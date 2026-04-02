@@ -1,0 +1,4 @@
+# Ignore the sub-projects inside the projects directory
+/projects/CozyCognee/
+/projects/CozyMem0/
+/projects/CozyMemobase/

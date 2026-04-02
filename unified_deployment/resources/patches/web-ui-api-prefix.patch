@@ -1,0 +1,13 @@
+--- main.py	2025-12-17 10:00:00
++++ main.py	2025-12-17 10:00:00
+@@ -61,7 +61,10 @@
+ app = FastAPI(
+     title="Mem0 REST APIs",
+     description="A REST API for managing and searching memories for your AI Agents and Apps.",
+     version="1.0.0",
++    servers=[
++        {"url": "/api/v1", "description": "API v1"},
++    ],
+ )
+ 
+ # 配置 CORS
