@@ -38,7 +38,15 @@ class Settings(BaseSettings):
     # ==================== Redis 配置 ====================
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_PREFIX: str = "cozymemory:"
+    REDIS_ENABLED: bool = True  # 是否启用 Redis 缓存
     CACHE_TTL: int = 300  # 5 分钟
+    
+    # ==================== 缓存配置 ====================
+    CACHE_MEMORY_MAX_SIZE: int = 1000  # 内存缓存最大条目数
+    CACHE_NULL_TTL: int = 60  # 空值缓存 TTL (防穿透)
+    CACHE_TTL_JITTER: float = 0.2  # TTL 抖动比例 (防雪崩)
+    CACHE_HOT_THRESHOLD: int = 100  # 热点数据阈值 (访问次数)
+    CACHE_HOT_TTL_MULTIPLIER: float = 2.0  # 热点数据 TTL 倍数
     
     # ==================== 记忆引擎配置 ====================
     # Memobase
