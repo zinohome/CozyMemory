@@ -210,7 +210,7 @@ class EnhancedMemoryService:
                 if memory:
                     # 缓存结果
                     if self.enable_cache and self._cache_service:
-                        await self._cache_service.set_memory(memory)
+                        await self._cache_service.set_memory(memory.id, memory)
                     
                     # 更新统计
                     latency = (datetime.now() - start_time).total_seconds()
@@ -461,6 +461,9 @@ class EnhancedMemoryService:
         """
         logger.info("batch_create", count=len(memories))
         
+        # 确保服务已初始化
+        await self._ensure_services()
+        
         # 按引擎分组
         by_engine: Dict[str, List[MemoryCreate]] = {}
         for memory in memories:
@@ -468,10 +471,11 @@ class EnhancedMemoryService:
                 engines = await self._router_service.route(
                     user_id=memory.user_id,
                     query=memory.content,
-                    memory_type=memory.memory_type,
+                    memory_type=memory.memory_type.value if memory.memory_type else None,
                     source=None,
                     available_engines=list(self.adapters.keys()),
                 )
+                self._stats["routing_decisions"] += 1
                 target = engines[0] if engines else "memobase"
             else:
                 target = "memobase"

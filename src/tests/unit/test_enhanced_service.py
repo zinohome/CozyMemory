@@ -25,11 +25,19 @@ from src.services.fusion_service import close_fusion_service
 @pytest.fixture
 async def service():
     """创建增强服务"""
-    # 创建多个 Mock 适配器
+    # 创建多个 Mock 适配器 (共享存储)
+    from src.adapters.memobase_mock_adapter import MemobaseMockAdapter, _mock_memories
+    
+    # 清空存储
+    _mock_memories.clear()
+    
+    # 使用同一个适配器实例
+    shared_adapter = MemobaseMockAdapter(api_url="http://localhost:8000")
+    
     adapters = {
-        "memobase": MemobaseMockAdapter(api_url="http://localhost:8000"),
-        "local": MemobaseMockAdapter(api_url="http://localhost:8001"),
-        "vector": MemobaseMockAdapter(api_url="http://localhost:8002"),
+        "memobase": shared_adapter,
+        "local": shared_adapter,
+        "vector": shared_adapter,
     }
     
     service = EnhancedMemoryService(
@@ -46,6 +54,7 @@ async def service():
     await close_cache_service()
     await close_router_service()
     await close_fusion_service()
+    _mock_memories.clear()
 
 
 class TestEnhancedMemoryService:
