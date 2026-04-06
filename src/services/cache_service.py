@@ -286,6 +286,25 @@ class CacheService:
         cache_key = self._make_query_key(user_id, query, memory_type, source, limit)
         return await self.set_query(cache_key, value)
     
+    # ========== 别名方法 (为了 EnhancedMemoryService 兼容) ==========
+    
+    async def get_by_key(self, key: str) -> Optional[Any]:
+        """获取缓存 (别名)"""
+        return await self.get(key)
+    
+    async def set_by_key(
+        self,
+        key: str,
+        value: Any,
+        ttl: Optional[int] = None,
+    ) -> bool:
+        """设置缓存 (别名)"""
+        return await self.set(key, value, ttl)
+    
+    async def invalidate_memory(self, memory_id: str) -> bool:
+        """失效记忆缓存 (别名)"""
+        return await self.invalidate_memory_cache(memory_id)
+    
     async def close(self) -> None:
         """关闭缓存服务"""
         if self._cache:
