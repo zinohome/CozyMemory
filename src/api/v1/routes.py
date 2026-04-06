@@ -7,7 +7,7 @@ API 路由模块
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 
-from ..models.memory import (
+from src.models.memory import (
     MemoryCreate,
     MemoryQuery,
     MemoryUpdate,
@@ -17,9 +17,9 @@ from ..models.memory import (
     ErrorResponse,
     EngineInfo,
 )
-from ..services.memory_service import MemoryService
-from ..utils.logger import get_logger
-from ..utils.config import settings
+from src.services.memory_service import MemoryService
+from src.utils.logger import get_logger
+from src.utils.config import settings
 
 logger = get_logger(__name__)
 
@@ -31,7 +31,7 @@ def get_memory_service() -> MemoryService:
     """获取记忆服务依赖"""
     # 这里会从依赖注入容器获取服务
     # 暂时直接返回，后续会改进
-    from ..adapters.memobase_mock_adapter import MemobaseMockAdapter
+    from src.adapters.memobase_mock_adapter import MemobaseMockAdapter
     
     adapter = MemobaseMockAdapter(
         api_url=settings.MEMOBASE_API_URL,
@@ -142,7 +142,7 @@ async def query_memories(
     service: MemoryService = Depends(get_memory_service)
 ) -> MemoryListResponse:
     """查询记忆"""
-    from ..models.memory import MemoryType
+    from src.models.memory import MemoryType
     
     # 构建查询对象
     memory_type_enum = None
