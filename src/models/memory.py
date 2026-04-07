@@ -25,6 +25,7 @@ class MemorySource(str, Enum):
     MEM0 = "mem0"
     COGNEE = "cognee"
     USER_INPUT = "user_input"
+    LOCAL = "local"  # 本地 SQLite 存储
 
 
 # ==================== 请求模型 ====================
@@ -65,6 +66,10 @@ class MemoryQuery(BaseModel):
     memory_type: Optional[MemoryType] = Field(
         default=None,
         description="记忆类型过滤"
+    )
+    source: Optional[MemorySource] = Field(
+        default=None,
+        description="记忆来源过滤"
     )
     limit: int = Field(default=10, ge=1, le=100, description="返回数量限制")
     engine: Optional[str] = Field(
