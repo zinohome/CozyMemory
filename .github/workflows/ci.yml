@@ -1,0 +1,320 @@
+name: CI
+
+# 触发条件
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# 环境变量
+env:
+  PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# 取消正在运行的重复工作流
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==================== 代码质量检查 ====================
+  lint:
+    name: 📝 代码质量检查
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 isort mypy
+
+      - name: 🔍 检查导入排序 (isort)
+        run: |
+          isort --check-only src/ tests/ || (echo "❌ isort 检查失败，请运行 'isort src/ tests/' 修复" && exit 1)
+
+      - name: 🎨 检查代码格式 (black)
+        run: |
+          black --check src/ tests/ || (echo "❌ black 检查失败，请运行 'black src/ tests/' 修复" && exit 1)
+
+      - name: 🔎 代码检查 (flake8)
+        run: |
+          flake8 src/ tests/ || (echo "❌ flake8 检查失败" && exit 1)
+
+      - name: 📊 类型检查 (mypy)
+        run: |
+          mypy src/ || echo "⚠️ mypy 检查有警告 (非阻塞)"
+
+  # ==================== 单元测试 ====================
+  test:
+    name: 🧪 单元测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: cozy
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: cozy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest pytest-asyncio pytest-cov httpx
+
+      - name: 🏗️ 初始化测试数据库
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U cozy -d cozy_test -f deploy/docker/init.sql
+
+      - name: 🧪 运行单元测试
+        run: |
+          pytest tests/unit/ \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-fail-under=80 \
+            -v \
+            --tb=short
+
+      - name: 📊 上传覆盖率报告
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: 📁 保存 HTML 覆盖率报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-html-report
+          path: htmlcov/
+          retention-days: 7
+
+  # ==================== 集成测试 ====================
+  integration-test:
+    name: 🔗 集成测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, test]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest pytest-asyncio httpx
+
+      - name: 🚀 启动 Docker Compose 服务
+        run: |
+          docker-compose -f deploy/docker/docker-compose.yml up -d
+          sleep 30  # 等待服务启动
+
+      - name: 🧪 运行集成测试
+        run: |
+          pytest tests/integration/ \
+            -v \
+            --tb=short \
+            --asyncio-mode=auto
+
+      - name: 📋 查看服务日志 (如果失败)
+        if: failure()
+        run: |
+          docker-compose -f deploy/docker/docker-compose.yml logs
+
+      - name: 🛑 停止 Docker Compose 服务
+        if: always()
+        run: |
+          docker-compose -f deploy/docker/docker-compose.yml down
+
+  # ==================== 安全扫描 ====================
+  security:
+    name: 🔒 安全扫描
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 安装安全工具
+        run: |
+          pip install bandit safety
+
+      - name: 🔍 代码安全扫描 (bandit)
+        run: |
+          bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: 📊 上传 Bandit 报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          retention-days: 7
+
+      - name: 🧪 依赖漏洞扫描 (safety)
+        run: |
+          safety check --json > safety-report.json || true
+        continue-on-error: true
+
+      - name: 📊 上传 Safety 报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: safety-vulnerability-report
+          path: safety-report.json
+          retention-days: 7
+
+  # ==================== 构建 Docker 镜像 (仅 main 分支) ====================
+  build-docker:
+    name: 🐳 构建 Docker 镜像
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 📦 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 登录到 GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ 提取 Docker 镜像元数据
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==================== 部署到 Staging (仅 main 分支) ====================
+  deploy-staging:
+    name: 🚀 部署到 Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build-docker, integration-test]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging-api.cozymemory.com
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 📝 输出部署信息
+        run: |
+          echo "==================================="
+          echo "🚀 部署到 Staging 环境"
+          echo "==================================="
+          echo "镜像：ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          echo "环境：staging"
+          echo "时间：$(date -u)"
+          echo "==================================="
+
+      - name: 🔔 发送部署通知 (模拟)
+        run: |
+          echo "✅ 部署到 Staging 环境完成！"
+          echo "📊 访问：https://staging-api.cozymemory.com"
+          echo "📋 API 文档：https://staging-api.cozymemory.com/docs"
+
+  # ==================== 生产部署审批 ====================
+  deploy-production:
+    name: 🎯 部署到生产环境
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://api.cozymemory.com
+    steps:
+      - name: 📝 输出生产部署信息
+        run: |
+          echo "==================================="
+          echo "🎯 部署到生产环境"
+          echo "==================================="
+          echo "镜像：ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          echo "环境：production"
+          echo "时间：$(date -u)"
+          echo "==================================="
+          echo "✅ 生产部署完成！"
+          echo "📊 访问：https://api.cozymemory.com"

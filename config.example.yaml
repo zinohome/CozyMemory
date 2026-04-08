@@ -1,0 +1,29 @@
+# CozyMemory 配置文件示例
+
+engines:
+  # Memobase 引擎
+  memobase:
+    enabled: true
+    api_url: "http://localhost:8000"
+    timeout: 30
+    priority: 1
+  
+  # Mem0 引擎
+  mem0:
+    enabled: true
+    api_key: "your-mem0-api-key"
+    timeout: 30
+    priority: 2
+  
+  # Cognee 引擎 (TODO)
+  cognee:
+    enabled: false
+    api_url: "http://localhost:8001"
+    timeout: 30
+
+# 路由配置
+router:
+  default_engine: "memobase"
+  cache_enabled: true
+  cache_ttl: 3600  # 缓存 1 小时
+  fusion_strategy: "rrf"  # 结果融合策略
