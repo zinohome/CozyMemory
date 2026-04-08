@@ -60,6 +60,11 @@ dev = [
     "safety>=3.0.0",
 ]
 
+vector = [
+    "chromadb>=0.4.22",
+    "sentence-transformers>=2.3.0",
+]
+
 memobase = [
     "memobase-client>=0.1.0",
 ]
