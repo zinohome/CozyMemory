@@ -6,19 +6,22 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# 安装构建依赖（gRPC 编译需要 gcc）
+# 安装构建依赖
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件
+# 复制依赖文件并安装到虚拟环境
 COPY requirements.txt .
-
-# 安装 Python 依赖到虚拟环境
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --upgrade pip --no-cache-dir && \
     pip install --no-cache-dir -r requirements.txt
+
+# 复制项目元数据和源码，用 pip install 安装包（注册 entry_points）
+COPY pyproject.toml ./
+COPY src/ ./src/
+RUN pip install --no-cache-dir -e .
 
 # ==================== 运行阶段 ====================
 FROM python:3.11-slim AS runtime
@@ -31,25 +34,26 @@ LABEL maintainer="CozyMemory Team" \
 RUN groupadd --gid 1000 cozymemory && \
     useradd --uid 1000 --gid cozymemory --shell /bin/bash --create-home cozymemory
 
+# 安装 supervisord 用于同时运行 REST + gRPC
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends supervisor && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # 从构建阶段复制虚拟环境
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# 复制应用代码
+# 复制应用代码（已包含预生成的 protobuf 代码）
 COPY --chown=cozymemory:cozymemory src/ ./src/
-COPY --chown=cozymemory:cozymemory proto/ ./proto/
+COPY --chown=cozymemory:cozymemory pyproject.toml ./
 
-# 生成 gRPC 代码
-RUN python -m grpc_tools.protoc \
-    -I./proto \
-    --python_out=./src/cozymemory/grpc_server \
-    --grpc_python_out=./src/cozymemory/grpc_server \
-    ./proto/common.proto \
-    ./proto/conversation.proto \
-    ./proto/profile.proto \
-    ./proto/knowledge.proto
+# 安装应用包（注册 CLI entry_points）
+RUN pip install --no-cache-dir -e .
+
+# 复制 supervisord 配置
+COPY --chown=cozymemory:cozymemory deploy/supervisord.conf /etc/supervisor/conf.d/cozymemory.conf
 
 # 环境变量
 ENV PYTHONUNBUFFERED=1 \
@@ -68,5 +72,5 @@ EXPOSE 8000 50051
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" || exit 1
 
-# 启动命令
-CMD ["uvicorn", "cozymemory.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+# 启动命令：supervisord 同时管理 REST API 和 gRPC Server
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/cozymemory.conf"]
