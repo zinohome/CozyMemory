@@ -1,0 +1,18 @@
+# 核心框架
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
+# HTTP 客户端
+httpx[http2]>=0.27.0
+
+# 数据验证
+pydantic>=2.0
+pydantic-settings>=2.0
+
+# gRPC
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+protobuf>=4.25.0
+
+# 日志
+structlog>=24.0
