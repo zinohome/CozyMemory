@@ -1,0 +1,63 @@
+# Version control
+.git
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.env
+.venv
+venv
+env/
+
+# Testing and coverage
+.pytest_cache
+.coverage
+htmlcov/
+coverage.xml
+
+# Type checking and linting
+.mypy_cache
+.ruff_cache
+.pytype/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Documentation (keep README.md)
+docs/
+archive/
+*.md
+!README.md
+
+# Docker
+docker-compose*.yml
+Dockerfile
+
+# Data and logs
+*.log
+data/
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+projects/
+scripts/
+tests/

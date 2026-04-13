@@ -1,0 +1,190 @@
+version: '3.8'
+
+# CozyMemory 开发环境 Docker Compose 配置
+# 包含：CozyMemory, Mem0, Memobase, Cognee
+
+services:
+  # ==========================================
+  # CozyMemory 统一记忆服务
+  # ==========================================
+  cozymemory:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: cozy_memory
+    restart: unless-stopped
+    ports:
+      - "8000:8000"     # REST API
+      - "50051:50051"   # gRPC
+    env_file:
+      - ../.env
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+      # Mem0 引擎
+      - MEM0_API_URL=http://mem0:8080
+      - MEM0_ENABLED=true
+      # Memobase 引擎
+      - MEMOBASE_API_URL=http://memobase:8070
+      - MEMOBASE_ENABLED=true
+      # Cognee 引擎
+      - COGNEE_API_URL=http://cognee:7860
+      - COGNEE_ENABLED=true
+    volumes:
+      # 开发热重载
+      - ../src:/app/src
+    depends_on:
+      mem0:
+        condition: service_started
+      memobase:
+        condition: service_started
+      cognee:
+        condition: service_started
+    networks:
+      - cozy-network
+
+  # ==========================================
+  # Mem0 对话记忆引擎
+  # ==========================================
+  mem0:
+    image: mem0/mem0:latest
+    container_name: cozy-mem0
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MEM0_HOST=0.0.0.0
+      - MEM0_PORT=8080
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-placeholder}
+      - VECTOR_STORE=qdrant
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - mem0_data:/root/.mem0
+    networks:
+      - cozy-network
+
+  # ==========================================
+  # Memobase 用户画像引擎
+  # ==========================================
+  memobase:
+    image: memobase/memobase:latest
+    container_name: cozy-memobase
+    restart: unless-stopped
+    ports:
+      - "8070:8070"
+    environment:
+      - MEMOBASE_HOST=0.0.0.0
+      - MEMOBASE_PORT=8070
+      - DATABASE_URL=postgresql://cozy:cozy_password_2026@postgres:5432/cozy_memory
+      - REDIS_URL=redis://redis:6379
+      - MEMOBASE_API_KEY=${MEMOBASE_API_KEY:-memobase_dev_key}
+    volumes:
+      - memobase_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cozy-network
+
+  # ==========================================
+  # Cognee 知识图谱引擎
+  # ==========================================
+  cognee:
+    image: cognee/cognee:latest
+    container_name: cozy-cognee
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      - COGNEE_HOST=0.0.0.0
+      - COGNEE_PORT=7860
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-placeholder}
+      - NEO4J_URL=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-cozy_neo4j_2026}
+      - POSTGRES_URL=postgresql://cozy:cozy_password_2026@postgres:5432/cognee
+    volumes:
+      - cognee_data:/root/.cognee
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cozy-network
+
+  # ==========================================
+  # 基础设施
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: cozy-postgres
+    environment:
+      POSTGRES_USER: cozy
+      POSTGRES_PASSWORD: cozy_password_2026
+      POSTGRES_DB: cozy_memory
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cozy -d cozy_memory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cozy-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cozy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cozy-network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cozy-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - cozy-network
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: cozy-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/cozy_neo4j_2026
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - cozy-network
+
+volumes:
+  mem0_data:
+  memobase_data:
+  cognee_data:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  neo4j_data:
+
+networks:
+  cozy-network:
+    driver: bridge
