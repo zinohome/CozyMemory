@@ -1,7 +1,7 @@
 syntax = "proto3";
 package cozymemory;
 
-import "common.proto";
+import "conversation.proto";
 
 message InsertProfileRequest {
   string user_id = 1;

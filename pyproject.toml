@@ -30,6 +30,9 @@ dev = [
     "mypy>=1.9",
 ]
 
+[project.scripts]
+cozymemory-grpc = "cozymemory.grpc_server:run_grpc_cli"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -44,9 +47,13 @@ markers = [
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+exclude = ["src/cozymemory/grpc_server/*_pb2.py", "src/cozymemory/grpc_server/*_pb2_grpc.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/cozymemory/grpc_server/server.py" = ["N802"]  # gRPC 方法必须 PascalCase
 
 [tool.mypy]
 python_version = "3.11"
@@ -56,6 +63,7 @@ disallow_untyped_defs = true
 disallow_untyped_calls = false
 no_implicit_optional = true
 plugins = ["pydantic.mypy"]
+exclude = ["cozymemory/grpc_server/"]
 
 [[tool.mypy.overrides]]
 module = "cozymemory.models.*"

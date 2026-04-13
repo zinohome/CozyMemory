@@ -1,8 +1,6 @@
 syntax = "proto3";
 package cozymemory;
 
-import "common.proto";
-
 message Message {
   string role = 1;
   string content = 2;
