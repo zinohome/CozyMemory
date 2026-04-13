@@ -6,14 +6,16 @@
 
 from typing import Any
 
-from .base import BaseClient, EngineError
 from ..models.conversation import ConversationMemory
+from .base import BaseClient, EngineError
 
 
 class Mem0Client(BaseClient):
     """Mem0 引擎客户端"""
 
-    def __init__(self, api_url: str = "http://localhost:8888", api_key: str | None = None, **kwargs):
+    def __init__(
+        self, api_url: str = "http://localhost:8888", api_key: str | None = None, **kwargs
+    ):
         super().__init__(engine_name="Mem0", api_url=api_url, api_key=api_key, **kwargs)
 
     def _get_headers(self, content_type: str = "application/json") -> dict[str, str]:
@@ -49,10 +51,17 @@ class Mem0Client(BaseClient):
         results = []
         for item in data if isinstance(data, list) else [data]:
             memory_text = (
-                item.get("data", {}).get("memory", "") if isinstance(item.get("data"), dict) else item.get("memory", "")
+                item.get("data", {}).get("memory", "")
+                if isinstance(item.get("data"), dict)
+                else item.get("memory", "")
             )
             results.append(
-                ConversationMemory(id=item.get("id", ""), user_id=user_id, content=memory_text, metadata=item.get("metadata"))
+                ConversationMemory(
+                    id=item.get("id", ""),
+                    user_id=user_id,
+                    content=memory_text,
+                    metadata=item.get("metadata"),
+                )
             )
         return results
 
@@ -98,7 +107,9 @@ class Mem0Client(BaseClient):
 
     async def get_all(self, user_id: str, limit: int = 100) -> list[ConversationMemory]:
         """获取用户所有记忆"""
-        response = await self._request("GET", "/memories", params={"user_id": user_id, "limit": limit})
+        response = await self._request(
+            "GET", "/memories", params={"user_id": user_id, "limit": limit}
+        )
         data = response.json()
 
         items = data.get("results", data if isinstance(data, list) else [])

@@ -1,14 +1,14 @@
 """知识库服务测试"""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from cozymemory.services.knowledge import KnowledgeService
+import pytest
+
 from cozymemory.models.knowledge import (
-    KnowledgeDataset, KnowledgeAddResponse, KnowledgeCognifyResponse,
-    KnowledgeSearchResponse, KnowledgeSearchResult, KnowledgeDatasetListResponse,
+    KnowledgeDataset,
+    KnowledgeSearchResult,
 )
-from cozymemory.clients.base import EngineError
+from cozymemory.services.knowledge import KnowledgeService
 
 
 @pytest.fixture
@@ -16,13 +16,17 @@ def mock_cognee_client():
     client = MagicMock()
     client.add = AsyncMock(return_value={"id": "data_123"})
     client.cognify = AsyncMock(return_value={"run_id": "pipe_123", "status": "pending"})
-    client.search = AsyncMock(return_value=[
-        KnowledgeSearchResult(id="n1", text="结果1", score=0.9),
-    ])
+    client.search = AsyncMock(
+        return_value=[
+            KnowledgeSearchResult(id="n1", text="结果1", score=0.9),
+        ]
+    )
     client.create_dataset = AsyncMock(return_value=KnowledgeDataset(id="uuid-1", name="my-ds"))
-    client.list_datasets = AsyncMock(return_value=[
-        KnowledgeDataset(id="uuid-1", name="ds1"),
-    ])
+    client.list_datasets = AsyncMock(
+        return_value=[
+            KnowledgeDataset(id="uuid-1", name="ds1"),
+        ]
+    )
     return client
 
 

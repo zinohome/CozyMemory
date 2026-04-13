@@ -1,16 +1,17 @@
 """知识库模型测试"""
 
 import pytest
+
 from cozymemory.models.knowledge import (
     KnowledgeAddRequest,
-    KnowledgeCognifyRequest,
-    KnowledgeSearchRequest,
-    KnowledgeSearchResult,
-    KnowledgeDataset,
     KnowledgeAddResponse,
+    KnowledgeCognifyRequest,
     KnowledgeCognifyResponse,
-    KnowledgeSearchResponse,
+    KnowledgeDataset,
     KnowledgeDatasetListResponse,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
+    KnowledgeSearchResult,
 )
 
 

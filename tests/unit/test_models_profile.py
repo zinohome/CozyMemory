@@ -1,16 +1,17 @@
 """用户画像模型测试"""
 
 import pytest
+
+from cozymemory.models.common import Message
 from cozymemory.models.profile import (
-    ProfileInsertRequest,
-    ProfileFlushRequest,
+    ProfileContext,
     ProfileContextRequest,
+    ProfileFlushRequest,
+    ProfileInsertRequest,
+    ProfileInsertResponse,
     ProfileTopic,
     UserProfile,
-    ProfileContext,
-    ProfileInsertResponse,
 )
-from cozymemory.models.common import Message
 
 
 def test_profile_insert_request():
@@ -27,16 +28,16 @@ def test_profile_flush_request():
 
 
 def test_profile_context_request():
-    req = ProfileContextRequest(user_id="user_123", max_token_size=500)
+    req = ProfileContextRequest(max_token_size=500)
     assert req.max_token_size == 500
     assert req.chats is None
 
 
 def test_profile_context_request_token_range():
     with pytest.raises(Exception):
-        ProfileContextRequest(user_id="user_123", max_token_size=50)
+        ProfileContextRequest(max_token_size=50)
     with pytest.raises(Exception):
-        ProfileContextRequest(user_id="user_123", max_token_size=5001)
+        ProfileContextRequest(max_token_size=5001)
 
 
 def test_profile_topic():

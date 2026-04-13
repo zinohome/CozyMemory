@@ -1,11 +1,15 @@
 """用户画像服务测试"""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from cozymemory.models.profile import (
+    ProfileContext,
+    ProfileTopic,
+    UserProfile,
+)
 from cozymemory.services.profile import ProfileService
-from cozymemory.models.profile import UserProfile, ProfileTopic, ProfileContext, ProfileInsertResponse
-from cozymemory.clients.base import EngineError
 
 
 @pytest.fixture
@@ -13,12 +17,16 @@ def mock_memobase_client():
     client = MagicMock()
     client.insert = AsyncMock(return_value="blob_123")
     client.flush = AsyncMock(return_value=None)
-    client.profile = AsyncMock(return_value=UserProfile(
-        user_id="u1",
-        topics=[ProfileTopic(id="p1", topic="basic_info", sub_topic="name", content="小明")],
-    ))
+    client.profile = AsyncMock(
+        return_value=UserProfile(
+            user_id="u1",
+            topics=[ProfileTopic(id="p1", topic="basic_info", sub_topic="name", content="小明")],
+        )
+    )
     client.context = AsyncMock(return_value=ProfileContext(user_id="u1", context="# Memory\n..."))
-    client.add_profile = AsyncMock(return_value=ProfileTopic(id="p2", topic="interest", sub_topic="hobby", content="游泳"))
+    client.add_profile = AsyncMock(
+        return_value=ProfileTopic(id="p2", topic="interest", sub_topic="hobby", content="游泳")
+    )
     client.delete_profile = AsyncMock(return_value=True)
     return client
 

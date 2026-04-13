@@ -1,7 +1,8 @@
 """通用数据模型测试"""
 
 import pytest
-from cozymemory.models.common import Message, EngineStatus, HealthResponse, ErrorResponse
+
+from cozymemory.models.common import EngineStatus, ErrorResponse, HealthResponse, Message
 
 
 def test_message_creation():

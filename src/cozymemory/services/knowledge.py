@@ -4,13 +4,13 @@
 """
 
 import logging
-from typing import Any
 
 from ..clients.cognee import CogneeClient
-from ..clients.base import EngineError
 from ..models.knowledge import (
-    KnowledgeAddResponse, KnowledgeCognifyResponse, KnowledgeSearchResponse,
-    KnowledgeDataset, KnowledgeDatasetListResponse,
+    KnowledgeAddResponse,
+    KnowledgeCognifyResponse,
+    KnowledgeDatasetListResponse,
+    KnowledgeSearchResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,18 +25,33 @@ class KnowledgeService:
     async def add(self, data: str, dataset: str) -> KnowledgeAddResponse:
         """添加文档到知识库"""
         result = await self.client.add(data=data, dataset=dataset)
-        return KnowledgeAddResponse(success=True, data_id=result.get("id"), dataset_name=dataset, message="数据已添加")
+        return KnowledgeAddResponse(
+            success=True, data_id=result.get("id"), dataset_name=dataset, message="数据已添加"
+        )
 
-    async def cognify(self, datasets: list[str] | None = None, run_in_background: bool = True) -> KnowledgeCognifyResponse:
+    async def cognify(
+        self, datasets: list[str] | None = None, run_in_background: bool = True
+    ) -> KnowledgeCognifyResponse:
         """触发知识图谱构建"""
         result = await self.client.cognify(datasets=datasets, run_in_background=run_in_background)
         return KnowledgeCognifyResponse(
-            success=True, pipeline_run_id=result.get("run_id"), status=result.get("status", "pending"), message="知识图谱构建已启动"
+            success=True,
+            pipeline_run_id=result.get("run_id"),
+            status=result.get("status", "pending"),
+            message="知识图谱构建已启动",
         )
 
-    async def search(self, query: str, dataset: str | None = None, search_type: str = "GRAPH_COMPLETION", top_k: int = 10) -> KnowledgeSearchResponse:
+    async def search(
+        self,
+        query: str,
+        dataset: str | None = None,
+        search_type: str = "GRAPH_COMPLETION",
+        top_k: int = 10,
+    ) -> KnowledgeSearchResponse:
         """搜索知识库"""
-        results = await self.client.search(query=query, dataset=dataset, search_type=search_type, top_k=top_k)
+        results = await self.client.search(
+            query=query, dataset=dataset, search_type=search_type, top_k=top_k
+        )
         return KnowledgeSearchResponse(success=True, data=results, total=len(results))
 
     async def create_dataset(self, name: str) -> KnowledgeDatasetListResponse:

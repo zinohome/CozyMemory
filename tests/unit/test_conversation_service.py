@@ -1,26 +1,35 @@
 """会话记忆服务测试"""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from cozymemory.services.conversation import ConversationService
-from cozymemory.models.conversation import ConversationMemory, ConversationMemoryListResponse
+import pytest
+
 from cozymemory.clients.base import EngineError
+from cozymemory.models.conversation import ConversationMemory
+from cozymemory.services.conversation import ConversationService
 
 
 @pytest.fixture
 def mock_mem0_client():
     client = MagicMock()
-    client.add = AsyncMock(return_value=[
-        ConversationMemory(id="mem_1", user_id="u1", content="事实1"),
-    ])
-    client.search = AsyncMock(return_value=[
-        ConversationMemory(id="mem_1", user_id="u1", content="事实1", score=0.9),
-    ])
-    client.get = AsyncMock(return_value=ConversationMemory(id="mem_1", user_id="u1", content="事实1"))
-    client.get_all = AsyncMock(return_value=[
-        ConversationMemory(id="mem_1", user_id="u1", content="事实1"),
-    ])
+    client.add = AsyncMock(
+        return_value=[
+            ConversationMemory(id="mem_1", user_id="u1", content="事实1"),
+        ]
+    )
+    client.search = AsyncMock(
+        return_value=[
+            ConversationMemory(id="mem_1", user_id="u1", content="事实1", score=0.9),
+        ]
+    )
+    client.get = AsyncMock(
+        return_value=ConversationMemory(id="mem_1", user_id="u1", content="事实1")
+    )
+    client.get_all = AsyncMock(
+        return_value=[
+            ConversationMemory(id="mem_1", user_id="u1", content="事实1"),
+        ]
+    )
     client.delete = AsyncMock(return_value=True)
     client.delete_all = AsyncMock(return_value=True)
     return client

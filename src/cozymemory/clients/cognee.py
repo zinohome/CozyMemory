@@ -5,14 +5,16 @@
 
 from typing import Any
 
+from ..models.knowledge import KnowledgeDataset, KnowledgeSearchResult
 from .base import BaseClient, EngineError
-from ..models.knowledge import KnowledgeSearchResult, KnowledgeDataset
 
 
 class CogneeClient(BaseClient):
     """Cognee 引擎客户端"""
 
-    def __init__(self, api_url: str = "http://localhost:8000", api_key: str | None = None, **kwargs):
+    def __init__(
+        self, api_url: str = "http://localhost:8000", api_key: str | None = None, **kwargs
+    ):
         kwargs.setdefault("timeout", 300.0)
         super().__init__(engine_name="Cognee", api_url=api_url, api_key=api_key, **kwargs)
 
@@ -34,7 +36,9 @@ class CogneeClient(BaseClient):
         )
         return response.json()
 
-    async def cognify(self, datasets: list[str] | None = None, run_in_background: bool = True) -> dict[str, Any]:
+    async def cognify(
+        self, datasets: list[str] | None = None, run_in_background: bool = True
+    ) -> dict[str, Any]:
         """触发知识图谱构建"""
         payload: dict[str, Any] = {"run_in_background": run_in_background}
         if datasets:
@@ -43,7 +47,11 @@ class CogneeClient(BaseClient):
         return response.json()
 
     async def search(
-        self, query: str, dataset: str | None = None, search_type: str = "GRAPH_COMPLETION", top_k: int = 10
+        self,
+        query: str,
+        dataset: str | None = None,
+        search_type: str = "GRAPH_COMPLETION",
+        top_k: int = 10,
     ) -> list[KnowledgeSearchResult]:
         """搜索知识库"""
         payload: dict[str, Any] = {"query": query, "search_type": search_type, "top_k": top_k}
@@ -85,7 +93,9 @@ class CogneeClient(BaseClient):
     async def delete(self, data_id: str, dataset_id: str) -> bool:
         """删除数据"""
         try:
-            await self._request("DELETE", "/api/v1/delete", params={"data_id": data_id, "dataset_id": dataset_id})
+            await self._request(
+                "DELETE", "/api/v1/delete", params={"data_id": data_id, "dataset_id": dataset_id}
+            )
             return True
         except EngineError:
             return False

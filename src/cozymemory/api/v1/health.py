@@ -1,13 +1,13 @@
 """健康检查端点"""
 
-import time
 import logging
+import time
 
 from fastapi import APIRouter
 
+from ...api.deps import get_cognee_client, get_mem0_client, get_memobase_client
 from ...config import settings
 from ...models.common import EngineStatus, HealthResponse
-from ...api.deps import get_mem0_client, get_memobase_client, get_cognee_client
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,9 @@ async def health_check():
             healthy = await client.health_check()
             latency = (time.time() - start) * 1000
             engines["mem0"] = EngineStatus(
-                name="Mem0", status="healthy" if healthy else "unhealthy", latency_ms=round(latency, 1)
+                name="Mem0",
+                status="healthy" if healthy else "unhealthy",
+                latency_ms=round(latency, 1),
             )
         except Exception as e:
             engines["mem0"] = EngineStatus(name="Mem0", status="unhealthy", error=str(e))
@@ -42,7 +44,9 @@ async def health_check():
             healthy = await client.health_check()
             latency = (time.time() - start) * 1000
             engines["memobase"] = EngineStatus(
-                name="Memobase", status="healthy" if healthy else "unhealthy", latency_ms=round(latency, 1)
+                name="Memobase",
+                status="healthy" if healthy else "unhealthy",
+                latency_ms=round(latency, 1),
             )
         except Exception as e:
             engines["memobase"] = EngineStatus(name="Memobase", status="unhealthy", error=str(e))
@@ -57,7 +61,9 @@ async def health_check():
             healthy = await client.health_check()
             latency = (time.time() - start) * 1000
             engines["cognee"] = EngineStatus(
-                name="Cognee", status="healthy" if healthy else "unhealthy", latency_ms=round(latency, 1)
+                name="Cognee",
+                status="healthy" if healthy else "unhealthy",
+                latency_ms=round(latency, 1),
             )
         except Exception as e:
             engines["cognee"] = EngineStatus(name="Cognee", status="unhealthy", error=str(e))

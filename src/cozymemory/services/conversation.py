@@ -7,7 +7,6 @@ import logging
 from typing import Any
 
 from ..clients.mem0 import Mem0Client
-from ..clients.base import EngineError
 from ..models.conversation import ConversationMemory, ConversationMemoryListResponse
 
 logger = logging.getLogger(__name__)
@@ -20,17 +19,30 @@ class ConversationService:
         self.client = client
 
     async def add(
-        self, user_id: str, messages: list[dict[str, str]], metadata: dict[str, Any] | None = None, infer: bool = True
+        self,
+        user_id: str,
+        messages: list[dict[str, str]],
+        metadata: dict[str, Any] | None = None,
+        infer: bool = True,
     ) -> ConversationMemoryListResponse:
         """添加对话，Mem0 自动提取事实"""
-        memories = await self.client.add(user_id=user_id, messages=messages, metadata=metadata, infer=infer)
+        memories = await self.client.add(
+            user_id=user_id, messages=messages, metadata=metadata, infer=infer
+        )
         return ConversationMemoryListResponse(
-            success=True, data=memories, total=len(memories), message=f"对话已添加，提取出 {len(memories)} 条记忆"
+            success=True,
+            data=memories,
+            total=len(memories),
+            message=f"对话已添加，提取出 {len(memories)} 条记忆",
         )
 
-    async def search(self, user_id: str, query: str, limit: int = 10, threshold: float | None = None) -> ConversationMemoryListResponse:
+    async def search(
+        self, user_id: str, query: str, limit: int = 10, threshold: float | None = None
+    ) -> ConversationMemoryListResponse:
         """搜索会话记忆"""
-        memories = await self.client.search(user_id=user_id, query=query, limit=limit, threshold=threshold)
+        memories = await self.client.search(
+            user_id=user_id, query=query, limit=limit, threshold=threshold
+        )
         return ConversationMemoryListResponse(success=True, data=memories, total=len(memories))
 
     async def get(self, memory_id: str) -> ConversationMemory | None:
@@ -45,9 +57,13 @@ class ConversationService:
     async def delete(self, memory_id: str) -> ConversationMemoryListResponse:
         """删除单条记忆"""
         success = await self.client.delete(memory_id)
-        return ConversationMemoryListResponse(success=success, message="记忆已删除" if success else "删除失败")
+        return ConversationMemoryListResponse(
+            success=success, message="记忆已删除" if success else "删除失败"
+        )
 
     async def delete_all(self, user_id: str) -> ConversationMemoryListResponse:
         """删除用户所有记忆"""
         success = await self.client.delete_all(user_id)
-        return ConversationMemoryListResponse(success=success, message="用户所有记忆已删除" if success else "删除失败")
+        return ConversationMemoryListResponse(
+            success=success, message="用户所有记忆已删除" if success else "删除失败"
+        )

@@ -4,9 +4,10 @@
 核心流程：添加文档 (add) → 构建知识图谱 (cognify) → 语义搜索 (search)
 """
 
-from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class KnowledgeAddRequest(BaseModel):

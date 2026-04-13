@@ -1,11 +1,11 @@
 """Memobase 客户端测试"""
 
-import pytest
-import httpx
 from unittest.mock import AsyncMock, patch
 
+import httpx
+import pytest
+
 from cozymemory.clients.memobase import MemobaseClient
-from cozymemory.clients.base import EngineError
 
 
 def test_memobase_client_init():
@@ -27,7 +27,9 @@ async def test_memobase_health_check():
     """MemobaseClient 健康检查"""
     client = MemobaseClient(api_url="http://localhost:8019")
     mock_response = httpx.Response(200, json={"status": "ok"})
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         result = await client.health_check()
         assert result is True
 
@@ -37,7 +39,9 @@ async def test_memobase_add_user():
     """MemobaseClient.add_user 创建用户"""
     client = MemobaseClient(api_url="http://localhost:8019")
     mock_response = httpx.Response(200, json={"id": "user_123"})
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         user_id = await client.add_user("user_123")
         assert user_id == "user_123"
 
@@ -47,8 +51,12 @@ async def test_memobase_insert():
     """MemobaseClient.insert 插入对话"""
     client = MemobaseClient(api_url="http://localhost:8019")
     mock_response = httpx.Response(200, json={"blob_id": "blob_123"})
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
-        blob_id = await client.insert(user_id="user_123", messages=[{"role": "user", "content": "你好"}])
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
+        blob_id = await client.insert(
+            user_id="user_123", messages=[{"role": "user", "content": "你好"}]
+        )
         assert blob_id == "blob_123"
 
 
@@ -57,7 +65,9 @@ async def test_memobase_flush():
     """MemobaseClient.flush 触发处理"""
     client = MemobaseClient(api_url="http://localhost:8019")
     mock_response = httpx.Response(200, json={})
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         await client.flush("user_123", sync=True)
 
 
@@ -67,9 +77,15 @@ async def test_memobase_profile():
     client = MemobaseClient(api_url="http://localhost:8019")
     mock_response = httpx.Response(
         200,
-        json={"basic_info": {"name": {"id": "p1", "content": "小明", "created_at": None, "updated_at": None}}},
+        json={
+            "basic_info": {
+                "name": {"id": "p1", "content": "小明", "created_at": None, "updated_at": None}
+            }
+        },
     )
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         profile = await client.profile("user_123")
         assert profile.user_id == "user_123"
         assert len(profile.topics) == 1
@@ -85,7 +101,9 @@ async def test_memobase_context():
     mock_response = httpx.Response(
         200, text="# Memory\n用户背景...", headers={"content-type": "text/plain; charset=utf-8"}
     )
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         ctx = await client.context("user_123")
         assert ctx.user_id == "user_123"
         assert "用户背景" in ctx.context

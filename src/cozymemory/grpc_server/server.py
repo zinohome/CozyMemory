@@ -4,7 +4,6 @@
 gRPC 功能在 REST API 完成后再实现。
 """
 
-import asyncio
 import logging
 from concurrent import futures
 

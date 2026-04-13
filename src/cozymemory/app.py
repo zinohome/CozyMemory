@@ -1,15 +1,15 @@
 """CozyMemory FastAPI 应用入口"""
 
-import time
 import logging
+import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 
-from .config import settings
 from .api.v1.router import router as v1_router
+from .config import settings
 
 logger = logging.getLogger(__name__)
 

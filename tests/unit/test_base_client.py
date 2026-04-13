@@ -1,8 +1,9 @@
 """BaseClient 基类测试"""
 
-import pytest
-import httpx
 from unittest.mock import AsyncMock, patch
+
+import httpx
+import pytest
 
 from cozymemory.clients.base import BaseClient, EngineError
 
@@ -57,7 +58,9 @@ async def test_base_client_request_success():
     """BaseClient 成功请求"""
     client = BaseClient(engine_name="Test", api_url="http://localhost:8000")
     mock_response = httpx.Response(200, json={"status": "ok"})
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         response = await client._request("GET", "/health")
         assert response.status_code == 200
 
@@ -67,7 +70,9 @@ async def test_base_client_request_4xx_no_retry():
     """BaseClient 4xx 错误不重试"""
     client = BaseClient(engine_name="Test", api_url="http://localhost:8000", max_retries=3)
     mock_response = httpx.Response(400, text="Bad Request")
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response):
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
         with pytest.raises(EngineError) as exc_info:
             await client._request("GET", "/bad")
         assert exc_info.value.status_code == 400
@@ -76,9 +81,13 @@ async def test_base_client_request_4xx_no_retry():
 @pytest.mark.asyncio
 async def test_base_client_request_5xx_retry():
     """BaseClient 5xx 错误重试后抛异常"""
-    client = BaseClient(engine_name="Test", api_url="http://localhost:8000", max_retries=2, retry_delay=0.01)
+    client = BaseClient(
+        engine_name="Test", api_url="http://localhost:8000", max_retries=2, retry_delay=0.01
+    )
     mock_response = httpx.Response(500, text="Internal Server Error")
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_response) as mock_req:
+    with patch.object(
+        client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ) as mock_req:
         with pytest.raises(EngineError) as exc_info:
             await client._request("GET", "/error")
         assert exc_info.value.status_code == 500
@@ -88,8 +97,15 @@ async def test_base_client_request_5xx_retry():
 @pytest.mark.asyncio
 async def test_base_client_request_timeout_retry():
     """BaseClient 超时错误重试"""
-    client = BaseClient(engine_name="Test", api_url="http://localhost:8000", max_retries=2, retry_delay=0.01)
-    with patch.object(client._client, "request", new_callable=AsyncMock, side_effect=httpx.TimeoutException("timeout")) as mock_req:
+    client = BaseClient(
+        engine_name="Test", api_url="http://localhost:8000", max_retries=2, retry_delay=0.01
+    )
+    with patch.object(
+        client._client,
+        "request",
+        new_callable=AsyncMock,
+        side_effect=httpx.TimeoutException("timeout"),
+    ) as mock_req:
         with pytest.raises(EngineError):
             await client._request("GET", "/slow")
         assert mock_req.call_count == 2

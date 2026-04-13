@@ -1,13 +1,14 @@
 """会话记忆模型测试"""
 
 import pytest
-from cozymemory.models.conversation import (
-    ConversationMemoryCreate,
-    ConversationMemorySearch,
-    ConversationMemory,
-    ConversationMemoryListResponse,
-)
+
 from cozymemory.models.common import Message
+from cozymemory.models.conversation import (
+    ConversationMemory,
+    ConversationMemoryCreate,
+    ConversationMemoryListResponse,
+    ConversationMemorySearch,
+)
 
 
 def test_conversation_memory_create():
@@ -51,7 +52,9 @@ def test_conversation_memory_search_limit_range():
 
 
 def test_conversation_memory_response():
-    mem = ConversationMemory(id="mem_123", user_id="user_123", content="用户喜欢喝拿铁咖啡", score=0.92)
+    mem = ConversationMemory(
+        id="mem_123", user_id="user_123", content="用户喜欢喝拿铁咖啡", score=0.92
+    )
     assert mem.id == "mem_123"
     assert mem.score == 0.92
 

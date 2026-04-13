@@ -19,7 +19,9 @@ class EngineError(Exception):
         self.engine = engine
         self.message = message
         self.status_code = status_code
-        super().__init__(f"[{engine}] {status_code} - {message}" if status_code else f"[{engine}] {message}")
+        super().__init__(
+            f"[{engine}] {status_code} - {message}" if status_code else f"[{engine}] {message}"
+        )
 
 
 class BaseClient:
@@ -111,7 +113,7 @@ class BaseClient:
 
                 if response.status_code >= 400:
                     if response.status_code == 429 and attempt < self.max_retries - 1:
-                        await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                        await asyncio.sleep(self.retry_delay * (2**attempt))
                         continue
 
                     if 400 <= response.status_code < 500:
@@ -122,7 +124,7 @@ class BaseClient:
                         )
 
                     if attempt < self.max_retries - 1:
-                        await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                        await asyncio.sleep(self.retry_delay * (2**attempt))
                         continue
 
                     raise EngineError(
@@ -139,13 +141,13 @@ class BaseClient:
             except httpx.TimeoutException as e:
                 last_exception = e
                 if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                    await asyncio.sleep(self.retry_delay * (2**attempt))
                     continue
 
             except httpx.RequestError as e:
                 last_exception = e
                 if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                    await asyncio.sleep(self.retry_delay * (2**attempt))
                     continue
 
         if last_exception:

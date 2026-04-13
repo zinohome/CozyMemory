@@ -4,9 +4,9 @@
 核心范式：插入对话 (insert) → 缓冲区 (buffer) → LLM 处理 (flush) → 生成画像 (profile)
 """
 
-from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Any
+
+from pydantic import BaseModel, Field
 
 from .common import Message
 
@@ -27,9 +27,8 @@ class ProfileFlushRequest(BaseModel):
 
 
 class ProfileContextRequest(BaseModel):
-    """获取上下文提示词请求"""
+    """获取上下文提示词请求（user_id 来自路径参数）"""
 
-    user_id: str = Field(..., description="用户 ID", min_length=1)
     max_token_size: int = Field(500, ge=100, le=4000, description="上下文最大 token 数")
     chats: list[Message] | None = Field(None, description="近期对话（用于语义搜索匹配）")
 

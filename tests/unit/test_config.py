@@ -1,7 +1,5 @@
 """配置管理测试"""
 
-import os
-import pytest
 from cozymemory.config import Settings
 
 
@@ -55,4 +53,5 @@ def test_settings_from_env(monkeypatch):
 def test_settings_singleton():
     """全局 settings 实例可用"""
     from cozymemory.config import settings
+
     assert settings.APP_NAME == "CozyMemory"

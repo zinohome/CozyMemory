@@ -3,13 +3,13 @@
 提供客户端和服务单例的 FastAPI 依赖注入函数。
 """
 
-from ..config import settings
+from ..clients.cognee import CogneeClient
 from ..clients.mem0 import Mem0Client
 from ..clients.memobase import MemobaseClient
-from ..clients.cognee import CogneeClient
+from ..config import settings
 from ..services.conversation import ConversationService
-from ..services.profile import ProfileService
 from ..services.knowledge import KnowledgeService
+from ..services.profile import ProfileService
 
 # 客户端单例（延迟初始化）
 _mem0_client: Mem0Client | None = None

@@ -6,8 +6,8 @@
 
 from typing import Any
 
+from ..models.profile import ProfileContext, ProfileTopic, UserProfile
 from .base import BaseClient, EngineError
-from ..models.profile import ProfileTopic, UserProfile, ProfileContext
 
 
 class MemobaseClient(BaseClient):
@@ -65,7 +65,9 @@ class MemobaseClient(BaseClient):
         params = {}
         if sync:
             params["wait_process"] = "true"
-        response = await self._request("POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params)
+        response = await self._request(
+            "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
+        )
         result = response.json()
         return result.get("blob_id", result.get("id", ""))
 
@@ -80,7 +82,9 @@ class MemobaseClient(BaseClient):
 
     async def profile(self, user_id: str) -> UserProfile:
         """获取用户结构化画像"""
-        response = await self._request("GET", f"/api/v1/users/profile/{user_id}", params={"need_json": "true"})
+        response = await self._request(
+            "GET", f"/api/v1/users/profile/{user_id}", params={"need_json": "true"}
+        )
         data = response.json()
 
         topics = []
@@ -101,12 +105,16 @@ class MemobaseClient(BaseClient):
                             )
         return UserProfile(user_id=user_id, topics=topics)
 
-    async def add_profile(self, user_id: str, topic: str, sub_topic: str, content: str) -> ProfileTopic:
+    async def add_profile(
+        self, user_id: str, topic: str, sub_topic: str, content: str
+    ) -> ProfileTopic:
         """手动添加画像条目"""
         payload = {"topic": topic, "sub_topic": sub_topic, "content": content}
         response = await self._request("POST", f"/api/v1/users/profile/{user_id}", json=payload)
         result = response.json()
-        return ProfileTopic(id=result.get("id", ""), topic=topic, sub_topic=sub_topic, content=content)
+        return ProfileTopic(
+            id=result.get("id", ""), topic=topic, sub_topic=sub_topic, content=content
+        )
 
     async def delete_profile(self, user_id: str, profile_id: str) -> bool:
         """删除画像条目"""
@@ -118,7 +126,9 @@ class MemobaseClient(BaseClient):
 
     # ===== 上下文 =====
 
-    async def context(self, user_id: str, max_token_size: int = 500, chats: list[dict[str, str]] | None = None) -> ProfileContext:
+    async def context(
+        self, user_id: str, max_token_size: int = 500, chats: list[dict[str, str]] | None = None
+    ) -> ProfileContext:
         """获取上下文提示词（可直接插入 LLM prompt）"""
         params = {"max_token_size": str(max_token_size)}
         json_body = None
@@ -126,7 +136,10 @@ class MemobaseClient(BaseClient):
             json_body = {"chats": chats}
 
         response = await self._request(
-            "GET", f"/api/v1/users/context/{user_id}", params=params, json=json_body if json_body else None
+            "GET",
+            f"/api/v1/users/context/{user_id}",
+            params=params,
+            json=json_body if json_body else None,
         )
 
         content_type = response.headers.get("content-type", "")
@@ -142,6 +155,8 @@ class MemobaseClient(BaseClient):
 
     async def events(self, user_id: str, topk: int = 10) -> list[dict]:
         """获取用户事件时间线"""
-        response = await self._request("GET", f"/api/v1/users/event/{user_id}", params={"topk": str(topk)})
+        response = await self._request(
+            "GET", f"/api/v1/users/event/{user_id}", params={"topk": str(topk)}
+        )
         data = response.json()
         return data if isinstance(data, list) else data.get("events", [])
