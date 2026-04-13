@@ -1,0 +1,72 @@
+syntax = "proto3";
+package cozymemory;
+
+import "common.proto";
+
+message Message {
+  string role = 1;
+  string content = 2;
+  string created_at = 3;
+}
+
+message AddConversationRequest {
+  string user_id = 1;
+  repeated Message messages = 2;
+  map<string, string> metadata = 3;
+  bool infer = 4;
+}
+
+message ConversationMemory {
+  string id = 1;
+  string user_id = 2;
+  string content = 3;
+  optional double score = 4;
+  map<string, string> metadata = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message AddConversationResponse {
+  bool success = 1;
+  repeated ConversationMemory data = 2;
+  string message = 3;
+}
+
+message SearchConversationsRequest {
+  string user_id = 1;
+  string query = 2;
+  int32 limit = 3;
+  optional double threshold = 4;
+}
+
+message SearchConversationsResponse {
+  bool success = 1;
+  repeated ConversationMemory data = 2;
+  int32 total = 3;
+  string message = 4;
+}
+
+message GetConversationRequest {
+  string memory_id = 1;
+}
+
+message DeleteConversationRequest {
+  string memory_id = 1;
+}
+
+message DeleteAllConversationsRequest {
+  string user_id = 1;
+}
+
+message DeleteResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+service ConversationService {
+  rpc AddConversation(AddConversationRequest) returns (AddConversationResponse);
+  rpc SearchConversations(SearchConversationsRequest) returns (SearchConversationsResponse);
+  rpc GetConversation(GetConversationRequest) returns (ConversationMemory);
+  rpc DeleteConversation(DeleteConversationRequest) returns (DeleteResponse);
+  rpc DeleteAllConversations(DeleteAllConversationsRequest) returns (DeleteResponse);
+}

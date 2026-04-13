@@ -1,0 +1,76 @@
+syntax = "proto3";
+package cozymemory;
+
+import "common.proto";
+
+message AddKnowledgeRequest {
+  string data = 1;
+  string dataset = 2;
+  repeated string node_set = 3;
+}
+
+message AddKnowledgeResponse {
+  bool success = 1;
+  string data_id = 2;
+  string dataset_name = 3;
+  string message = 4;
+}
+
+message CognifyRequest {
+  repeated string datasets = 1;
+  bool run_in_background = 2;
+}
+
+message CognifyResponse {
+  bool success = 1;
+  string pipeline_run_id = 2;
+  string status = 3;
+  string message = 4;
+}
+
+message SearchKnowledgeRequest {
+  string query = 1;
+  string dataset = 2;
+  string search_type = 3;
+  int32 top_k = 4;
+}
+
+message KnowledgeSearchResult {
+  string id = 1;
+  string text = 2;
+  optional double score = 3;
+  map<string, string> metadata = 4;
+}
+
+message SearchKnowledgeResponse {
+  bool success = 1;
+  repeated KnowledgeSearchResult data = 2;
+  int32 total = 3;
+  string message = 4;
+}
+
+message DatasetInfo {
+  string id = 1;
+  string name = 2;
+  string created_at = 3;
+}
+
+message CreateDatasetRequest {
+  string name = 1;
+}
+
+message ListDatasetsRequest {}
+
+message ListDatasetsResponse {
+  bool success = 1;
+  repeated DatasetInfo data = 2;
+  string message = 3;
+}
+
+service KnowledgeService {
+  rpc CreateDataset(CreateDatasetRequest) returns (DatasetInfo);
+  rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsResponse);
+  rpc AddKnowledge(AddKnowledgeRequest) returns (AddKnowledgeResponse);
+  rpc Cognify(CognifyRequest) returns (CognifyResponse);
+  rpc SearchKnowledge(SearchKnowledgeRequest) returns (SearchKnowledgeResponse);
+}

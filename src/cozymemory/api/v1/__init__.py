@@ -1,0 +1,1 @@
+"""CozyMemory API v1"""

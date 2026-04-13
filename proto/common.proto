@@ -1,0 +1,19 @@
+syntax = "proto3";
+package cozymemory;
+
+message Empty {}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  map<string, EngineStatus> engines = 2;
+  int64 timestamp = 3;
+}
+
+message EngineStatus {
+  string name = 1;
+  string status = 2;
+  double latency_ms = 3;
+  string error = 4;
+}
