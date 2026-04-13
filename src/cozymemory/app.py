@@ -2,11 +2,13 @@
 
 import logging
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from .api.v1.router import router as v1_router
 from .config import settings
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期管理"""
     logger.info(f"CozyMemory starting v{settings.APP_VERSION} env={settings.APP_ENV}")
     yield
@@ -45,16 +47,16 @@ def create_app() -> FastAPI:
 
     # 请求日志中间件
     @app.middleware("http")
-    async def log_requests(request: Request, call_next):
+    async def log_requests(request: Request, call_next: Any) -> Response:
         start_time = time.time()
-        response = await call_next(request)
+        response: Response = await call_next(request)
         duration = (time.time() - start_time) * 1000
         logger.info(f"{request.method} {request.url.path} {response.status_code} {duration:.1f}ms")
         return response
 
     # 全局异常处理
     @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
+    async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         logger.error(f"Unhandled exception: {exc}", exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -14,7 +14,7 @@ from ..config import settings
 logger = logging.getLogger(__name__)
 
 
-async def serve_grpc():
+async def serve_grpc() -> None:
     """启动 gRPC 服务器（占位实现）"""
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
     # TODO: 注册 gRPC 服务实现

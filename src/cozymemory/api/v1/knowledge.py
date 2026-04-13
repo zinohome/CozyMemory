@@ -27,7 +27,9 @@ router = APIRouter(prefix="/knowledge", tags=["knowledge"])
     response_model=KnowledgeDatasetListResponse,
     responses={502: {"model": ErrorResponse}},
 )
-async def create_dataset(name: str, service: KnowledgeService = Depends(get_knowledge_service)):
+async def create_dataset(
+    name: str, service: KnowledgeService = Depends(get_knowledge_service)
+) -> KnowledgeDatasetListResponse:
     """创建数据集"""
     try:
         return await service.create_dataset(name=name)
@@ -43,7 +45,9 @@ async def create_dataset(name: str, service: KnowledgeService = Depends(get_know
     response_model=KnowledgeDatasetListResponse,
     responses={502: {"model": ErrorResponse}},
 )
-async def list_datasets(service: KnowledgeService = Depends(get_knowledge_service)):
+async def list_datasets(
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> KnowledgeDatasetListResponse:
     """列出所有数据集"""
     try:
         return await service.list_datasets()
@@ -57,7 +61,7 @@ async def list_datasets(service: KnowledgeService = Depends(get_knowledge_servic
 @router.post("/add", response_model=KnowledgeAddResponse, responses={502: {"model": ErrorResponse}})
 async def add_knowledge(
     request: KnowledgeAddRequest, service: KnowledgeService = Depends(get_knowledge_service)
-):
+) -> KnowledgeAddResponse:
     """添加文档到知识库"""
     try:
         return await service.add(data=request.data, dataset=request.dataset)
@@ -73,7 +77,7 @@ async def add_knowledge(
 )
 async def cognify(
     request: KnowledgeCognifyRequest, service: KnowledgeService = Depends(get_knowledge_service)
-):
+) -> KnowledgeCognifyResponse:
     """触发知识图谱构建"""
     try:
         return await service.cognify(
@@ -91,7 +95,7 @@ async def cognify(
 )
 async def search_knowledge(
     request: KnowledgeSearchRequest, service: KnowledgeService = Depends(get_knowledge_service)
-):
+) -> KnowledgeSearchResponse:
     """搜索知识库"""
     try:
         return await service.search(

@@ -14,8 +14,8 @@ class Mem0Client(BaseClient):
     """Mem0 引擎客户端"""
 
     def __init__(
-        self, api_url: str = "http://localhost:8888", api_key: str | None = None, **kwargs
-    ):
+        self, api_url: str = "http://localhost:8888", api_key: str | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(engine_name="Mem0", api_url=api_url, api_key=api_key, **kwargs)
 
     def _get_headers(self, content_type: str = "application/json") -> dict[str, str]:

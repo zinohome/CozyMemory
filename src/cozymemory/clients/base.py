@@ -80,7 +80,7 @@ class BaseClient:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
-        files: list[tuple] | None = None,
+        files: list[tuple[str, Any]] | None = None,
         headers: dict[str, str] | None = None,
     ) -> httpx.Response:
         """发送 HTTP 请求，带指数退避重试。
@@ -166,8 +166,13 @@ class BaseClient:
         """关闭 HTTP 客户端"""
         await self._client.aclose()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "BaseClient":
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
+    ) -> None:
         await self.close()

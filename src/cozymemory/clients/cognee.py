@@ -13,8 +13,8 @@ class CogneeClient(BaseClient):
     """Cognee 引擎客户端"""
 
     def __init__(
-        self, api_url: str = "http://localhost:8000", api_key: str | None = None, **kwargs
-    ):
+        self, api_url: str = "http://localhost:8000", api_key: str | None = None, **kwargs: Any
+    ) -> None:
         kwargs.setdefault("timeout", 300.0)
         super().__init__(engine_name="Cognee", api_url=api_url, api_key=api_key, **kwargs)
 
@@ -34,7 +34,7 @@ class CogneeClient(BaseClient):
             data={"datasetName": dataset},
             files=[("data", ("data.txt", data.encode("utf-8"), "text/plain"))],
         )
-        return response.json()
+        return dict(response.json())
 
     async def cognify(
         self, datasets: list[str] | None = None, run_in_background: bool = True
@@ -44,7 +44,7 @@ class CogneeClient(BaseClient):
         if datasets:
             payload["datasets"] = datasets
         response = await self._request("POST", "/api/v1/cognify", json=payload)
-        return response.json()
+        return dict(response.json())
 
     async def search(
         self,

@@ -25,7 +25,7 @@ router = APIRouter(prefix="/conversations", tags=["conversations"])
 async def add_conversation(
     request: ConversationMemoryCreate,
     service: ConversationService = Depends(get_conversation_service),
-):
+) -> ConversationMemoryListResponse:
     """添加对话，Mem0 自动提取事实性记忆"""
     try:
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -50,7 +50,7 @@ async def add_conversation(
 async def search_conversations(
     request: ConversationMemorySearch,
     service: ConversationService = Depends(get_conversation_service),
-):
+) -> ConversationMemoryListResponse:
     """搜索会话记忆"""
     try:
         return await service.search(
@@ -71,7 +71,7 @@ async def search_conversations(
 )
 async def get_conversation(
     memory_id: str, service: ConversationService = Depends(get_conversation_service)
-):
+) -> ConversationMemory:
     """获取单条记忆"""
     try:
         result = await service.get(memory_id)
@@ -88,7 +88,7 @@ async def get_conversation(
 @router.delete("/{memory_id}", response_model=ConversationMemoryListResponse)
 async def delete_conversation(
     memory_id: str, service: ConversationService = Depends(get_conversation_service)
-):
+) -> ConversationMemoryListResponse:
     """删除单条记忆"""
     try:
         return await service.delete(memory_id)
@@ -102,7 +102,7 @@ async def delete_conversation(
 @router.delete("", response_model=ConversationMemoryListResponse)
 async def delete_all_conversations(
     user_id: str, service: ConversationService = Depends(get_conversation_service)
-):
+) -> ConversationMemoryListResponse:
     """删除用户所有记忆"""
     try:
         return await service.delete_all(user_id)

@@ -3,6 +3,8 @@
 对应引擎：Memobase
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from ...api.deps import get_profile_service
@@ -24,7 +26,7 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 )
 async def insert_profile(
     request: ProfileInsertRequest, service: ProfileService = Depends(get_profile_service)
-):
+) -> ProfileInsertResponse:
     """插入对话到 Memobase 缓冲区，自动提取画像"""
     try:
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -39,7 +41,7 @@ async def insert_profile(
 @router.post("/flush", responses={502: {"model": ErrorResponse}})
 async def flush_profile(
     request: ProfileFlushRequest, service: ProfileService = Depends(get_profile_service)
-):
+) -> dict[str, Any]:
     """触发缓冲区处理"""
     try:
         return await service.flush(user_id=request.user_id, sync=request.sync)
@@ -51,7 +53,9 @@ async def flush_profile(
 
 
 @router.get("/{user_id}", responses={502: {"model": ErrorResponse}})
-async def get_profile(user_id: str, service: ProfileService = Depends(get_profile_service)):
+async def get_profile(
+    user_id: str, service: ProfileService = Depends(get_profile_service)
+) -> dict[str, Any]:
     """获取用户结构化画像"""
     try:
         return await service.get_profile(user_id)
@@ -67,7 +71,7 @@ async def get_context(
     user_id: str,
     request: ProfileContextRequest,
     service: ProfileService = Depends(get_profile_service),
-):
+) -> dict[str, Any]:
     """获取上下文提示词"""
     try:
         chats = None

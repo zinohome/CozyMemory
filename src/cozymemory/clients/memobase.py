@@ -13,7 +13,9 @@ from .base import BaseClient, EngineError
 class MemobaseClient(BaseClient):
     """Memobase 引擎客户端"""
 
-    def __init__(self, api_url: str = "http://localhost:8019", api_key: str = "secret", **kwargs):
+    def __init__(
+        self, api_url: str = "http://localhost:8019", api_key: str = "secret", **kwargs: Any
+    ) -> None:
         super().__init__(engine_name="Memobase", api_url=api_url, api_key=api_key, **kwargs)
 
     def _get_headers(self, content_type: str = "application/json") -> dict[str, str]:
@@ -33,7 +35,7 @@ class MemobaseClient(BaseClient):
 
     # ===== 用户管理 =====
 
-    async def add_user(self, user_id: str | None = None, data: dict | None = None) -> str:
+    async def add_user(self, user_id: str | None = None, data: dict[str, Any] | None = None) -> str:
         """创建用户，返回 user_id"""
         payload: dict[str, Any] = {}
         if user_id:
@@ -41,13 +43,13 @@ class MemobaseClient(BaseClient):
         if data:
             payload["data"] = data
         response = await self._request("POST", "/api/v1/users", json=payload)
-        result = response.json()
-        return result.get("id", result.get("user_id", ""))
+        result: dict[str, Any] = response.json()
+        return str(result.get("id", result.get("user_id", "")))
 
-    async def get_user(self, user_id: str) -> dict:
+    async def get_user(self, user_id: str) -> dict[str, Any]:
         """获取用户信息"""
         response = await self._request("GET", f"/api/v1/users/{user_id}")
-        return response.json()
+        return dict(response.json())
 
     async def delete_user(self, user_id: str) -> bool:
         """删除用户"""
@@ -68,8 +70,8 @@ class MemobaseClient(BaseClient):
         response = await self._request(
             "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
         )
-        result = response.json()
-        return result.get("blob_id", result.get("id", ""))
+        result: dict[str, Any] = response.json()
+        return str(result.get("blob_id", result.get("id", "")))
 
     async def flush(self, user_id: str, sync: bool = False) -> None:
         """触发缓冲区处理"""
