@@ -1,56 +1,331 @@
-# CozyMemory 部署及合并说明指南
+# CozyMemory 部署设计文档
 
-本文档包含 `CozyMemory` 的全局整合部署指南。本方案遵循安全性隔离准则，将三款微内存系统（Cognee、Mem0、Memobase）的部署聚合于一体。
+**版本**: 2.0  
+**日期**: 2026-04-13  
+**状态**: 已批准
 
-## 目录结构
-在完成整合后，您会在本目录下看到以下重要结构：
-```text
-CozyMemory/
-├── docs/                             # 总库文档中心
-│   └── deployment.md                 # 当前部署白皮书
-├── unified_deployment/               # 整合环境目录（入口）
-│   ├── sql/
-│   │   └── init.sql                  # PostgreSQL 初始数据库映射脚本
-│   ├── conf/
-│   │   └── config.yaml               # 主 Memobase LLM 鉴权路由
-│   ├── resources/                    # 从原微项目迁移过来的组件资源（Patches, SDK等）
-│   └── docker-compose.1panel.yml     # ★核心编排文件
-└── projects/                         # 原始克隆项目集合（保留不修改）
+---
+
+## 1. 部署架构
+
+CozyMemory 作为独立容器加入现有的 `1panel-network` 网络，与 Mem0、Memobase、Cognee 互通。
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    1panel-network (Docker)                       │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │  Mem0 API    │  │  Memobase    │  │  Cognee      │          │
+│  │  :8888       │  │  :8019       │  │  :8000       │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│         │                  │                  │                  │
+│         │    ┌─────────────────────────┐      │                 │
+│         └────│  CozyMemory Service     │──────┘                 │
+│              │  REST :8010             │                        │
+│              │  gRPC :50051            │                        │
+│              └─────────────────────────┘                        │
+│                          │                                       │
+│              ┌───────────┴───────────┐                           │
+│              │  外部服务 / 其他微服务  │                           │
+│              └───────────────────────┘                           │
+│                                                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ Postgres │  │  Redis   │  │  Qdrant  │  │  Neo4j   │       │
+│  │ :5432    │  │  :6379   │  │  :6333   │  │  :7687   │       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## 核心配置指引
+---
 
-### 1. 架构梳理与网络
-我们使用 Docker 的外部网络 `1panel-network`。所有的持久化存储都被收束并重新定位于宿主机的 `/data/cozy-memory` 下（兼容 1panel 标准规范）。
+## 2. Dockerfile
 
-- **禁用所有的对外数据库端口绑定**：
-  为提高安全性并遏制越权攻击风险，Postgres (`5432`)、Redis (`6379`)、Qdrant (`6333`)、MinIO 等基础节点均不再对宿主机暴露。
-  它们只能由同一 `1panel-network` 网络下的 AI Agent API 及网关发起通讯。
+```dockerfile
+FROM python:3.11-slim AS base
 
-### 2. 数据库逻辑分离方案
-为了减少对宿主机的影响并有效降本增效，我们合并了数据库实例层：
-- **Redis 合并**：由 `unified_deployment/docker-compose.1panel.yml` 统一拉起密码为 `cozy_redis_password` 的缓存服务器。
-  - Cognee 连接位于 `0` 号 DB（`redis://.../0`）。
-  - Memobase 连接位于 `1` 号 DB（`redis://.../1`）。
-- **Postgres 合并**：配合了基于 `pgvector:0.8.1` 的增强镜像。启动时，挂载的 `./sql/init.sql` 会同步部署并建构两个子库 `cognee_db` 和 `memobase`（配置相应的只读属主凭证）。
+WORKDIR /app
 
-### 3. Web 端访问端口一览
-在整合架构拉起后，本地暴露供您测试及 1Panel OpenResty 反向代理使用的接口对应关系如下：
-- **Cognee Core API**: -> `8000`
-- **Cognee Frontend UI**: -> `3000`
-- **Cognee Nginx 转发**: -> `8080` (防止与 1panel 80 端口互斥)
-- **Mem0 API**: -> `8888`
-- **Mem0 WebUI**: -> `3001` (由原 `3000` 偏移防止端口占用了前端服务)
-- **Memobase API**: -> `8019`
+# 安装系统依赖（gRPC 需要）
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
 
-### 4. 数据清理与重测
-由于架构革新，若您原本于本地有旧数据，这些整合部署并不会自动衔接回原挂载点（原环境被留存在 `/data/mem0` 或 `/data/cognee`）。全新目录将在 `/data/cozy-memory/` 创建并伴随 `init.sql` 进行重新初始化。
+# 安装 Python 依赖
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-## 使用指引
-请打开 1Panel 面板 -> 【容器】 -> 【编排】并导入，或者在对应的终端路径使用 Docker CLI：
+# 复制代码
+COPY src/ src/
+COPY proto/ proto/
+
+# 生成 gRPC 代码
+RUN python -m grpc_tools.protoc \
+    -I./proto \
+    --python_out=./src/cozymemory/grpc_server \
+    --grpc_python_out=./src/cozymemory/grpc_server \
+    ./proto/common.proto \
+    ./proto/conversation.proto \
+    ./proto/profile.proto \
+    ./proto/knowledge.proto
+
+EXPOSE 8000 50051
+
+# 默认启动 REST + gRPC
+CMD ["python", "-m", "cozymemory.app"]
+```
+
+---
+
+## 3. docker-compose.yml
+
+将 CozyMemory 容器加入 `unified_deployment/docker-compose.1panel.yml`：
+
+```yaml
+# 在现有 docker-compose.1panel.yml 中添加：
+
+  # ==========================================
+  # CozyMemory 统一记忆服务
+  # ==========================================
+  cozymemory:
+    build:
+      context: /path/to/CozyMemory
+      dockerfile: Dockerfile
+    container_name: cozy_memory
+    restart: unless-stopped
+    ports:
+      - "8010:8000"    # REST API
+      - "50051:50051"  # gRPC
+    environment:
+      # 应用配置
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+      # Mem0 引擎
+      - MEM0_API_URL=http://mem0-api:8000
+      - MEM0_API_KEY=${MEM0_API_KEY:-}
+      - MEM0_ENABLED=true
+      # Memobase 引擎
+      - MEMOBASE_API_URL=http://memobase-server-api:8000
+      - MEMOBASE_API_KEY=secret
+      - MEMOBASE_ENABLED=true
+      # Cognee 引擎
+      - COGNEE_API_URL=http://cognee:8000
+      - COGNEE_API_KEY=${COGNEE_API_KEY:-}
+      - COGNEE_ENABLED=true
+    depends_on:
+      - mem0-api
+      - memobase-server-api
+      - cognee
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+```
+
+---
+
+## 4. 依赖清单
+
+### requirements.txt
+
+```
+# 核心框架
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
+# HTTP 客户端（SDK 通信）
+httpx[http2]>=0.27.0
+
+# 数据验证
+pydantic>=2.0
+pydantic-settings>=2.0
+
+# gRPC
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+protobuf>=4.25.0
+
+# 日志
+structlog>=24.0
+```
+
+### requirements-dev.txt
+
+```
+-r requirements.txt
+
+# 测试
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-cov>=5.0
+httpx  # 测试客户端
+
+# 代码质量
+ruff>=0.3
+mypy>=1.9
+black>=24.0
+```
+
+---
+
+## 5. 环境变量
+
+### .env.example
+
 ```bash
-cd /Users/zhangjun/CursorProjects/CozyMemory/unified_deployment
-docker network create 1panel-network || true
-docker-compose -f docker-compose.1panel.yml up -d
+# ==================== 应用配置 ====================
+APP_NAME=CozyMemory
+APP_VERSION=2.0.0
+APP_ENV=development
+DEBUG=true
+HOST=0.0.0.0
+PORT=8000
+GRPC_PORT=50051
+
+# ==================== 日志配置 ====================
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+
+# ==================== Mem0 引擎 ====================
+MEM0_API_URL=http://localhost:8888
+MEM0_API_KEY=                    # 自托管默认不需要
+MEM0_TIMEOUT=30.0
+MEM0_ENABLED=true
+
+# ==================== Memobase 引擎 ====================
+MEMOBASE_API_URL=http://localhost:8019
+MEMOBASE_API_KEY=secret           # 自托管默认 token
+MEMOBASE_TIMEOUT=60.0
+MEMOBASE_ENABLED=true
+
+# ==================== Cognee 引擎 ====================
+COGNEE_API_URL=http://localhost:8000
+COGNEE_API_KEY=                   # 可选
+COGNEE_TIMEOUT=300.0              # cognify 操作需要更长超时
+COGNEE_ENABLED=true
 ```
-请在 `.env` (如果需要管理环境凭证) 或者对应的 `conf/config.yaml` 中将 OpenAI KEY 的等价配置设为您专属的值，即可拉起服务！
+
+---
+
+## 6. 服务启动
+
+### 开发环境
+
+```bash
+# 安装依赖
+pip install -r requirements-dev.txt
+
+# 启动 REST API（开发模式）
+uvicorn cozymemory.app:create_app --factory --reload --port 8000
+
+# 启动 gRPC（开发模式）
+python -m cozymemory.grpc_server.server
+```
+
+### 生产环境
+
+```bash
+# 构建并启动
+docker-compose -f unified_deployment/docker-compose.1panel.yml up -d cozymemory
+
+# 查看日志
+docker-compose logs -f cozymemory
+
+# 健康检查
+curl http://localhost:8010/api/v1/health
+```
+
+---
+
+## 7. 端口分配
+
+| 服务 | 内部端口 | 外部端口 | 说明 |
+|------|---------|---------|------|
+| CozyMemory REST | 8000 | 8010 | REST API |
+| CozyMemory gRPC | 50051 | 50051 | gRPC 服务 |
+| Mem0 API | 8000 | 8888 | 会话记忆引擎 |
+| Memobase | 8000 | 8019 | 用户画像引擎 |
+| Cognee | 8000 | 8000 | 知识库引擎 |
+
+> 注意：CozyMemory REST 外部端口为 8010，避免与 Cognee 的 8000 冲突。内部通信使用 Docker 网络的服务名（如 `mem0-api:8000`），无需端口映射。
+
+---
+
+## 8. 健康检查与监控
+
+### 健康检查端点
+
+```
+GET /api/v1/health
+```
+
+返回各引擎状态：
+
+```json
+{
+  "status": "healthy",
+  "engines": {
+    "mem0": {"name": "Mem0", "status": "healthy", "latency_ms": 12.5},
+    "memobase": {"name": "Memobase", "status": "healthy", "latency_ms": 8.3},
+    "cognee": {"name": "Cognee", "status": "healthy", "latency_ms": 15.1}
+  },
+  "timestamp": "2026-04-13T10:30:00Z"
+}
+```
+
+- `healthy`: 所有引擎正常
+- `degraded`: 部分引擎不可用
+- `unhealthy`: 全部引擎不可用
+
+### Docker 健康检查
+
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+```
+
+---
+
+## 9. 后期扩展点
+
+以下功能暂不实现，但架构预留了扩展空间：
+
+### 9.1 认证
+
+在 `api/deps.py` 中添加认证中间件：
+
+```python
+# 后期添加：API Key 认证
+from fastapi import Security
+from fastapi.security import APIKeyHeader
+
+api_key_header = APIKeyHeader(name="X-API-Key")
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    if api_key != settings.API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+```
+
+### 9.2 速率限制
+
+使用 `slowapi` 中间件：
+
+```python
+from slowapi import Limiter
+limiter = Limiter(key_func=get_remote_address)
+```
+
+### 9.3 指标监控
+
+使用 `prometheus-fastapi-instrumentator`：
+
+```python
+from prometheus_fastapi_instrumentator import Instrumentator
+Instrumentator().instrument(app).expose(app)
+```
+
+### 9.4 日志聚合
+
+使用 `structlog` + JSON 格式，可接入 ELK/Loki。
