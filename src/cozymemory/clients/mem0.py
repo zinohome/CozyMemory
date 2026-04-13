@@ -75,9 +75,15 @@ class Mem0Client(BaseClient):
 
         response = await self._request("POST", "/search", json=payload)
         data = response.json()
-
+        items = (
+            data.get("results", data)
+            if isinstance(data, dict)
+            else data
+            if isinstance(data, list)
+            else []
+        )
         results = []
-        for item in data.get("results", data if isinstance(data, list) else []):
+        for item in items:
             results.append(
                 ConversationMemory(
                     id=item.get("id", ""),
@@ -112,7 +118,13 @@ class Mem0Client(BaseClient):
         )
         data = response.json()
 
-        items = data.get("results", data if isinstance(data, list) else [])
+        items = (
+            data.get("results", data)
+            if isinstance(data, dict)
+            else data
+            if isinstance(data, list)
+            else []
+        )
         return [
             ConversationMemory(
                 id=item.get("id", ""),
