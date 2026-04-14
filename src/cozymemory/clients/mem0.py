@@ -151,13 +151,17 @@ class Mem0Client(BaseClient):
         try:
             await self._request("DELETE", f"/memories/{memory_id}")
             return True
-        except EngineError:
-            return False
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise
 
     async def delete_all(self, user_id: str) -> bool:
         """删除用户所有记忆"""
         try:
             await self._request("DELETE", "/memories", params={"user_id": user_id})
             return True
-        except EngineError:
-            return False
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise

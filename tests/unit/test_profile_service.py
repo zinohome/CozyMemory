@@ -43,7 +43,7 @@ async def test_profile_service_insert(mock_memobase_client):
 async def test_profile_service_flush(mock_memobase_client):
     service = ProfileService(client=mock_memobase_client)
     result = await service.flush("u1")
-    assert result["success"] is True
+    assert result.success is True
     mock_memobase_client.flush.assert_called_once()
 
 
@@ -51,13 +51,13 @@ async def test_profile_service_flush(mock_memobase_client):
 async def test_profile_service_get_profile(mock_memobase_client):
     service = ProfileService(client=mock_memobase_client)
     result = await service.get_profile("u1")
-    assert result["success"] is True
-    assert result["data"].user_id == "u1"
+    assert result.success is True
+    assert result.data.user_id == "u1"
 
 
 @pytest.mark.asyncio
 async def test_profile_service_get_context(mock_memobase_client):
     service = ProfileService(client=mock_memobase_client)
     result = await service.get_context("u1")
-    assert result["success"] is True
-    assert result["data"].user_id == "u1"
+    assert result.success is True
+    assert result.data.user_id == "u1"

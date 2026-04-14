@@ -26,7 +26,7 @@ def test_settings_memobase_defaults():
     """Memobase 引擎默认配置"""
     s = Settings()
     assert s.MEMOBASE_API_URL == "http://localhost:8019"
-    assert s.MEMOBASE_API_KEY == "secret"
+    assert s.MEMOBASE_API_KEY == ""
     assert s.MEMOBASE_TIMEOUT == 60.0
     assert s.MEMOBASE_ENABLED is True
 

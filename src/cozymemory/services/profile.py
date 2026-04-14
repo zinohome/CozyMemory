@@ -5,11 +5,17 @@
 
 import logging
 from collections.abc import Sequence
-from typing import Any
 
 from ..clients.memobase import MemobaseClient
 from ..models.common import Message
-from ..models.profile import ProfileInsertResponse
+from ..models.profile import (
+    ProfileAddItemResponse,
+    ProfileContextResponse,
+    ProfileDeleteItemResponse,
+    ProfileFlushResponse,
+    ProfileGetResponse,
+    ProfileInsertResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,33 +39,34 @@ class ProfileService:
             success=True, user_id=user_id, blob_id=blob_id, message="对话已插入缓冲区"
         )
 
-    async def flush(self, user_id: str, sync: bool = False) -> dict[str, Any]:
+    async def flush(self, user_id: str, sync: bool = False) -> ProfileFlushResponse:
         """触发缓冲区处理"""
         await self.client.flush(user_id=user_id, sync=sync)
-        return {"success": True, "message": "处理完成"}
+        return ProfileFlushResponse(success=True, message="处理完成")
 
-    async def get_profile(self, user_id: str) -> dict[str, Any]:
+    async def get_profile(self, user_id: str) -> ProfileGetResponse:
         """获取用户结构化画像"""
         profile = await self.client.profile(user_id=user_id)
-        return {"success": True, "data": profile, "message": ""}
+        return ProfileGetResponse(success=True, data=profile, message="")
 
     async def get_context(
         self, user_id: str, max_token_size: int = 500, chats: list[dict[str, str]] | None = None
-    ) -> dict[str, Any]:
+    ) -> ProfileContextResponse:
         """获取上下文提示词"""
         ctx = await self.client.context(user_id=user_id, max_token_size=max_token_size, chats=chats)
-        return {"success": True, "data": ctx, "message": ""}
+        return ProfileContextResponse(success=True, data=ctx, message="")
 
     async def add_profile_item(
         self, user_id: str, topic: str, sub_topic: str, content: str
-    ) -> dict[str, Any]:
+    ) -> ProfileAddItemResponse:
         """手动添加画像条目"""
         result = await self.client.add_profile(
             user_id=user_id, topic=topic, sub_topic=sub_topic, content=content
         )
-        return {"success": True, "data": result, "message": ""}
+        return ProfileAddItemResponse(success=True, data=result, message="")
 
-    async def delete_profile_item(self, user_id: str, profile_id: str) -> dict[str, Any]:
+    async def delete_profile_item(self, user_id: str, profile_id: str) -> ProfileDeleteItemResponse:
         """删除画像条目"""
         success = await self.client.delete_profile(user_id=user_id, profile_id=profile_id)
-        return {"success": success, "message": "已删除" if success else "删除失败"}
+        msg = "已删除" if success else "删除失败"
+        return ProfileDeleteItemResponse(success=success, message=msg)

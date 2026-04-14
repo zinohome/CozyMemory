@@ -56,8 +56,10 @@ class MemobaseClient(BaseClient):
         try:
             await self._request("DELETE", f"/api/v1/users/{user_id}")
             return True
-        except EngineError:
-            return False
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise
 
     # ===== 数据插入 =====
 
@@ -123,8 +125,10 @@ class MemobaseClient(BaseClient):
         try:
             await self._request("DELETE", f"/api/v1/users/profile/{user_id}/{profile_id}")
             return True
-        except EngineError:
-            return False
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise
 
     # ===== 上下文 =====
 

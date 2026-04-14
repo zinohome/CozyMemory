@@ -3,7 +3,7 @@
 包含 Message、EngineStatus、HealthResponse、ErrorResponse。
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -30,7 +30,7 @@ class HealthResponse(BaseModel):
 
     status: str = Field(..., description="整体状态: healthy / degraded / unhealthy")
     engines: dict[str, EngineStatus] = Field(default_factory=dict)
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ErrorResponse(BaseModel):

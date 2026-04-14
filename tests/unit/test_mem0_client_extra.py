@@ -63,28 +63,54 @@ async def test_mem0_update(mem0_client):
 
 @pytest.mark.asyncio
 async def test_mem0_delete_failure(mem0_client):
-    """Mem0Client.delete 引擎错误返回 False"""
+    """Mem0Client.delete 5xx 引擎错误向上抛出"""
     with patch.object(
         mem0_client._client,
         "request",
         new_callable=AsyncMock,
         side_effect=EngineError("Mem0", "error", 500),
     ):
+        with pytest.raises(EngineError):
+            await mem0_client.delete("mem_1")
+
+
+@pytest.mark.asyncio
+async def test_mem0_delete_404_idempotent(mem0_client):
+    """Mem0Client.delete 404 返回 True（幂等）"""
+    with patch.object(
+        mem0_client._client,
+        "request",
+        new_callable=AsyncMock,
+        side_effect=EngineError("Mem0", "not found", 404),
+    ):
         result = await mem0_client.delete("mem_1")
-        assert result is False
+        assert result is True
 
 
 @pytest.mark.asyncio
 async def test_mem0_delete_all_failure(mem0_client):
-    """Mem0Client.delete_all 引擎错误返回 False"""
+    """Mem0Client.delete_all 5xx 引擎错误向上抛出"""
     with patch.object(
         mem0_client._client,
         "request",
         new_callable=AsyncMock,
         side_effect=EngineError("Mem0", "error", 500),
     ):
+        with pytest.raises(EngineError):
+            await mem0_client.delete_all("u1")
+
+
+@pytest.mark.asyncio
+async def test_mem0_delete_all_404_idempotent(mem0_client):
+    """Mem0Client.delete_all 404 返回 True（幂等）"""
+    with patch.object(
+        mem0_client._client,
+        "request",
+        new_callable=AsyncMock,
+        side_effect=EngineError("Mem0", "not found", 404),
+    ):
         result = await mem0_client.delete_all("u1")
-        assert result is False
+        assert result is True
 
 
 @pytest.mark.asyncio

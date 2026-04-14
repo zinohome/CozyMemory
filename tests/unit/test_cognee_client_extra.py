@@ -51,15 +51,28 @@ async def test_cognee_delete_success(cognee_client):
 
 @pytest.mark.asyncio
 async def test_cognee_delete_failure(cognee_client):
-    """CogneeClient.delete 失败返回 False"""
+    """CogneeClient.delete 5xx 引擎错误向上抛出"""
     with patch.object(
         cognee_client._client,
         "request",
         new_callable=AsyncMock,
         side_effect=EngineError("Cognee", "error", 500),
     ):
+        with pytest.raises(EngineError):
+            await cognee_client.delete(data_id="data_1", dataset_id="ds_1")
+
+
+@pytest.mark.asyncio
+async def test_cognee_delete_404_idempotent(cognee_client):
+    """CogneeClient.delete 404 返回 True（幂等）"""
+    with patch.object(
+        cognee_client._client,
+        "request",
+        new_callable=AsyncMock,
+        side_effect=EngineError("Cognee", "not found", 404),
+    ):
         result = await cognee_client.delete(data_id="data_1", dataset_id="ds_1")
-        assert result is False
+        assert result is True
 
 
 @pytest.mark.asyncio

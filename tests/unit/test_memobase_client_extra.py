@@ -60,15 +60,28 @@ async def test_memobase_delete_user_success(memobase_client):
 
 @pytest.mark.asyncio
 async def test_memobase_delete_user_failure(memobase_client):
-    """MemobaseClient.delete_user 失败"""
+    """MemobaseClient.delete_user 5xx 引擎错误向上抛出"""
     with patch.object(
         memobase_client._client,
         "request",
         new_callable=AsyncMock,
         side_effect=EngineError("Memobase", "error", 500),
     ):
+        with pytest.raises(EngineError):
+            await memobase_client.delete_user("user_123")
+
+
+@pytest.mark.asyncio
+async def test_memobase_delete_user_404_idempotent(memobase_client):
+    """MemobaseClient.delete_user 404 返回 True（幂等）"""
+    with patch.object(
+        memobase_client._client,
+        "request",
+        new_callable=AsyncMock,
+        side_effect=EngineError("Memobase", "not found", 404),
+    ):
         result = await memobase_client.delete_user("user_123")
-        assert result is False
+        assert result is True
 
 
 @pytest.mark.asyncio
@@ -121,15 +134,28 @@ async def test_memobase_delete_profile_success(memobase_client):
 
 @pytest.mark.asyncio
 async def test_memobase_delete_profile_failure(memobase_client):
-    """MemobaseClient.delete_profile 失败"""
+    """MemobaseClient.delete_profile 5xx 引擎错误向上抛出"""
     with patch.object(
         memobase_client._client,
         "request",
         new_callable=AsyncMock,
         side_effect=EngineError("Memobase", "error", 500),
     ):
+        with pytest.raises(EngineError):
+            await memobase_client.delete_profile("user_123", "prof_1")
+
+
+@pytest.mark.asyncio
+async def test_memobase_delete_profile_404_idempotent(memobase_client):
+    """MemobaseClient.delete_profile 404 返回 True（幂等）"""
+    with patch.object(
+        memobase_client._client,
+        "request",
+        new_callable=AsyncMock,
+        side_effect=EngineError("Memobase", "not found", 404),
+    ):
         result = await memobase_client.delete_profile("user_123", "prof_1")
-        assert result is False
+        assert result is True
 
 
 @pytest.mark.asyncio

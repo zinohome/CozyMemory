@@ -97,5 +97,7 @@ class CogneeClient(BaseClient):
                 "DELETE", "/api/v1/delete", params={"data_id": data_id, "dataset_id": dataset_id}
             )
             return True
-        except EngineError:
-            return False
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise

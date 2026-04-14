@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, Response
 
 from .api.v1.router import router as v1_router
 from .config import settings
+from .models.common import ErrorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -60,11 +61,11 @@ def create_app() -> FastAPI:
         logger.error(f"Unhandled exception: {exc}", exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "success": False,
-                "error": "InternalServerError",
-                "detail": str(exc) if settings.DEBUG else "服务器内部错误",
-            },
+            content=ErrorResponse(
+                success=False,
+                error="InternalServerError",
+                detail=str(exc) if settings.DEBUG else "Internal server error",
+            ).model_dump(),
         )
 
     # 注册路由

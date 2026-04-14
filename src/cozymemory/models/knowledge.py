@@ -45,7 +45,7 @@ class KnowledgeSearchResult(BaseModel):
     score: float | None = Field(None, description="相关性分数")
     metadata: dict[str, Any] | None = Field(None, description="附加元数据")
 
-    model_config = {"extra": "allow"}
+    model_config = {"extra": "allow"}  # Cognee 搜索结果字段不固定，允许透传未知字段
 
 
 class KnowledgeDataset(BaseModel):

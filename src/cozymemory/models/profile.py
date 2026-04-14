@@ -66,3 +66,41 @@ class ProfileInsertResponse(BaseModel):
     user_id: str
     blob_id: str | None = Field(None, description="Blob ID")
     message: str = ""
+
+
+class ProfileFlushResponse(BaseModel):
+    """缓冲区处理响应"""
+
+    success: bool = True
+    message: str = ""
+
+
+class ProfileGetResponse(BaseModel):
+    """获取画像响应"""
+
+    success: bool = True
+    data: UserProfile | None = Field(None, description="用户画像数据")
+    message: str = ""
+
+
+class ProfileContextResponse(BaseModel):
+    """获取上下文响应"""
+
+    success: bool = True
+    data: ProfileContext | None = Field(None, description="上下文提示词")
+    message: str = ""
+
+
+class ProfileAddItemResponse(BaseModel):
+    """手动添加画像条目响应"""
+
+    success: bool = True
+    data: ProfileTopic | None = Field(None, description="添加的画像条目")
+    message: str = ""
+
+
+class ProfileDeleteItemResponse(BaseModel):
+    """删除画像条目响应"""
+
+    success: bool
+    message: str = ""

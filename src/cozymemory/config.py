@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Memobase 引擎
     MEMOBASE_API_URL: str = "http://localhost:8019"
-    MEMOBASE_API_KEY: str = "secret"
+    MEMOBASE_API_KEY: str = ""
     MEMOBASE_TIMEOUT: float = 60.0
     MEMOBASE_ENABLED: bool = True
 

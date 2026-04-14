@@ -3,7 +3,10 @@
 对应引擎：Mem0
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 
 from ...api.deps import get_conversation_service
 from ...clients.base import EngineError
@@ -19,13 +22,27 @@ from ...services.conversation import ConversationService
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
+def _engine_error_response(exc: EngineError) -> JSONResponse:
+    """将 EngineError 转为统一格式的 JSONResponse"""
+    status_code = 502 if exc.status_code and exc.status_code >= 500 else 400
+    return JSONResponse(
+        status_code=status_code,
+        content=ErrorResponse(
+            success=False,
+            error=f"{exc.engine}Error",
+            detail=exc.message,
+            engine=exc.engine,
+        ).model_dump(),
+    )
+
+
 @router.post(
     "", response_model=ConversationMemoryListResponse, responses={502: {"model": ErrorResponse}}
 )
 async def add_conversation(
     request: ConversationMemoryCreate,
     service: ConversationService = Depends(get_conversation_service),
-) -> ConversationMemoryListResponse:
+) -> ConversationMemoryListResponse | JSONResponse:
     """添加对话，Mem0 自动提取事实性记忆"""
     try:
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -36,10 +53,7 @@ async def add_conversation(
             infer=request.infer,
         )
     except EngineError as e:
-        raise HTTPException(
-            status_code=502 if e.status_code and e.status_code >= 500 else 400,
-            detail=f"Mem0 引擎错误: {e.message}",
-        )
+        return _engine_error_response(e)
 
 
 @router.post(
@@ -50,7 +64,7 @@ async def add_conversation(
 async def search_conversations(
     request: ConversationMemorySearch,
     service: ConversationService = Depends(get_conversation_service),
-) -> ConversationMemoryListResponse:
+) -> ConversationMemoryListResponse | JSONResponse:
     """搜索会话记忆"""
     try:
         return await service.search(
@@ -60,54 +74,50 @@ async def search_conversations(
             threshold=request.threshold,
         )
     except EngineError as e:
-        raise HTTPException(
-            status_code=502 if e.status_code and e.status_code >= 500 else 400,
-            detail=f"Mem0 引擎错误: {e.message}",
-        )
+        return _engine_error_response(e)
 
 
 @router.get(
     "/{memory_id}", response_model=ConversationMemory, responses={404: {"model": ErrorResponse}}
 )
 async def get_conversation(
-    memory_id: str, service: ConversationService = Depends(get_conversation_service)
-) -> ConversationMemory:
+    memory_id: str,
+    service: ConversationService = Depends(get_conversation_service),
+) -> ConversationMemory | JSONResponse:
     """获取单条记忆"""
     try:
         result = await service.get(memory_id)
         if result is None:
-            raise HTTPException(status_code=404, detail="记忆不存在")
+            return JSONResponse(
+                status_code=404,
+                content=ErrorResponse(
+                    success=False, error="NotFoundError", detail="记忆不存在"
+                ).model_dump(),
+            )
         return result
     except EngineError as e:
-        raise HTTPException(
-            status_code=502 if e.status_code and e.status_code >= 500 else 400,
-            detail=f"Mem0 引擎错误: {e.message}",
-        )
+        return _engine_error_response(e)
 
 
 @router.delete("/{memory_id}", response_model=ConversationMemoryListResponse)
 async def delete_conversation(
-    memory_id: str, service: ConversationService = Depends(get_conversation_service)
-) -> ConversationMemoryListResponse:
+    memory_id: str,
+    service: ConversationService = Depends(get_conversation_service),
+) -> ConversationMemoryListResponse | JSONResponse:
     """删除单条记忆"""
     try:
         return await service.delete(memory_id)
     except EngineError as e:
-        raise HTTPException(
-            status_code=502 if e.status_code and e.status_code >= 500 else 400,
-            detail=f"Mem0 引擎错误: {e.message}",
-        )
+        return _engine_error_response(e)
 
 
 @router.delete("", response_model=ConversationMemoryListResponse)
 async def delete_all_conversations(
-    user_id: str, service: ConversationService = Depends(get_conversation_service)
-) -> ConversationMemoryListResponse:
+    user_id: str,
+    service: ConversationService = Depends(get_conversation_service),
+) -> ConversationMemoryListResponse | JSONResponse:
     """删除用户所有记忆"""
     try:
         return await service.delete_all(user_id)
     except EngineError as e:
-        raise HTTPException(
-            status_code=502 if e.status_code and e.status_code >= 500 else 400,
-            detail=f"Mem0 引擎错误: {e.message}",
-        )
+        return _engine_error_response(e)
