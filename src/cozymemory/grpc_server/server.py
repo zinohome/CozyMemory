@@ -30,9 +30,7 @@ logger = logging.getLogger(__name__)
 class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer):
     """会话记忆 gRPC 服务实现"""
 
-    async def AddConversation(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def AddConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_conversation_service()
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
         metadata = dict(request.metadata) if request.metadata else None
@@ -43,9 +41,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
             infer=request.infer,
         )
         memories = [
-            conversation_pb2.ConversationMemory(
-                id=m.id, user_id=m.user_id, content=m.content
-            )
+            conversation_pb2.ConversationMemory(id=m.id, user_id=m.user_id, content=m.content)
             for m in result.data
         ]
         return conversation_pb2.AddConversationResponse(
@@ -54,9 +50,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
             message=result.message,
         )
 
-    async def SearchConversations(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def SearchConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_conversation_service()
         result = await svc.search(
             user_id=request.user_id,
@@ -81,9 +75,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
             message=result.message,
         )
 
-    async def GetConversation(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def GetConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_conversation_service()
         result = await svc.get(request.memory_id)
         if result is None:
@@ -96,16 +88,12 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
             content=result.content,
         )
 
-    async def DeleteConversation(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def DeleteConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_conversation_service()
         result = await svc.delete(request.memory_id)
         return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
 
-    async def DeleteAllConversations(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def DeleteAllConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_conversation_service()
         result = await svc.delete_all(request.user_id)
         return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
@@ -114,14 +102,10 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
     """用户画像 gRPC 服务实现"""
 
-    async def InsertProfile(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def InsertProfile(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_profile_service()
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
-        result = await svc.insert(
-            user_id=request.user_id, messages=messages, sync=request.sync
-        )
+        result = await svc.insert(user_id=request.user_id, messages=messages, sync=request.sync)
         return profile_pb2.InsertProfileResponse(
             success=result.success,
             user_id=result.user_id,
@@ -129,9 +113,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
             message=result.message,
         )
 
-    async def FlushProfile(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def FlushProfile(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_profile_service()
         result = await svc.flush(user_id=request.user_id, sync=request.sync)
         return profile_pb2.FlushProfileResponse(
@@ -139,9 +121,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
             message=result.get("message", ""),
         )
 
-    async def GetProfile(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def GetProfile(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_profile_service()
         result = await svc.get_profile(request.user_id)
         profile_data = result.get("data")
@@ -161,9 +141,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
             topics=topics,
         )
 
-    async def GetContext(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def GetContext(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_profile_service()
         chats = (
             [{"role": m.role, "content": m.content} for m in request.chats]
@@ -187,9 +165,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
     """知识库 gRPC 服务实现"""
 
-    async def CreateDataset(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def CreateDataset(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_knowledge_service()
         result = await svc.create_dataset(name=request.name)
         ds = result.data[0] if result.data else None
@@ -198,23 +174,17 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
             name=ds.name if ds else request.name,
         )
 
-    async def ListDatasets(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def ListDatasets(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_knowledge_service()
         result = await svc.list_datasets()
-        datasets = [
-            knowledge_pb2.DatasetInfo(id=ds.id, name=ds.name) for ds in result.data
-        ]
+        datasets = [knowledge_pb2.DatasetInfo(id=ds.id, name=ds.name) for ds in result.data]
         return knowledge_pb2.ListDatasetsResponse(
             success=result.success,
             data=datasets,
             message=result.message,
         )
 
-    async def AddKnowledge(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def AddKnowledge(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_knowledge_service()
         result = await svc.add(data=request.data, dataset=request.dataset)
         return knowledge_pb2.AddKnowledgeResponse(
@@ -224,14 +194,10 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
             message=result.message,
         )
 
-    async def Cognify(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def Cognify(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_knowledge_service()
         datasets = list(request.datasets) if request.datasets else None
-        result = await svc.cognify(
-            datasets=datasets, run_in_background=request.run_in_background
-        )
+        result = await svc.cognify(datasets=datasets, run_in_background=request.run_in_background)
         return knowledge_pb2.CognifyResponse(
             success=result.success,
             pipeline_run_id=result.pipeline_run_id or "",
@@ -239,9 +205,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
             message=result.message,
         )
 
-    async def SearchKnowledge(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> Any:
+    async def SearchKnowledge(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         svc = get_knowledge_service()
         result = await svc.search(
             query=request.query,
@@ -273,12 +237,8 @@ async def serve_grpc() -> None:
     conversation_pb2_grpc.add_ConversationServiceServicer_to_server(
         ConversationGrpcServicer(), server
     )
-    profile_pb2_grpc.add_ProfileServiceServicer_to_server(
-        ProfileGrpcServicer(), server
-    )
-    knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(
-        KnowledgeGrpcServicer(), server
-    )
+    profile_pb2_grpc.add_ProfileServiceServicer_to_server(ProfileGrpcServicer(), server)
+    knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeGrpcServicer(), server)
 
     server.add_insecure_port(f"[::]:{settings.GRPC_PORT}")
     await server.start()

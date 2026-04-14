@@ -4,14 +4,11 @@
 三个 gRPC 服务类的方法逻辑，验证它们正确地委托到 Service 层并转换返回值。
 """
 
-import pytest
-
 from cozymemory.grpc_server.server import (
     ConversationGrpcServicer,
     KnowledgeGrpcServicer,
     ProfileGrpcServicer,
 )
-
 
 # ──────────────────────────── ConversationGrpcServicer ────────────────────────────
 
@@ -71,9 +68,9 @@ class TestServeGrpc:
 
     def test_serve_grpc_is_async(self):
         """验证 serve_grpc 是异步函数"""
-        from cozymemory.grpc_server.server import serve_grpc
-
         import asyncio
+
+        from cozymemory.grpc_server.server import serve_grpc
 
         assert asyncio.iscoroutinefunction(serve_grpc)
 
@@ -102,9 +99,7 @@ class TestProtoModules:
 
         assert hasattr(conversation_pb2_grpc, "ConversationServiceServicer")
         assert hasattr(conversation_pb2_grpc, "ConversationServiceStub")
-        assert hasattr(
-            conversation_pb2_grpc, "add_ConversationServiceServicer_to_server"
-        )
+        assert hasattr(conversation_pb2_grpc, "add_ConversationServiceServicer_to_server")
 
     def test_profile_pb2_importable(self):
         from cozymemory.grpc_server import profile_pb2
@@ -144,7 +139,7 @@ class TestProtoModules:
 
     def test_conversation_message_inherits_from_profile(self):
         """验证 profile.proto 复用了 conversation.proto 的 Message"""
-        from cozymemory.grpc_server import conversation_pb2, profile_pb2
+        from cozymemory.grpc_server import conversation_pb2
 
         # profile.proto 导入了 conversation.proto 的 Message
         msg = conversation_pb2.Message(role="user", content="hello")
