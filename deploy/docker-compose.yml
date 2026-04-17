@@ -118,7 +118,7 @@ services:
   # 基础设施
   # ==========================================
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: cozy-postgres
     environment:
       POSTGRES_USER: cozy
