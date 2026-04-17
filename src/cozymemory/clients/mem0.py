@@ -45,25 +45,26 @@ class Mem0Client(BaseClient):
         if metadata:
             payload["metadata"] = metadata
 
-        response = await self._request("POST", "/memories", json=payload)
+        response = await self._request("POST", "/api/v1/memories", json=payload)
         data = response.json()
 
-        results = []
-        for item in data if isinstance(data, list) else [data]:
-            memory_text = (
-                item.get("data", {}).get("memory", "")
-                if isinstance(item.get("data"), dict)
-                else item.get("memory", "")
+        # 实际响应格式：{"results": [{"id": ..., "memory": ..., "event": ...}]}
+        items: list = (
+            data.get("results", [])
+            if isinstance(data, dict)
+            else data
+            if isinstance(data, list)
+            else []
+        )
+        return [
+            ConversationMemory(
+                id=item.get("id", ""),
+                user_id=user_id,
+                content=item.get("memory", ""),
+                metadata=item.get("metadata"),
             )
-            results.append(
-                ConversationMemory(
-                    id=item.get("id", ""),
-                    user_id=user_id,
-                    content=memory_text,
-                    metadata=item.get("metadata"),
-                )
-            )
-        return results
+            for item in items
+        ]
 
     async def search(
         self, user_id: str, query: str, limit: int = 10, threshold: float | None = None
@@ -73,7 +74,7 @@ class Mem0Client(BaseClient):
         if threshold is not None:
             payload["threshold"] = threshold
 
-        response = await self._request("POST", "/search", json=payload)
+        response = await self._request("POST", "/api/v1/search", json=payload)
         data = response.json()
         items = (
             data.get("results", data)
@@ -98,7 +99,7 @@ class Mem0Client(BaseClient):
     async def get(self, memory_id: str) -> ConversationMemory | None:
         """获取单条记忆"""
         try:
-            response = await self._request("GET", f"/memories/{memory_id}")
+            response = await self._request("GET", f"/api/v1/memories/{memory_id}")
             item = response.json()
             return ConversationMemory(
                 id=item.get("id", memory_id),
@@ -114,7 +115,7 @@ class Mem0Client(BaseClient):
     async def get_all(self, user_id: str, limit: int = 100) -> list[ConversationMemory]:
         """获取用户所有记忆"""
         response = await self._request(
-            "GET", "/memories", params={"user_id": user_id, "limit": limit}
+            "GET", "/api/v1/memories", params={"user_id": user_id, "limit": limit}
         )
         data = response.json()
 
@@ -137,7 +138,7 @@ class Mem0Client(BaseClient):
 
     async def update(self, memory_id: str, content: str) -> ConversationMemory | None:
         """更新记忆内容"""
-        response = await self._request("PUT", f"/memories/{memory_id}", json={"memory": content})
+        response = await self._request("PUT", f"/api/v1/memories/{memory_id}", json={"memory": content})
         item = response.json()
         return ConversationMemory(
             id=item.get("id", memory_id),
@@ -149,7 +150,7 @@ class Mem0Client(BaseClient):
     async def delete(self, memory_id: str) -> bool:
         """删除单条记忆"""
         try:
-            await self._request("DELETE", f"/memories/{memory_id}")
+            await self._request("DELETE", f"/api/v1/memories/{memory_id}")
             return True
         except EngineError as e:
             if e.status_code == 404:
@@ -159,7 +160,7 @@ class Mem0Client(BaseClient):
     async def delete_all(self, user_id: str) -> bool:
         """删除用户所有记忆"""
         try:
-            await self._request("DELETE", "/memories", params={"user_id": user_id})
+            await self._request("DELETE", "/api/v1/memories", params={"user_id": user_id})
             return True
         except EngineError as e:
             if e.status_code == 404:

@@ -36,7 +36,10 @@ class MemobaseClient(BaseClient):
     # ===== 用户管理 =====
 
     async def add_user(self, user_id: str | None = None, data: dict[str, Any] | None = None) -> str:
-        """创建用户，返回 user_id"""
+        """创建用户，返回 user_id。若用户已存在则静默忽略 (upsert 语义)。
+
+        注意：Memobase 用 HTTP 200 + errno 字段表达业务错误，不使用 HTTP 4xx/5xx。
+        """
         payload: dict[str, Any] = {}
         if user_id:
             payload["id"] = user_id
@@ -44,7 +47,11 @@ class MemobaseClient(BaseClient):
             payload["data"] = data
         response = await self._request("POST", "/api/v1/users", json=payload)
         result: dict[str, Any] = response.json()
-        return str(result.get("id", result.get("user_id", "")))
+        # UniqueViolation = user already exists, treat as success
+        if result.get("errno", 0) != 0 and "UniqueViolation" not in result.get("errmsg", ""):
+            raise EngineError(self.engine_name, result.get("errmsg", "Unknown error"), 500)
+        data_field = result.get("data") or {}
+        return str(data_field.get("id", user_id or ""))
 
     async def get_user(self, user_id: str) -> dict[str, Any]:
         """获取用户信息"""
@@ -64,16 +71,34 @@ class MemobaseClient(BaseClient):
     # ===== 数据插入 =====
 
     async def insert(self, user_id: str, messages: list[dict[str, str]], sync: bool = False) -> str:
-        """插入对话数据到 Memobase 缓冲区"""
-        payload = {"messages": messages}
-        params = {}
+        """插入对话数据到 Memobase 缓冲区。若用户不存在则自动创建。
+
+        Memobase API 格式：{"blob_type": "chat", "blob_data": {"messages": [...]}}
+        """
+        payload: dict[str, Any] = {
+            "blob_type": "chat",
+            "blob_data": {"messages": messages},
+        }
+        params: dict[str, str] = {}
         if sync:
             params["wait_process"] = "true"
+
         response = await self._request(
             "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
         )
         result: dict[str, Any] = response.json()
-        return str(result.get("blob_id", result.get("id", "")))
+
+        # 若返回 ForeignKeyViolation（用户不存在），自动创建用户后重试
+        if result.get("errno", 0) != 0 and "ForeignKeyViolation" in result.get("errmsg", ""):
+            await self.add_user(user_id=user_id)
+            response = await self._request(
+                "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
+            )
+            result = response.json()
+
+        # 响应格式：{"data": {"id": "<blob_id>", "chat_results": [...]}, "errno": 0}
+        data = result.get("data") or {}
+        return str(data.get("id", data.get("blob_id", "")))
 
     async def flush(self, user_id: str, sync: bool = False) -> None:
         """触发缓冲区处理"""
@@ -85,28 +110,49 @@ class MemobaseClient(BaseClient):
     # ===== 画像 =====
 
     async def profile(self, user_id: str) -> UserProfile:
-        """获取用户结构化画像"""
+        """获取用户结构化画像
+
+        Memobase 响应格式：{"data": {"profiles": [{"id": ..., "content": ...,
+        "attributes": {"topic": ..., "sub_topic": ...}}]}, "errno": 0}
+        """
         response = await self._request(
             "GET", f"/api/v1/users/profile/{user_id}", params={"need_json": "true"}
         )
-        data = response.json()
+        raw = response.json()
 
-        topics = []
-        if isinstance(data, dict):
-            for topic_name, sub_topics in data.items():
-                if isinstance(sub_topics, dict):
-                    for sub_topic_name, content_data in sub_topics.items():
-                        if isinstance(content_data, dict):
-                            topics.append(
-                                ProfileTopic(
-                                    id=content_data.get("id", ""),
-                                    topic=topic_name,
-                                    sub_topic=sub_topic_name,
-                                    content=content_data.get("content", ""),
-                                    created_at=content_data.get("created_at"),
-                                    updated_at=content_data.get("updated_at"),
+        # 兼容新旧两种格式
+        if isinstance(raw, dict) and "data" in raw:
+            profiles_list = raw["data"].get("profiles", [])
+            topics = [
+                ProfileTopic(
+                    id=item.get("id", ""),
+                    topic=item.get("attributes", {}).get("topic", ""),
+                    sub_topic=item.get("attributes", {}).get("sub_topic", ""),
+                    content=item.get("content", ""),
+                    created_at=item.get("created_at"),
+                    updated_at=item.get("updated_at"),
+                )
+                for item in profiles_list
+                if isinstance(item, dict)
+            ]
+        else:
+            # 旧格式兼容：{topic: {sub_topic: {id, content, ...}}}
+            topics = []
+            if isinstance(raw, dict):
+                for topic_name, sub_topics in raw.items():
+                    if isinstance(sub_topics, dict):
+                        for sub_topic_name, content_data in sub_topics.items():
+                            if isinstance(content_data, dict):
+                                topics.append(
+                                    ProfileTopic(
+                                        id=content_data.get("id", ""),
+                                        topic=topic_name,
+                                        sub_topic=sub_topic_name,
+                                        content=content_data.get("content", ""),
+                                        created_at=content_data.get("created_at"),
+                                        updated_at=content_data.get("updated_at"),
+                                    )
                                 )
-                            )
         return UserProfile(user_id=user_id, topics=topics)
 
     async def add_profile(
@@ -148,12 +194,15 @@ class MemobaseClient(BaseClient):
             json=json_body if json_body else None,
         )
 
-        content_type = response.headers.get("content-type", "")
-        if "application/json" in content_type:
-            data = response.json()
-            context_text = data.get("context", data.get("result", str(data)))
+        body = response.json()
+        # 响应格式：{"data": {"context": "..."}, "errno": 0, "errmsg": ""}
+        if isinstance(body, dict) and "data" in body:
+            inner = body.get("data") or {}
+            context_text = inner.get("context", inner.get("result", ""))
+        elif isinstance(body, dict):
+            context_text = body.get("context", body.get("result", str(body)))
         else:
-            context_text = response.text
+            context_text = str(body)
 
         return ProfileContext(user_id=user_id, context=context_text)
 
