@@ -175,6 +175,12 @@ services:
       - 1panel-network
     labels:
       createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 256m
 
   # ==========================================
   # Mem0 服务群
@@ -224,6 +230,12 @@ services:
       - 1panel-network
     labels:
       createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 128m
 
   # ==========================================
   # Memobase 服务群
