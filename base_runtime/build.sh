@@ -42,11 +42,14 @@ build_memobase() {
     log "Syncing memobase source files ..."
     DEPLOY_DIR="$PROJECTS_DIR/CozyMemobase/deployment/memobase"
     SRC_DIR="$PROJECTS_DIR/CozyMemobase/projects/memobase/src/server/api"
-    [ -d "$SRC_DIR" ] || err "Memobase source not found: $SRC_DIR"
+    [ -d "$SRC_DIR" ]    || err "Memobase source not found: $SRC_DIR"
+    [ -d "$DEPLOY_DIR" ] || err "Memobase deploy dir not found: $DEPLOY_DIR"
 
     cp "$SRC_DIR/pyproject.toml" "$DEPLOY_DIR/"
     cp "$SRC_DIR/uv.lock"        "$DEPLOY_DIR/"
     cp "$SRC_DIR/api.py"         "$DEPLOY_DIR/"
+    # 先删除旧副本，保证重复构建时目录不嵌套
+    rm -rf "$DEPLOY_DIR/memobase_server"
     cp -r "$SRC_DIR/memobase_server" "$DEPLOY_DIR/"
     log "Memobase source synced. Building memobase-server:latest ..."
 
