@@ -37,9 +37,19 @@ mypy src/cozymemory --ignore-missing-imports
 
 # Backend engines (base_runtime)
 cd base_runtime && ./build.sh all          # Build all custom images
-cd base_runtime && ./build.sh cognee       # Build single image (cognee|mem0-api|mem0-webui|memobase|cognee-frontend)
-docker compose -f base_runtime/docker-compose.1panel.yml up -d    # Start all engines
+cd base_runtime && ./build.sh cognee       # Build single image (cognee|mem0-api|mem0-webui|memobase|cognee-frontend|cozymemory)
+docker compose -f base_runtime/docker-compose.1panel.yml up -d    # Start all engines + CozyMemory API
 docker compose -f base_runtime/docker-compose.1panel.yml ps       # Check status
+
+# Quick API smoke tests (requires running base_runtime)
+curl http://SERVER_IP:8000/api/v1/health                          # Health check (all 3 engines)
+curl -X POST http://SERVER_IP:8000/api/v1/conversations \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"u1","messages":[{"role":"user","content":"test"}]}'
+curl -X POST http://SERVER_IP:8000/api/v1/profiles/insert \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"<uuid-v4>","messages":[{"role":"user","content":"test"}],"sync":true}'
+curl http://SERVER_IP:8000/api/v1/knowledge/datasets
 ```
 
 ## Environment Configuration
@@ -95,7 +105,38 @@ python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --g
 
 ### Backend engine deployment (`base_runtime/`)
 
-`base_runtime/docker-compose.1panel.yml` runs 10 services on `1panel-network`. Caddy exposes three ports: 8080 (Cognee), 8081 (Mem0), 8019 (Memobase). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `YOUR_SERVER_IP` in the compose file with the actual server IP. Tiktoken cache must be pre-copied to `/data/CozyMemory/tiktoken/`.
+`base_runtime/docker-compose.1panel.yml` runs 11 services on `1panel-network`. Caddy exposes four ports: 8000 (CozyMemory unified API), 8080 (Cognee), 8081 (Mem0), 8019 (Memobase). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `YOUR_SERVER_IP` in the compose file with the actual server IP. Tiktoken cache must be pre-copied to `/data/CozyMemory/tiktoken/`.
+
+The CozyMemory unified API (`cozymemory:latest`) is built from the root `Dockerfile` using `deploy/supervisord.conf` to run REST (port 8000) and gRPC (port 50051) in a single container.
+
+## Engine API Quirks
+
+These are non-obvious behaviors discovered during integration testing. Check here before touching client code.
+
+### Mem0 (`Mem0Client`)
+
+- **API prefix**: All endpoints are under `/api/v1/` — server is patched by `apply_server_fixes.py` to add this prefix via `APIRouter`. Without the prefix, all routes return 404.
+- **`add()` response format**: `{"results": [{"id": "...", "memory": "...", "event": "ADD"}]}` — not a bare list. Parse with `data.get("results", [])`.
+- **`search()` / `get_all()` entity params**: The mem0ai library requires entity identifiers in `filters={"user_id": "..."}`, not as top-level kwargs. The server is patched (Fix 8/9 in `apply_server_fixes.py`) to wrap them correctly.
+- **No `/health` endpoint**: `health_check()` probes `GET /` which returns Swagger UI (HTTP 200 after redirect).
+- **Auth header**: `X-API-Key` (not `Authorization: Bearer`) — see `Mem0Client._get_headers`.
+
+### Memobase (`MemobaseClient`)
+
+- **user_id must be UUID v4**: Memobase enforces UUID v4 format at the path level. String IDs like `"user_01"` will return HTTP 422.
+- **`insert()` payload format**: `{"blob_type": "chat", "blob_data": {"messages": [...]}}` — not a bare `{"messages": [...]}`. The `blob_type` field is required.
+- **Auto-create user**: `insert()` detects `ForeignKeyViolation` in the response body (HTTP 200 + `errno != 0`) and automatically calls `add_user()` then retries. Callers don't need to create users manually.
+- **`add_user()` upsert semantics**: Creating a user that already exists returns HTTP 200 + `errno: 500` + `UniqueViolation`. This is silently ignored.
+- **Business errors use HTTP 200 + errno**: Unlike REST conventions, Memobase returns HTTP 200 for all responses and encodes errors in `{"errno": <int>, "errmsg": "..."}`. `EngineError` is only raised for real HTTP 4xx/5xx.
+- **`profile()` response format**: `{"data": {"profiles": [{"id", "content", "attributes": {"topic", "sub_topic"}}]}, "errno": 0}`.
+- **`context()` response format**: `{"data": {"context": "<prompt text>"}, "errno": 0}`.
+- **`/api/v1/healthcheck`**: Health endpoint includes the API prefix.
+
+### Cognee (`CogneeClient`)
+
+- **`search_type` values**: Must be one of the Cognee enum values: `CHUNKS`, `SUMMARIES`, `RAG_COMPLETION`, `GRAPH_COMPLETION`, etc. `"insights"` is not valid.
+- **Two-step add flow**: `add()` stages data; `cognify()` builds the knowledge graph. Search returns `NoDataError` if cognify hasn't run yet.
+- **Slow health check**: Cognee health check (calls `/api/v1/datasets`) typically takes 1–4 seconds due to graph DB queries. This is normal.
 
 ## Conventions
 
