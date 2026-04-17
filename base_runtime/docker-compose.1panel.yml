@@ -283,6 +283,43 @@ services:
           memory: 256m
 
   # ==========================================
+  # CozyMemory 统一服务层
+  # ==========================================
+
+  cozymemory-api:
+    image: cozymemory:latest
+    container_name: cozy_api
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      # 三引擎后端（容器内网访问）
+      MEM0_API_URL: http://mem0-api:8000
+      MEM0_API_KEY: ""
+      MEM0_ENABLED: "true"
+      MEMOBASE_API_URL: http://memobase-server-api:8000
+      MEMOBASE_API_KEY: secret
+      MEMOBASE_ENABLED: "true"
+      COGNEE_API_URL: http://cognee:8000
+      COGNEE_API_KEY: ""
+      COGNEE_ENABLED: "true"
+    depends_on:
+      - mem0-api
+      - memobase-server-api
+      - cognee
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 128m
+
+  # ==========================================
   # Caddy 反向代理
   # ==========================================
 
@@ -291,6 +328,7 @@ services:
     container_name: cozy_caddy
     restart: unless-stopped
     ports:
+      - "8000:8000"
       - "8080:8080"
       - "8081:8081"
       - "8019:8019"
@@ -304,6 +342,7 @@ services:
       - mem0-api
       - mem0-webui
       - memobase-server-api
+      - cozymemory-api
     networks:
       - 1panel-network
     labels:

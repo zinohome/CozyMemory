@@ -1,8 +1,14 @@
 # CozyMemory 统一反向代理配置
 # 端口说明：
+#   :8000 → CozyMemory 统一服务层（REST API + gRPC）
 #   :8080 → Cognee（前端 + API）
 #   :8081 → Mem0（前端 + API）
 #   :8019 → Memobase API
+
+# CozyMemory 统一服务层 (:8000)
+:8000 {
+	reverse_proxy cozymemory-api:8000
+}
 
 # Cognee 生态 (:8080)
 :8080 {

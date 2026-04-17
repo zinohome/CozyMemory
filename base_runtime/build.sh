@@ -80,6 +80,16 @@ build_cognee() {
     log "cognee:0.4.1 built."
 }
 
+# ---- cozymemory ----
+build_cozymemory() {
+    log "Building cozymemory:latest ..."
+    local root_dir
+    root_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+    [ -f "$root_dir/Dockerfile" ] || err "CozyMemory Dockerfile not found: $root_dir/Dockerfile"
+    docker build -t cozymemory:latest "$root_dir"
+    log "cozymemory:latest built."
+}
+
 # ---- cognee-frontend ----
 build_cognee_frontend() {
     log "Building cognee-frontend:local-0.4.1 ..."
@@ -110,14 +120,16 @@ case "$TARGET" in
         build_memobase
         build_cognee
         build_cognee_frontend
+        build_cozymemory
         ;;
     mem0-api)       build_mem0_api ;;
     mem0-webui)     build_mem0_webui ;;
     memobase)       build_memobase ;;
     cognee)         build_cognee ;;
     cognee-frontend) build_cognee_frontend ;;
+    cozymemory)     build_cozymemory ;;
     *)
-        echo "Usage: $0 [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend]"
+        echo "Usage: $0 [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend|cozymemory]"
         exit 1
         ;;
 esac
@@ -125,4 +137,4 @@ esac
 echo ""
 log "Done! Custom images:"
 docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" \
-    | grep -E "mem0-api|mem0-webui|memobase-server|cognee"
+    | grep -E "mem0-api|mem0-webui|memobase-server|cognee|cozymemory"

@@ -26,9 +26,9 @@ class MemobaseClient(BaseClient):
         return headers
 
     async def health_check(self) -> bool:
-        """健康检查"""
+        """健康检查 — Memobase 健康端点为 /api/v1/healthcheck"""
         try:
-            response = await self._request("GET", "/healthcheck")
+            response = await self._request("GET", "/api/v1/healthcheck")
             return response.status_code == 200
         except Exception:
             return False

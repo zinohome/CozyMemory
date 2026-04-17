@@ -26,9 +26,9 @@ class Mem0Client(BaseClient):
         return headers
 
     async def health_check(self) -> bool:
-        """健康检查"""
+        """健康检查 — mem0 无专属 /health 端点，使用根路径探活（返回 Swagger UI）"""
         try:
-            response = await self._request("GET", "/health")
+            response = await self._request("GET", "/")
             return response.status_code == 200
         except Exception:
             return False
