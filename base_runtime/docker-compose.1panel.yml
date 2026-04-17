@@ -88,6 +88,212 @@ services:
         reservations:
           memory: 512m
 
+  # ==========================================
+  # Cognee 服务群
+  # ==========================================
+
+  cognee:
+    image: cognee:0.4.1
+    container_name: cozy_cognee
+    restart: unless-stopped
+    environment:
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - HOST=0.0.0.0
+      - HTTP_PORT=8000
+      - PYTHONUNBUFFERED=1
+      - LLM_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      - LLM_PROVIDER=openai
+      - LLM_MODEL=gpt-4o-mini
+      - LLM_ENDPOINT=https://oneapi.naivehero.top/v1
+      - LLM_MAX_TOKENS=16384
+      - EMBEDDING_PROVIDER=openai
+      - EMBEDDING_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      - EMBEDDING_ENDPOINT=https://oneapi.naivehero.top/v1
+      - EMBEDDING_MODEL=openai/text-embedding-3-large
+      - EMBEDDING_DIMENSIONS=3072
+      - DATABASE_URL=postgresql://cognee_user:cognee_password@postgres:5432/cognee_db
+      - DB_PROVIDER=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=cognee_db
+      - DB_USERNAME=cognee_user
+      - DB_PASSWORD=cognee_password
+      - VECTOR_DB_PROVIDER=pgvector
+      - VECTOR_DB_URL=postgresql://cognee_user:cognee_password@postgres:5432/cognee_db
+      - GRAPH_DATABASE_PROVIDER=neo4j
+      - GRAPH_DATABASE_NAME=neo4j
+      - GRAPH_DATABASE_URL=bolt://neo4j:7687
+      - GRAPH_DATABASE_USERNAME=neo4j
+      - GRAPH_DATABASE_PASSWORD=pleaseletmein
+      - REDIS_URL=redis://:cozy_redis_pass@redis:6379/0
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_BUCKET_NAME=cognee-storage
+      - S3_USE_SSL=false
+      - CORS_ALLOWED_ORIGINS=*
+      - EXTRAS=api,postgres,neo4j
+      - TELEMETRY_DISABLED=1
+      - DEFAULT_USER_EMAIL=admin@cognee.com
+      - DEFAULT_USER_PASSWORD=passw0rd
+      - TIKTOKEN_CACHE_DIR=/root/.tiktoken
+    depends_on:
+      - postgres
+      - redis
+      - neo4j
+      - minio
+    volumes:
+      - /data/CozyMemory/cognee/data:/app/data
+      - /data/CozyMemory/cognee/logs:/app/logs
+      - /data/CozyMemory/tiktoken:/root/.tiktoken
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 512m
+
+  cognee-frontend:
+    image: cognee-frontend:local-0.4.1
+    container_name: cozy_cognee_frontend
+    restart: unless-stopped
+    # cognee-frontend 跑 Next.js dev 模式，NEXT_PUBLIC_* 可在运行时注入
+    environment:
+      - NEXT_PUBLIC_BACKEND_API_URL=http://YOUR_SERVER_IP:8080
+      - NEXT_PUBLIC_IS_CLOUD_ENVIRONMENT=false
+      - NEXT_DISABLE_DEV_INDICATORS=true
+      - NEXT_TELEMETRY_DISABLED=1
+    depends_on:
+      - cognee
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  # ==========================================
+  # Mem0 服务群
+  # ==========================================
+
+  mem0-api:
+    image: mem0-api:latest
+    container_name: cozy_mem0_api
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      OPENAI_BASE_URL: https://oneapi.naivehero.top/v1
+      OPENAI_MODEL: gpt-4.1-nano-2025-04-14
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION_NAME: memories
+      HISTORY_DB_PATH: /app/history/history.db
+      CORS_ORIGINS: "*"
+    depends_on:
+      - qdrant
+    volumes:
+      - /data/CozyMemory/mem0/history:/app/history
+      - /data/CozyMemory/mem0/logs:/app/logs
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 256m
+
+  mem0-webui:
+    image: mem0-webui:latest
+    container_name: cozy_mem0_webui
+    restart: unless-stopped
+    # entrypoint.sh 在启动时将 NEXT_PUBLIC_* 替换进 .next/ 编译产物
+    environment:
+      NEXT_PUBLIC_API_URL: http://YOUR_SERVER_IP:8081
+      NEXT_PUBLIC_USER_ID: user
+    depends_on:
+      - mem0-api
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  # ==========================================
+  # Memobase 服务群
+  # ==========================================
+
+  memobase-server-api:
+    image: memobase-server:latest
+    container_name: cozy_memobase_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://memobase:memobase123@postgres:5432/memobase
+      REDIS_URL: redis://:cozy_redis_pass@redis:6379/1
+      ACCESS_TOKEN: secret
+      PROJECT_ID: default
+      API_HOSTS: "http://YOUR_SERVER_IP:8019,http://memobase-server-api:8000"
+      USE_CORS: "true"
+      MEMOBASE_LANGUAGE: zh
+      MEMOBASE_LLM_STYLE: openai
+      MEMOBASE_LLM_API_KEY: "sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH"
+      MEMOBASE_LLM_BASE_URL: "https://oneapi.naivehero.top/v1"
+      MEMOBASE_EMBEDDING_API_KEY: "sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH"
+      MEMOBASE_EMBEDDING_BASE_URL: "https://oneapi.naivehero.top/v1"
+      MEMOBASE_EMBEDDING_PROVIDER: openai
+      TIKTOKEN_CACHE_DIR: /root/.tiktoken
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - /data/CozyMemory/tiktoken:/root/.tiktoken
+      - /data/CozyMemory/memobase:/app/data
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 256m
+
+  # ==========================================
+  # Caddy 反向代理
+  # ==========================================
+
+  caddy:
+    image: caddy:alpine
+    container_name: cozy_caddy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "8019:8019"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /data/CozyMemory/caddy/data:/data
+      - /data/CozyMemory/caddy/config:/config
+    depends_on:
+      - cognee
+      - cognee-frontend
+      - mem0-api
+      - mem0-webui
+      - memobase-server-api
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
 networks:
   1panel-network:
     external: true
