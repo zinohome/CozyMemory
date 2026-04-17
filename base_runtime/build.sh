@@ -60,22 +60,45 @@ build_memobase() {
 # ---- cognee ----
 build_cognee() {
     log "Building cognee:0.4.1 ..."
-    [ -d "$PROJECTS_DIR/CozyCognee" ] || err "CozyCognee directory not found: $PROJECTS_DIR/CozyCognee"
+    local cozy_dir="$PROJECTS_DIR/CozyCognee"
+    local src="$cozy_dir/projects/cognee"
+    local dst="$cozy_dir/project/cognee"
+    [ -d "$cozy_dir" ] || err "CozyCognee directory not found: $cozy_dir"
+    [ -d "$src" ]      || err "cognee source not found: $src"
+
+    # BuildKit 不跟随含 ../ 的 symlink，需将源码拷贝为真实文件
+    log "Syncing cognee source to project/cognee ..."
+    rm -rf "$dst"
+    cp -r "$src" "$dst"
+
     docker build \
-        -f "$PROJECTS_DIR/CozyCognee/deployment/docker/cognee/Dockerfile" \
+        -f "$cozy_dir/deployment/docker/cognee/Dockerfile" \
         -t cognee:0.4.1 \
-        "$PROJECTS_DIR/CozyCognee"
+        "$cozy_dir"
+
+    rm -rf "$dst"
     log "cognee:0.4.1 built."
 }
 
 # ---- cognee-frontend ----
 build_cognee_frontend() {
     log "Building cognee-frontend:local-0.4.1 ..."
-    [ -d "$PROJECTS_DIR/CozyCognee" ] || err "CozyCognee directory not found: $PROJECTS_DIR/CozyCognee"
+    local cozy_dir="$PROJECTS_DIR/CozyCognee"
+    local src="$cozy_dir/projects/cognee"
+    local dst="$cozy_dir/project/cognee"
+    [ -d "$cozy_dir" ] || err "CozyCognee directory not found: $cozy_dir"
+    [ -d "$src" ]      || err "cognee source not found: $src"
+
+    log "Syncing cognee source to project/cognee ..."
+    rm -rf "$dst"
+    cp -r "$src" "$dst"
+
     docker build \
-        -f "$PROJECTS_DIR/CozyCognee/deployment/docker/cognee-frontend/Dockerfile" \
+        -f "$cozy_dir/deployment/docker/cognee-frontend/Dockerfile" \
         -t cognee-frontend:local-0.4.1 \
-        "$PROJECTS_DIR/CozyCognee"
+        "$cozy_dir"
+
+    rm -rf "$dst"
     log "cognee-frontend:local-0.4.1 built."
 }
 

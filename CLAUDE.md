@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CozyMemory is a unified AI memory service platform that integrates three memory engines: **Mem0** (conversation memory), **Memobase** (user profile), and **Cognee** (knowledge graph). It exposes both a REST API (FastAPI) and a gRPC API, with services that delegate to backend engine clients.
 
+**Important**: The official `mem0ai` SDK is deliberately **not used**. All engine communication is via custom `httpx` HTTP clients against self-hosted engine backends.
+
 ## Commands
 
 ```bash
@@ -33,9 +35,28 @@ ruff format src/ tests/                          # Auto-fix formatting
 # Type checking
 mypy src/cozymemory --ignore-missing-imports
 
-# Docker
-docker build -t cozymemory .
-docker-compose -f deploy/docker-compose.yml up -d
+# Backend engines (base_runtime)
+cd base_runtime && ./build.sh all          # Build all custom images
+cd base_runtime && ./build.sh cognee       # Build single image (cognee|mem0-api|mem0-webui|memobase|cognee-frontend)
+docker compose -f base_runtime/docker-compose.1panel.yml up -d    # Start all engines
+docker compose -f base_runtime/docker-compose.1panel.yml ps       # Check status
+```
+
+## Environment Configuration
+
+Copy `.env.example` to `.env` and configure engine backends before running:
+
+```
+MEM0_API_URL=http://localhost:8888       # Default Mem0 port
+MEMOBASE_API_URL=http://localhost:8019   # Default Memobase port
+COGNEE_API_URL=http://localhost:8000     # Default Cognee port
+MEM0_API_KEY=...
+MEMOBASE_API_KEY=...
+COGNEE_API_KEY=...
+MEM0_ENABLED=true
+MEMOBASE_ENABLED=true
+COGNEE_ENABLED=true
+APP_ENV=development   # Set to "production" to hide error details in responses
 ```
 
 ## Architecture
@@ -72,9 +93,9 @@ Proto definitions live in `proto/`. Generated Python code (`*_pb2.py`, `*_pb2_gr
 python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --grpc_python_out=src/cozymemory/grpc_server proto/common.proto proto/conversation.proto proto/profile.proto proto/knowledge.proto
 ```
 
-### Docker deployment
+### Backend engine deployment (`base_runtime/`)
 
-Docker uses supervisord (`deploy/supervisord.conf`) to run both REST and gRPC servers in a single container. Ports: 8000 (REST), 50051 (gRPC).
+`base_runtime/docker-compose.1panel.yml` runs 10 services on `1panel-network`. Caddy exposes three ports: 8080 (Cognee), 8081 (Mem0), 8019 (Memobase). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `YOUR_SERVER_IP` in the compose file with the actual server IP. Tiktoken cache must be pre-copied to `/data/CozyMemory/tiktoken/`.
 
 ## Conventions
 
@@ -84,8 +105,10 @@ Docker uses supervisord (`deploy/supervisord.conf`) to run both REST and gRPC se
 - MyPy strict on `src/cozymemory/` except `grpc_server/` subpackage
 - Tests use `pytest-asyncio` with `asyncio_mode = "auto"`
 - Engine errors raised as `EngineError` with engine name and status code; API layer converts to HTTP 400/502
-- Mem0 uses `X-API-Key` header (not Bearer token) — see `Mem0Client._get_headers`
+- Mem0 uses `X-API-Key` header (not Bearer token) — see `Mem0Client._get_headers`; other engines use `Authorization: Bearer`
 - All responses follow `{success: bool, data: ..., message: str}` pattern
+- `DEBUG=True` (default) exposes full exception details in 500 responses; set `APP_ENV=production` / `DEBUG=False` to suppress
+- `structlog` is listed as a dependency but not yet used; current code uses stdlib `logging`
 
 ## Project layout
 
@@ -93,5 +116,5 @@ Docker uses supervisord (`deploy/supervisord.conf`) to run both REST and gRPC se
 - `tests/unit/` — unit tests (mocked, no engine backends needed)
 - `tests/integration/` — integration tests (need running backends)
 - `proto/` — protobuf definitions
-- `deploy/` — Docker and supervisord configs
-- `archive/` — previous v1 implementation (not active code, do not modify)
+- `base_runtime/` — **current active deployment** for the three backend engines (Mem0, Memobase, Cognee) and their infrastructure (PostgreSQL/pgvector, Redis, Qdrant, MinIO, Neo4j). This is what CozyMemory's service layer connects to. Ongoing development happens here.
+- `archive/` — inactive code and superseded configs (previous v1 impl, old deploy/, old unified_deployment/); do not modify

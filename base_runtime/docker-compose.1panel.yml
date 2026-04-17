@@ -1,6 +1,6 @@
 # CozyMemory Base Runtime
 # 1Panel 专用 Docker Compose 编排文件
-# 部署前替换：192.168.32.40 → 实际服务器 IP
+# 部署前替换：YOUR_SERVER_IP → 实际服务器 IP
 # 数据存储：/data/CozyMemory/
 # 网络：1panel-network（1Panel 预建外部网络）
 
@@ -165,7 +165,7 @@ services:
     restart: unless-stopped
     # cognee-frontend 跑 Next.js dev 模式，NEXT_PUBLIC_* 可在运行时注入
     environment:
-      - NEXT_PUBLIC_BACKEND_API_URL=http://192.168.32.40:8080
+      - NEXT_PUBLIC_BACKEND_API_URL=http://YOUR_SERVER_IP:8080
       - NEXT_PUBLIC_IS_CLOUD_ENVIRONMENT=false
       - NEXT_DISABLE_DEV_INDICATORS=true
       - NEXT_TELEMETRY_DISABLED=1
@@ -200,8 +200,11 @@ services:
       QDRANT_COLLECTION_NAME: memories
       HISTORY_DB_PATH: /app/history/history.db
       CORS_ORIGINS: "*"
+      # patch未生效时回退：使用 cozy_postgres 做向量存储（pgvector）
+      POSTGRES_PASSWORD: cozy_pg_root_pass
     depends_on:
       - qdrant
+      - postgres
     volumes:
       - /data/CozyMemory/mem0/history:/app/history
       - /data/CozyMemory/mem0/logs:/app/logs
@@ -222,7 +225,7 @@ services:
     restart: unless-stopped
     # entrypoint.sh 在启动时将 NEXT_PUBLIC_* 替换进 .next/ 编译产物
     environment:
-      NEXT_PUBLIC_API_URL: http://192.168.32.40:8081
+      NEXT_PUBLIC_API_URL: http://YOUR_SERVER_IP:8081
       NEXT_PUBLIC_USER_ID: user
     depends_on:
       - mem0-api
@@ -250,7 +253,7 @@ services:
       REDIS_URL: redis://:cozy_redis_pass@redis:6379/1
       ACCESS_TOKEN: secret
       PROJECT_ID: default
-      API_HOSTS: "http://192.168.32.40:8019,http://memobase-server-api:8000"
+      API_HOSTS: "http://YOUR_SERVER_IP:8019,http://memobase-server-api:8000"
       USE_CORS: "true"
       MEMOBASE_LANGUAGE: zh
       MEMOBASE_LLM_STYLE: openai
