@@ -54,6 +54,7 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
+      # 部署前建议修改为更强密码（当前使用开发默认值）
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
@@ -64,7 +65,7 @@ services:
       createdBy: "Apps"
 
   neo4j:
-    image: neo4j:latest
+    image: neo4j:2026.03.1
     container_name: cozy_neo4j
     restart: unless-stopped
     environment:
