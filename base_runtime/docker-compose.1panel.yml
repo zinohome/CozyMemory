@@ -1,0 +1,92 @@
+# CozyMemory Base Runtime
+# 1Panel 专用 Docker Compose 编排文件
+# 部署前替换：YOUR_SERVER_IP → 实际服务器 IP
+# 数据存储：/data/CozyMemory/
+# 网络：1panel-network（1Panel 预建外部网络）
+
+services:
+
+  # ==========================================
+  # 基础设施层（无对外端口，仅内网访问）
+  # ==========================================
+
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg17-trixie
+    container_name: cozy_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: cozy_pg_root_pass
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /data/CozyMemory/postgres:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  redis:
+    image: redis:7-alpine
+    container_name: cozy_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass cozy_redis_pass
+    volumes:
+      - /data/CozyMemory/redis:/data
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  qdrant:
+    image: qdrant/qdrant:v1.15
+    container_name: cozy_qdrant
+    restart: unless-stopped
+    volumes:
+      - /data/CozyMemory/qdrant:/qdrant/storage
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z-cpuv1
+    container_name: cozy_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - /data/CozyMemory/minio:/data
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  neo4j:
+    image: neo4j:latest
+    container_name: cozy_neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/pleaseletmein
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 1G
+    volumes:
+      - /data/CozyMemory/neo4j/data:/data
+      - /data/CozyMemory/neo4j/logs:/logs
+      - /data/CozyMemory/neo4j/plugins:/plugins
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 512m
+
+networks:
+  1panel-network:
+    external: true
