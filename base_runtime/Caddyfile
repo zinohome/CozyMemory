@@ -6,30 +6,30 @@
 
 # Cognee 生态 (:8080)
 :8080 {
-    # Cognee API（/api/* 路径优先匹配）
-    handle /api/* {
-        reverse_proxy cognee:8000
-    }
-    # Cognee 前端（其余所有路径）
-    handle {
-        reverse_proxy cognee-frontend:3000
-    }
+	# Cognee API（/api/* 路径优先匹配）
+	handle /api/* {
+		reverse_proxy cognee:8000
+	}
+	# Cognee 前端（其余所有路径）
+	handle {
+		reverse_proxy cognee-frontend:3000
+	}
 }
 
 # Mem0 生态 (:8081)
 # 注意：mem0-api 路由本身在 /api/v1/*，不裁剪前缀，直接透传
 :8081 {
-    # Mem0 API
-    handle /api/* {
-        reverse_proxy mem0-api:8000
-    }
-    # Mem0 前端
-    handle {
-        reverse_proxy mem0-webui:3000
-    }
+	# Mem0 API
+	handle /api/* {
+		reverse_proxy mem0-api:8000
+	}
+	# Mem0 前端
+	handle {
+		reverse_proxy mem0-webui:3000
+	}
 }
 
 # Memobase API (:8019)
 :8019 {
-    reverse_proxy memobase-server-api:8000
+	reverse_proxy memobase-server-api:8000
 }
