@@ -7,7 +7,7 @@
 - context() 新响应格式解析
 """
 
-from unittest.mock import AsyncMock, call, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -58,7 +58,8 @@ async def test_insert_raises_on_other_errno(client):
     error_response = httpx.Response(
         200, json={"errno": 500, "errmsg": "SomeOtherDatabaseError occurred"}
     )
-    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=error_response):
+    mock = AsyncMock(return_value=error_response)
+    with patch.object(client._client, "request", mock):
         with pytest.raises(EngineError):
             await client.insert("uid-abc", [{"role": "user", "content": "hi"}])
 

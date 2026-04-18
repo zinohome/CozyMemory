@@ -138,7 +138,9 @@ class Mem0Client(BaseClient):
 
     async def update(self, memory_id: str, content: str) -> ConversationMemory | None:
         """更新记忆内容"""
-        response = await self._request("PUT", f"/api/v1/memories/{memory_id}", json={"memory": content})
+        response = await self._request(
+            "PUT", f"/api/v1/memories/{memory_id}", json={"memory": content}
+        )
         item = response.json()
         return ConversationMemory(
             id=item.get("id", memory_id),
