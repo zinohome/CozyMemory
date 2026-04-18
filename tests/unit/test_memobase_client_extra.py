@@ -109,8 +109,8 @@ async def test_memobase_flush_with_sync(memobase_client):
 
 @pytest.mark.asyncio
 async def test_memobase_add_profile(memobase_client):
-    """MemobaseClient.add_profile 手动添加画像"""
-    mock_response = httpx.Response(200, json={"id": "prof_1"})
+    """MemobaseClient.add_profile 手动添加画像 — 使用 Memobase 真实响应格式"""
+    mock_response = httpx.Response(200, json={"data": {"id": "prof_1"}, "errno": 0})
     with patch.object(
         memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
     ):
@@ -119,6 +119,17 @@ async def test_memobase_add_profile(memobase_client):
         assert result.topic == "interest"
         assert result.sub_topic == "hobby"
         assert result.content == "游泳"
+
+
+@pytest.mark.asyncio
+async def test_memobase_add_profile_errno_raises(memobase_client):
+    """MemobaseClient.add_profile errno != 0 应抛出 EngineError"""
+    mock_response = httpx.Response(200, json={"errno": 1, "errmsg": "duplicate profile"})
+    with patch.object(
+        memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
+    ):
+        with pytest.raises(EngineError, match="duplicate profile"):
+            await memobase_client.add_profile("user_123", "interest", "hobby", "游泳")
 
 
 @pytest.mark.asyncio
@@ -159,21 +170,23 @@ async def test_memobase_delete_profile_404_idempotent(memobase_client):
 
 
 @pytest.mark.asyncio
-async def test_memobase_context_with_chats(memobase_client):
-    """MemobaseClient.context 带 chats 参数"""
+async def test_memobase_context_no_json_body_on_get(memobase_client):
+    """MemobaseClient.context 使用 GET 请求，不发送 JSON body（GET body 会被服务器忽略）"""
     mock_response = httpx.Response(
         200,
-        json={"context": "# Memory\n用户喜欢游泳"},
+        json={"data": {"context": "# Memory\n用户喜欢游泳"}, "errno": 0},
         headers={"content-type": "application/json"},
     )
-    with patch.object(
-        memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
-    ):
+    mock_req = AsyncMock(return_value=mock_response)
+    with patch.object(memobase_client._client, "request", mock_req):
         ctx = await memobase_client.context(
             "user_123", max_token_size=300, chats=[{"role": "user", "content": "你好"}]
         )
         assert ctx.user_id == "user_123"
         assert "游泳" in ctx.context
+    # chats 参数当前在 GET 请求中未传递
+    call_kwargs = mock_req.call_args[1]
+    assert call_kwargs.get("json") is None
 
 
 @pytest.mark.asyncio
