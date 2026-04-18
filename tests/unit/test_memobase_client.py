@@ -50,7 +50,7 @@ async def test_memobase_add_user():
 async def test_memobase_insert():
     """MemobaseClient.insert 插入对话"""
     client = MemobaseClient(api_url="http://localhost:8019")
-    mock_response = httpx.Response(200, json={"blob_id": "blob_123"})
+    mock_response = httpx.Response(200, json={"data": {"id": "blob_123"}, "errno": 0})
     with patch.object(
         client._client, "request", new_callable=AsyncMock, return_value=mock_response
     ):
@@ -99,7 +99,7 @@ async def test_memobase_context():
     """MemobaseClient.context 获取上下文"""
     client = MemobaseClient(api_url="http://localhost:8019")
     mock_response = httpx.Response(
-        200, text="# Memory\n用户背景...", headers={"content-type": "text/plain; charset=utf-8"}
+        200, json={"data": {"context": "# Memory\n用户背景..."}, "errno": 0}
     )
     with patch.object(
         client._client, "request", new_callable=AsyncMock, return_value=mock_response

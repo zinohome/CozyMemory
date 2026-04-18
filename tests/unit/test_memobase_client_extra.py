@@ -28,7 +28,7 @@ async def test_memobase_add_user_with_data(memobase_client):
 @pytest.mark.asyncio
 async def test_memobase_add_user_no_id(memobase_client):
     """MemobaseClient.add_user 不带 user_id"""
-    mock_response = httpx.Response(200, json={"user_id": "generated_id"})
+    mock_response = httpx.Response(200, json={"data": {"id": "generated_id"}, "errno": 0})
     with patch.object(
         memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
     ):
@@ -87,7 +87,7 @@ async def test_memobase_delete_user_404_idempotent(memobase_client):
 @pytest.mark.asyncio
 async def test_memobase_insert_with_sync(memobase_client):
     """MemobaseClient.insert 同步模式"""
-    mock_response = httpx.Response(200, json={"blob_id": "blob_1"})
+    mock_response = httpx.Response(200, json={"data": {"id": "blob_1"}, "errno": 0})
     with patch.object(
         memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
     ):

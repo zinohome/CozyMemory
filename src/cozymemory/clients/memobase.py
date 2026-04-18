@@ -88,13 +88,18 @@ class MemobaseClient(BaseClient):
         )
         result: dict[str, Any] = response.json()
 
-        # 若返回 ForeignKeyViolation（用户不存在），自动创建用户后重试
-        if result.get("errno", 0) != 0 and "ForeignKeyViolation" in result.get("errmsg", ""):
-            await self.add_user(user_id=user_id)
-            response = await self._request(
-                "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
-            )
-            result = response.json()
+        if result.get("errno", 0) != 0:
+            if "ForeignKeyViolation" in result.get("errmsg", ""):
+                # 用户不存在，自动创建后重试
+                await self.add_user(user_id=user_id)
+                response = await self._request(
+                    "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
+                )
+                result = response.json()
+                if result.get("errno", 0) != 0:
+                    raise EngineError(self.engine_name, result.get("errmsg", "Unknown error"), 500)
+            else:
+                raise EngineError(self.engine_name, result.get("errmsg", "Unknown error"), 500)
 
         # 响应格式：{"data": {"id": "<blob_id>", "chat_results": [...]}, "errno": 0}
         data = result.get("data") or {}

@@ -59,7 +59,7 @@ async def test_mem0_add():
     client = Mem0Client(api_url="http://localhost:8888")
     mock_response = httpx.Response(
         200,
-        json=[{"id": "mem_1", "event": "ADD", "data": {"memory": "用户喜欢咖啡"}}],
+        json={"results": [{"id": "mem_1", "event": "ADD", "memory": "用户喜欢咖啡"}]},
     )
     with patch.object(
         client._client, "request", new_callable=AsyncMock, return_value=mock_response

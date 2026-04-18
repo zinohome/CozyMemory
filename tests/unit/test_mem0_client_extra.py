@@ -142,10 +142,10 @@ async def test_mem0_add_with_metadata(mem0_client):
 
 @pytest.mark.asyncio
 async def test_mem0_add_dict_response(mem0_client):
-    """Mem0Client.add 返回字典而非列表"""
+    """Mem0Client.add 返回 results 包装格式"""
     mock_response = httpx.Response(
         200,
-        json={"id": "mem_1", "memory": "单条记忆"},
+        json={"results": [{"id": "mem_1", "memory": "单条记忆"}]},
     )
     with patch.object(
         mem0_client._client, "request", new_callable=AsyncMock, return_value=mock_response
