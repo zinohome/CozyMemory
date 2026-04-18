@@ -30,7 +30,7 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 
 def _engine_error_response(exc: EngineError) -> JSONResponse:
     """将 EngineError 转为统一格式的 JSONResponse"""
-    status_code = 502 if exc.status_code and exc.status_code >= 500 else 400
+    status_code = 502 if exc.status_code is None or exc.status_code >= 500 else 400
     return JSONResponse(
         status_code=status_code,
         content=ErrorResponse(

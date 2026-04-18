@@ -167,8 +167,11 @@ class MemobaseClient(BaseClient):
         payload = {"topic": topic, "sub_topic": sub_topic, "content": content}
         response = await self._request("POST", f"/api/v1/users/profile/{user_id}", json=payload)
         result = response.json()
+        if isinstance(result, dict) and result.get("errno", 0) != 0:
+            raise EngineError(self.engine_name, result.get("errmsg", "add_profile failed"), 500)
+        data = result.get("data", result) if isinstance(result, dict) else {}
         return ProfileTopic(
-            id=result.get("id", ""), topic=topic, sub_topic=sub_topic, content=content
+            id=data.get("id", ""), topic=topic, sub_topic=sub_topic, content=content
         )
 
     async def delete_profile(self, user_id: str, profile_id: str) -> bool:
@@ -188,15 +191,12 @@ class MemobaseClient(BaseClient):
     ) -> ProfileContext:
         """获取上下文提示词（可直接插入 LLM prompt）"""
         params = {"max_token_size": str(max_token_size)}
-        json_body = None
-        if chats:
-            json_body = {"chats": chats}
-
+        # Note: Memobase context endpoint is GET-only; the optional `chats` parameter
+        # cannot be sent as a request body on GET requests and is currently unused.
         response = await self._request(
             "GET",
             f"/api/v1/users/context/{user_id}",
             params=params,
-            json=json_body if json_body else None,
         )
 
         body = response.json()

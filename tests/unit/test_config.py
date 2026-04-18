@@ -9,7 +9,7 @@ def test_settings_defaults():
     assert s.APP_NAME == "CozyMemory"
     assert s.APP_VERSION == "2.0.0"
     assert s.APP_ENV == "development"
-    assert s.DEBUG is True
+    assert s.DEBUG is False
     assert s.PORT == 8000
     assert s.GRPC_PORT == 50051
 

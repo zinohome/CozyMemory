@@ -108,8 +108,8 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
             svc = get_conversation_service()
             result = await svc.get(request.memory_id)
             if result is None:
-                await context.set_code(grpc.StatusCode.NOT_FOUND)
-                await context.set_details("记忆不存在")
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details("记忆不存在")
                 return conversation_pb2.ConversationMemory()
             return conversation_pb2.ConversationMemory(
                 id=result.id,
@@ -345,7 +345,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
             results = [
                 knowledge_pb2.KnowledgeSearchResult(
                     id=r.id or "",
-                    text=r.text or r.content if hasattr(r, "content") else r.text or "",
+                    text=getattr(r, "content", None) or r.text or "",
                     score=r.score or 0.0,
                 )
                 for r in result.data

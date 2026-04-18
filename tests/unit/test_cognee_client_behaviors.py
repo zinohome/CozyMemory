@@ -262,12 +262,11 @@ async def test_list_datasets_prefers_camel_case_created_at(client):
 
 
 @pytest.mark.asyncio
-async def test_health_check_uses_health_path(client):
-    """/health 路径（不带 /api/v1 前缀）"""
-    mock_req = _mock(httpx.Response(200, json={"status": "ok"}))
+async def test_health_check_uses_datasets_path(client):
+    """健康检查探测 /api/v1/datasets（Cognee 无专属 /health 端点）"""
+    mock_req = _mock(httpx.Response(200, json=[]))
     with patch.object(client._client, "request", mock_req):
         result = await client.health_check()
 
     assert result is True
-    assert mock_req.call_args[1]["url"].endswith("/health")
-    assert "/api/v1" not in mock_req.call_args[1]["url"]
+    assert mock_req.call_args[1]["url"].endswith("/api/v1/datasets")

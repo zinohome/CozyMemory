@@ -5,8 +5,13 @@
 
 from typing import Any
 
+import structlog
+from pydantic import ValidationError
+
 from ..models.knowledge import KnowledgeDataset, KnowledgeSearchResult
 from .base import BaseClient, EngineError
+
+logger = structlog.get_logger()
 
 
 class CogneeClient(BaseClient):
@@ -19,9 +24,9 @@ class CogneeClient(BaseClient):
         super().__init__(engine_name="Cognee", api_url=api_url, api_key=api_key, **kwargs)
 
     async def health_check(self) -> bool:
-        """健康检查"""
+        """健康检查 — Cognee 无专属 /health 端点，使用 /api/v1/datasets 探活"""
         try:
-            response = await self._request("GET", "/health")
+            response = await self._request("GET", "/api/v1/datasets")
             return response.status_code == 200
         except Exception:
             return False
@@ -64,7 +69,10 @@ class CogneeClient(BaseClient):
         items = data if isinstance(data, list) else [data] if isinstance(data, dict) else []
         for item in items:
             if isinstance(item, dict):
-                results.append(KnowledgeSearchResult(**item))
+                try:
+                    results.append(KnowledgeSearchResult(**item))
+                except ValidationError:
+                    logger.warning("cognee.search.parse_error", item=item)
         return results
 
     async def list_datasets(self) -> list[KnowledgeDataset]:

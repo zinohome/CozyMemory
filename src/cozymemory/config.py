@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "CozyMemory"
     APP_VERSION: str = "2.0.0"
     APP_ENV: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # 服务配置
     HOST: str = "0.0.0.0"
