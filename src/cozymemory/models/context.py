@@ -68,7 +68,9 @@ class ContextRequest(BaseModel):
         None,
         description=(
             "当前对话轮次，传给 Memobase 以生成与当前对话更相关的上下文提示词。"
-            "为 null 时 Memobase 仅基于历史画像生成上下文"
+            "为 null 时 Memobase 仅基于历史画像生成上下文。"
+            "注意：Memobase context 端点当前为 GET-only，此参数已透传至服务层但暂不生效，"
+            "待 Memobase 支持 POST context 端点后自动启用"
         ),
     )
 
