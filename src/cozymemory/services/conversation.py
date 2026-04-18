@@ -3,13 +3,14 @@
 薄层封装 Mem0 客户端，负责请求转发和错误转换。
 """
 
-import logging
 from typing import Any
+
+import structlog
 
 from ..clients.mem0 import Mem0Client
 from ..models.conversation import ConversationMemory, ConversationMemoryListResponse
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class ConversationService:

@@ -99,6 +99,14 @@ class ProfileAddItemResponse(BaseModel):
     message: str = ""
 
 
+class ProfileAddItemRequest(BaseModel):
+    """手动添加画像条目请求"""
+
+    topic: str = Field(..., description="主题 (如 basic_info, interest)", min_length=1)
+    sub_topic: str = Field(..., description="子主题 (如 name, hobby)", min_length=1)
+    content: str = Field(..., description="内容", min_length=1)
+
+
 class ProfileDeleteItemResponse(BaseModel):
     """删除画像条目响应"""
 

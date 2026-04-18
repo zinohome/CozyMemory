@@ -3,10 +3,10 @@
 启动 gRPC 服务，复用 Service 层逻辑。
 """
 
-import logging
 from typing import Any
 
 import grpc
+import structlog
 
 from ..api.deps import (
     get_conversation_service,
@@ -24,7 +24,7 @@ from . import (  # noqa: F401
     profile_pb2_grpc,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 def _handle_engine_error(exc: EngineError, context: grpc.aio.ServicerContext) -> None:

@@ -3,17 +3,18 @@
 薄层封装 Cognee 客户端，负责请求转发和错误转换。
 """
 
-import logging
+import structlog
 
 from ..clients.cognee import CogneeClient
 from ..models.knowledge import (
     KnowledgeAddResponse,
     KnowledgeCognifyResponse,
     KnowledgeDatasetListResponse,
+    KnowledgeDeleteResponse,
     KnowledgeSearchResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class KnowledgeService:
@@ -63,3 +64,9 @@ class KnowledgeService:
         """列出所有数据集"""
         datasets = await self.client.list_datasets()
         return KnowledgeDatasetListResponse(success=True, data=datasets)
+
+    async def delete(self, data_id: str, dataset_id: str) -> KnowledgeDeleteResponse:
+        """删除知识数据"""
+        success = await self.client.delete(data_id=data_id, dataset_id=dataset_id)
+        msg = "已删除" if success else "删除失败"
+        return KnowledgeDeleteResponse(success=success, message=msg)

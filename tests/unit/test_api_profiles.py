@@ -13,8 +13,10 @@ from cozymemory.api.deps import get_profile_service
 from cozymemory.app import create_app
 from cozymemory.clients.base import EngineError
 from cozymemory.models.profile import (
+    ProfileAddItemResponse,
     ProfileContext,
     ProfileContextResponse,
+    ProfileDeleteItemResponse,
     ProfileFlushResponse,
     ProfileGetResponse,
     ProfileInsertResponse,
@@ -212,4 +214,78 @@ async def test_get_context_engine_error(client, mock_service):
         "/api/v1/profiles/uid-abc/context",
         json={},
     )
+    assert response.status_code == 502
+
+
+# ===== POST /profiles/{user_id}/items =====
+
+
+@pytest.mark.asyncio
+async def test_add_profile_item_success(client, mock_service):
+    """POST /profiles/{user_id}/items 手动添加画像条目"""
+    mock_service.add_profile_item = AsyncMock(
+        return_value=ProfileAddItemResponse(
+            success=True,
+            data=ProfileTopic(id="p99", topic="interest", sub_topic="sport", content="游泳"),
+            message="",
+        )
+    )
+    response = await client.post(
+        "/api/v1/profiles/uid-abc/items",
+        json={"topic": "interest", "sub_topic": "sport", "content": "游泳"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["topic"] == "interest"
+    assert body["data"]["content"] == "游泳"
+
+
+@pytest.mark.asyncio
+async def test_add_profile_item_missing_fields(client, mock_service):
+    """POST /profiles/{user_id}/items 缺少必填字段 → 422"""
+    response = await client.post(
+        "/api/v1/profiles/uid-abc/items",
+        json={"topic": "interest"},  # 缺少 sub_topic 和 content
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_add_profile_item_engine_error(client, mock_service):
+    """POST /profiles/{user_id}/items 引擎错误 → 502"""
+    mock_service.add_profile_item = AsyncMock(
+        side_effect=EngineError("Memobase", "add profile failed", 500)
+    )
+    response = await client.post(
+        "/api/v1/profiles/uid-abc/items",
+        json={"topic": "interest", "sub_topic": "sport", "content": "游泳"},
+    )
+    assert response.status_code == 502
+    assert response.json()["error"] == "MemobaseError"
+
+
+# ===== DELETE /profiles/{user_id}/items/{profile_id} =====
+
+
+@pytest.mark.asyncio
+async def test_delete_profile_item_success(client, mock_service):
+    """DELETE /profiles/{user_id}/items/{profile_id} 成功删除"""
+    mock_service.delete_profile_item = AsyncMock(
+        return_value=ProfileDeleteItemResponse(success=True, message="已删除")
+    )
+    response = await client.delete("/api/v1/profiles/uid-abc/items/p99")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["message"] == "已删除"
+
+
+@pytest.mark.asyncio
+async def test_delete_profile_item_engine_error(client, mock_service):
+    """DELETE /profiles/{user_id}/items/{profile_id} 引擎错误 → 502"""
+    mock_service.delete_profile_item = AsyncMock(
+        side_effect=EngineError("Memobase", "delete failed", 500)
+    )
+    response = await client.delete("/api/v1/profiles/uid-abc/items/p99")
     assert response.status_code == 502

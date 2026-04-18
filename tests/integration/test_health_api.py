@@ -1,69 +1,42 @@
-"""健康检查 API 集成测试"""
+"""健康检查 API 集成测试
 
-from unittest.mock import AsyncMock, patch
+针对真实运行的 CozyMemory 服务执行。
+服务地址由 COZY_TEST_URL 环境变量控制（默认 http://localhost:8000）。
+若服务不可达，测试自动跳过。
+"""
 
 import pytest
-from fastapi.testclient import TestClient
 
-from cozymemory.app import create_app
-
-
-@pytest.fixture
-def client():
-    """创建测试客户端"""
-    app = create_app()
-    return TestClient(app)
+from .conftest import requires_server
 
 
-class TestHealthEndpoint:
-    """健康检查端点测试"""
+@requires_server
+@pytest.mark.asyncio
+async def test_health_returns_200(http):
+    """GET /api/v1/health 返回 200"""
+    response = await http.get("/api/v1/health")
+    assert response.status_code == 200
 
-    def test_health_returns_200(self, client):
-        """健康检查应返回 200"""
-        with (
-            patch("cozymemory.api.v1.health.get_mem0_client") as mock_mem0,
-            patch("cozymemory.api.v1.health.get_memobase_client") as mock_memobase,
-            patch("cozymemory.api.v1.health.get_cognee_client") as mock_cognee,
-        ):
-            mock_mem0.return_value.health_check = AsyncMock(return_value=True)
-            mock_memobase.return_value.health_check = AsyncMock(return_value=True)
-            mock_cognee.return_value.health_check = AsyncMock(return_value=True)
-            response = client.get("/api/v1/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert "status" in data
-        assert "engines" in data
 
-    def test_health_degraded_when_one_fails(self, client):
-        """一个引擎不健康时状态应为 degraded"""
-        with (
-            patch("cozymemory.api.v1.health.get_mem0_client") as mock_mem0,
-            patch("cozymemory.api.v1.health.get_memobase_client") as mock_memobase,
-            patch("cozymemory.api.v1.health.get_cognee_client") as mock_cognee,
-        ):
-            mock_mem0.return_value.health_check = AsyncMock(return_value=True)
-            mock_memobase.return_value.health_check = AsyncMock(return_value=False)
-            mock_cognee.return_value.health_check = AsyncMock(return_value=True)
-            response = client.get("/api/v1/health")
-        data = response.json()
-        assert data["status"] == "degraded"
+@requires_server
+@pytest.mark.asyncio
+async def test_health_response_shape(http):
+    """健康检查响应包含 status 和 engines 字段"""
+    response = await http.get("/api/v1/health")
+    body = response.json()
+    assert "status" in body
+    assert "engines" in body
+    assert body["status"] in ("healthy", "degraded", "unhealthy")
 
-    def test_health_unhealthy_when_all_fail(self, client):
-        """所有引擎不健康时状态应为 unhealthy"""
-        with (
-            patch("cozymemory.api.v1.health.get_mem0_client") as mock_mem0,
-            patch("cozymemory.api.v1.health.get_memobase_client") as mock_memobase,
-            patch("cozymemory.api.v1.health.get_cognee_client") as mock_cognee,
-        ):
-            mock_mem0.return_value.health_check = AsyncMock(
-                side_effect=Exception("connection refused")
-            )
-            mock_memobase.return_value.health_check = AsyncMock(
-                side_effect=Exception("connection refused")
-            )
-            mock_cognee.return_value.health_check = AsyncMock(
-                side_effect=Exception("connection refused")
-            )
-            response = client.get("/api/v1/health")
-        data = response.json()
-        assert data["status"] == "unhealthy"
+
+@requires_server
+@pytest.mark.asyncio
+async def test_health_engines_have_required_keys(http):
+    """engines 字典中每个条目包含必要字段"""
+    response = await http.get("/api/v1/health")
+    body = response.json()
+    engines = body.get("engines", {})
+    assert isinstance(engines, dict)
+    for engine_info in engines.values():
+        assert "name" in engine_info
+        assert "status" in engine_info

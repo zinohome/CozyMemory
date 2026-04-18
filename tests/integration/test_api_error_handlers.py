@@ -39,7 +39,7 @@ async def test_conversation_add_502():
             json={"user_id": "u1", "messages": [{"role": "user", "content": "hi"}]},
         )
         assert resp.status_code == 502
-        assert "Mem0" in resp.json()["detail"]
+        assert resp.json()["engine"] == "Mem0"
 
 
 @pytest.mark.asyncio
@@ -118,7 +118,7 @@ async def test_profile_insert_502():
             json={"user_id": "u1", "messages": [{"role": "user", "content": "hi"}]},
         )
         assert resp.status_code == 502
-        assert "Memobase" in resp.json()["detail"]
+        assert resp.json()["engine"] == "Memobase"
 
 
 @pytest.mark.asyncio
@@ -189,7 +189,7 @@ async def test_knowledge_add_502():
             json={"data": "test content", "dataset": "test_ds"},
         )
         assert resp.status_code == 502
-        assert "Cognee" in resp.json()["detail"]
+        assert resp.json()["engine"] == "Cognee"
 
 
 @pytest.mark.asyncio

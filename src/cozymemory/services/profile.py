@@ -3,8 +3,9 @@
 薄层封装 Memobase 客户端，负责请求转发和错误转换。
 """
 
-import logging
 from collections.abc import Sequence
+
+import structlog
 
 from ..clients.memobase import MemobaseClient
 from ..models.common import Message
@@ -17,7 +18,7 @@ from ..models.profile import (
     ProfileInsertResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class ProfileService:

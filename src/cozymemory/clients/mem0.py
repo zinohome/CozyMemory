@@ -101,6 +101,8 @@ class Mem0Client(BaseClient):
         try:
             response = await self._request("GET", f"/api/v1/memories/{memory_id}")
             item = response.json()
+            if item is None:  # Mem0 returns JSON null for non-existent memories
+                return None
             return ConversationMemory(
                 id=item.get("id", memory_id),
                 user_id=item.get("user_id", ""),

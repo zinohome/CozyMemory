@@ -17,6 +17,8 @@ from ...models.knowledge import (
     KnowledgeCognifyRequest,
     KnowledgeCognifyResponse,
     KnowledgeDatasetListResponse,
+    KnowledgeDeleteRequest,
+    KnowledgeDeleteResponse,
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
 )
@@ -113,5 +115,19 @@ async def search_knowledge(
             search_type=request.search_type,
             top_k=request.top_k,
         )
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.delete(
+    "", response_model=KnowledgeDeleteResponse, responses={502: {"model": ErrorResponse}}
+)
+async def delete_knowledge(
+    request: KnowledgeDeleteRequest,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> KnowledgeDeleteResponse | JSONResponse:
+    """删除知识数据"""
+    try:
+        return await service.delete(data_id=request.data_id, dataset_id=request.dataset_id)
     except EngineError as e:
         return _engine_error_response(e)

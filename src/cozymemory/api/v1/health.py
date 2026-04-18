@@ -1,15 +1,15 @@
 """健康检查端点"""
 
-import logging
 import time
 
+import structlog
 from fastapi import APIRouter
 
 from ...api.deps import get_cognee_client, get_mem0_client, get_memobase_client
 from ...config import settings
 from ...models.common import EngineStatus, HealthResponse
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 router = APIRouter(tags=["health"])
 

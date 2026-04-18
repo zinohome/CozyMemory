@@ -17,6 +17,7 @@ from cozymemory.models.knowledge import (
     KnowledgeCognifyResponse,
     KnowledgeDataset,
     KnowledgeDatasetListResponse,
+    KnowledgeDeleteResponse,
     KnowledgeSearchResponse,
     KnowledgeSearchResult,
 )
@@ -231,3 +232,65 @@ async def test_search_knowledge_empty_query(client, mock_service):
         json={"query": ""},
     )
     assert response.status_code == 422
+
+
+# ===== DELETE /knowledge =====
+
+
+@pytest.mark.asyncio
+async def test_delete_knowledge_success(client, mock_service):
+    """DELETE /knowledge 成功删除知识数据"""
+    mock_service.delete = AsyncMock(
+        return_value=KnowledgeDeleteResponse(success=True, message="已删除")
+    )
+    response = await client.request(
+        "DELETE",
+        "/api/v1/knowledge",
+        json={"data_id": "doc-1", "dataset_id": "ds-abc"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["message"] == "已删除"
+
+
+@pytest.mark.asyncio
+async def test_delete_knowledge_forwards_ids(client, mock_service):
+    """DELETE /knowledge 正确传递 data_id 和 dataset_id 给服务层"""
+    mock_service.delete = AsyncMock(
+        return_value=KnowledgeDeleteResponse(success=True, message="已删除")
+    )
+    await client.request(
+        "DELETE",
+        "/api/v1/knowledge",
+        json={"data_id": "doc-42", "dataset_id": "ds-xyz"},
+    )
+    _, kwargs = mock_service.delete.call_args
+    assert kwargs["data_id"] == "doc-42"
+    assert kwargs["dataset_id"] == "ds-xyz"
+
+
+@pytest.mark.asyncio
+async def test_delete_knowledge_missing_fields(client, mock_service):
+    """DELETE /knowledge 缺少必填字段 → 422"""
+    response = await client.request(
+        "DELETE",
+        "/api/v1/knowledge",
+        json={"data_id": "doc-1"},  # 缺少 dataset_id
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_delete_knowledge_engine_error(client, mock_service):
+    """DELETE /knowledge 引擎错误 → 502"""
+    mock_service.delete = AsyncMock(
+        side_effect=EngineError("Cognee", "delete failed", 500)
+    )
+    response = await client.request(
+        "DELETE",
+        "/api/v1/knowledge",
+        json={"data_id": "doc-1", "dataset_id": "ds-abc"},
+    )
+    assert response.status_code == 502
+    assert response.json()["error"] == "CogneeError"

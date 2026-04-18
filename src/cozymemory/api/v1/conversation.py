@@ -36,6 +36,21 @@ def _engine_error_response(exc: EngineError) -> JSONResponse:
     )
 
 
+@router.get(
+    "", response_model=ConversationMemoryListResponse, responses={502: {"model": ErrorResponse}}
+)
+async def list_conversations(
+    user_id: str,
+    limit: int = 100,
+    service: ConversationService = Depends(get_conversation_service),
+) -> ConversationMemoryListResponse | JSONResponse:
+    """获取用户所有记忆"""
+    try:
+        return await service.get_all(user_id=user_id, limit=limit)
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
 @router.post(
     "", response_model=ConversationMemoryListResponse, responses={502: {"model": ErrorResponse}}
 )

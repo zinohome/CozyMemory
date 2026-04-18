@@ -1,8 +1,10 @@
 """CozyMemory gRPC 服务"""
 
 import asyncio
-import logging
 
+import structlog
+
+from ..logging_config import configure_logging
 from . import (
     common_pb2,
     common_pb2_grpc,
@@ -36,14 +38,11 @@ __all__ = [
     "run_grpc_cli",
 ]
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 def run_grpc_cli() -> None:
     """CLI 入口：启动 gRPC 服务器"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    configure_logging()
     logger.info("Starting CozyMemory gRPC server...")
     asyncio.run(serve_grpc())

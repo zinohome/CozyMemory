@@ -200,3 +200,59 @@ async def test_delete_all_conversations_success(client, mock_service):
     response = await client.delete("/api/v1/conversations", params={"user_id": "u1"})
     assert response.status_code == 200
     assert response.json()["success"] is True
+
+
+# ===== GET /conversations (list all) =====
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_success(client, mock_service):
+    """GET /conversations?user_id=u1 返回用户所有记忆"""
+    mock_service.get_all = AsyncMock(
+        return_value=ConversationMemoryListResponse(
+            success=True,
+            data=[
+                ConversationMemory(id="m1", user_id="u1", content="用户喜欢咖啡"),
+                ConversationMemory(id="m2", user_id="u1", content="用户住在上海"),
+            ],
+            total=2,
+        )
+    )
+    response = await client.get("/api/v1/conversations", params={"user_id": "u1"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["total"] == 2
+    assert len(body["data"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_with_limit(client, mock_service):
+    """GET /conversations?user_id=u1&limit=5 传递 limit 给服务层"""
+    mock_service.get_all = AsyncMock(
+        return_value=ConversationMemoryListResponse(success=True, data=[], total=0)
+    )
+    response = await client.get(
+        "/api/v1/conversations", params={"user_id": "u1", "limit": 5}
+    )
+    assert response.status_code == 200
+    _, kwargs = mock_service.get_all.call_args
+    assert kwargs["limit"] == 5
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_engine_error(client, mock_service):
+    """GET /conversations 引擎错误 → 502"""
+    mock_service.get_all = AsyncMock(
+        side_effect=EngineError("Mem0", "list failed", 500)
+    )
+    response = await client.get("/api/v1/conversations", params={"user_id": "u1"})
+    assert response.status_code == 502
+    assert response.json()["error"] == "Mem0Error"
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_missing_user_id(client, mock_service):
+    """GET /conversations 缺少 user_id → 422"""
+    response = await client.get("/api/v1/conversations")
+    assert response.status_code == 422

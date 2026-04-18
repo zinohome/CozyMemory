@@ -90,3 +90,17 @@ class KnowledgeDatasetListResponse(BaseModel):
     success: bool = True
     data: list[KnowledgeDataset] = Field(default_factory=list)
     message: str = ""
+
+
+class KnowledgeDeleteRequest(BaseModel):
+    """删除知识数据请求"""
+
+    data_id: str = Field(..., description="数据项 ID", min_length=1)
+    dataset_id: str = Field(..., description="数据集 ID", min_length=1)
+
+
+class KnowledgeDeleteResponse(BaseModel):
+    """删除知识数据响应"""
+
+    success: bool = True
+    message: str = ""

@@ -12,8 +12,11 @@ from ...api.deps import get_profile_service
 from ...clients.base import EngineError
 from ...models.common import ErrorResponse
 from ...models.profile import (
+    ProfileAddItemRequest,
+    ProfileAddItemResponse,
     ProfileContextRequest,
     ProfileContextResponse,
+    ProfileDeleteItemResponse,
     ProfileFlushRequest,
     ProfileFlushResponse,
     ProfileGetResponse,
@@ -100,5 +103,44 @@ async def get_context(
         return await service.get_context(
             user_id=user_id, max_token_size=request.max_token_size, chats=chats
         )
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.post(
+    "/{user_id}/items",
+    response_model=ProfileAddItemResponse,
+    responses={502: {"model": ErrorResponse}},
+)
+async def add_profile_item(
+    user_id: str,
+    request: ProfileAddItemRequest,
+    service: ProfileService = Depends(get_profile_service),
+) -> ProfileAddItemResponse | JSONResponse:
+    """手动添加画像条目"""
+    try:
+        return await service.add_profile_item(
+            user_id=user_id,
+            topic=request.topic,
+            sub_topic=request.sub_topic,
+            content=request.content,
+        )
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.delete(
+    "/{user_id}/items/{profile_id}",
+    response_model=ProfileDeleteItemResponse,
+    responses={502: {"model": ErrorResponse}},
+)
+async def delete_profile_item(
+    user_id: str,
+    profile_id: str,
+    service: ProfileService = Depends(get_profile_service),
+) -> ProfileDeleteItemResponse | JSONResponse:
+    """删除画像条目"""
+    try:
+        return await service.delete_profile_item(user_id=user_id, profile_id=profile_id)
     except EngineError as e:
         return _engine_error_response(e)
