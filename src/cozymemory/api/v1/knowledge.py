@@ -45,6 +45,7 @@ def _engine_error_response(exc: EngineError) -> JSONResponse:
     "/datasets",
     response_model=KnowledgeDatasetListResponse,
     responses={502: {"model": ErrorResponse}},
+    summary="创建数据集",
 )
 async def create_dataset(
     name: str,
@@ -61,6 +62,7 @@ async def create_dataset(
     "/datasets",
     response_model=KnowledgeDatasetListResponse,
     responses={502: {"model": ErrorResponse}},
+    summary="列出所有数据集",
 )
 async def list_datasets(
     service: KnowledgeService = Depends(get_knowledge_service),
@@ -72,7 +74,12 @@ async def list_datasets(
         return _engine_error_response(e)
 
 
-@router.post("/add", response_model=KnowledgeAddResponse, responses={502: {"model": ErrorResponse}})
+@router.post(
+    "/add",
+    response_model=KnowledgeAddResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="添加文档到知识库",
+)
 async def add_knowledge(
     request: KnowledgeAddRequest,
     service: KnowledgeService = Depends(get_knowledge_service),
@@ -85,7 +92,10 @@ async def add_knowledge(
 
 
 @router.post(
-    "/cognify", response_model=KnowledgeCognifyResponse, responses={502: {"model": ErrorResponse}}
+    "/cognify",
+    response_model=KnowledgeCognifyResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="构建知识图谱",
 )
 async def cognify(
     request: KnowledgeCognifyRequest,
@@ -101,7 +111,10 @@ async def cognify(
 
 
 @router.post(
-    "/search", response_model=KnowledgeSearchResponse, responses={502: {"model": ErrorResponse}}
+    "/search",
+    response_model=KnowledgeSearchResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="搜索知识库",
 )
 async def search_knowledge(
     request: KnowledgeSearchRequest,
@@ -120,7 +133,10 @@ async def search_knowledge(
 
 
 @router.delete(
-    "", response_model=KnowledgeDeleteResponse, responses={502: {"model": ErrorResponse}}
+    "",
+    response_model=KnowledgeDeleteResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="删除知识数据",
 )
 async def delete_knowledge(
     request: KnowledgeDeleteRequest,

@@ -43,7 +43,10 @@ def _engine_error_response(exc: EngineError) -> JSONResponse:
 
 
 @router.post(
-    "/insert", response_model=ProfileInsertResponse, responses={502: {"model": ErrorResponse}}
+    "/insert",
+    response_model=ProfileInsertResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="插入对话到缓冲区",
 )
 async def insert_profile(
     request: ProfileInsertRequest,
@@ -58,7 +61,10 @@ async def insert_profile(
 
 
 @router.post(
-    "/flush", response_model=ProfileFlushResponse, responses={502: {"model": ErrorResponse}}
+    "/flush",
+    response_model=ProfileFlushResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="触发缓冲区处理",
 )
 async def flush_profile(
     request: ProfileFlushRequest,
@@ -72,7 +78,10 @@ async def flush_profile(
 
 
 @router.get(
-    "/{user_id}", response_model=ProfileGetResponse, responses={502: {"model": ErrorResponse}}
+    "/{user_id}",
+    response_model=ProfileGetResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="获取用户画像",
 )
 async def get_profile(
     user_id: str,
@@ -89,6 +98,7 @@ async def get_profile(
     "/{user_id}/context",
     response_model=ProfileContextResponse,
     responses={502: {"model": ErrorResponse}},
+    summary="获取 LLM 上下文提示词",
 )
 async def get_context(
     user_id: str,
@@ -111,6 +121,7 @@ async def get_context(
     "/{user_id}/items",
     response_model=ProfileAddItemResponse,
     responses={502: {"model": ErrorResponse}},
+    summary="手动添加画像条目",
 )
 async def add_profile_item(
     user_id: str,
@@ -133,6 +144,7 @@ async def add_profile_item(
     "/{user_id}/items/{profile_id}",
     response_model=ProfileDeleteItemResponse,
     responses={502: {"model": ErrorResponse}},
+    summary="删除画像条目",
 )
 async def delete_profile_item(
     user_id: str,

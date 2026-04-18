@@ -14,7 +14,20 @@ from .common import Message
 class ProfileInsertRequest(BaseModel):
     """插入对话到 Memobase 缓冲区"""
 
-    user_id: str = Field(..., description="用户 ID", min_length=1)
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "user_id": "550e8400-e29b-41d4-a716-446655440000",
+                "messages": [
+                    {"role": "user", "content": "我叫小明，今年 28 岁，住在北京"},
+                    {"role": "assistant", "content": "好的，我已记录您的基本信息"},
+                ],
+                "sync": False,
+            }
+        }
+    }
+
+    user_id: str = Field(..., description="用户 ID（必须是 UUID v4 格式）", min_length=1)
     messages: list[Message] = Field(..., description="对话消息列表", min_length=1)
     sync: bool = Field(False, description="是否同步等待处理完成")
 
@@ -29,6 +42,15 @@ class ProfileFlushRequest(BaseModel):
 class ProfileContextRequest(BaseModel):
     """获取上下文提示词请求（user_id 来自路径参数）"""
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "max_token_size": 500,
+                "chats": None,
+            }
+        }
+    }
+
     max_token_size: int = Field(500, ge=100, le=4000, description="上下文最大 token 数")
     chats: list[Message] | None = Field(None, description="近期对话（用于语义搜索匹配）")
 
@@ -40,8 +62,8 @@ class ProfileTopic(BaseModel):
     topic: str = Field(..., description="主题 (如 basic_info, interest)")
     sub_topic: str = Field(..., description="子主题 (如 name, hobby)")
     content: str = Field(..., description="内容")
-    created_at: datetime | None = Field(None)
-    updated_at: datetime | None = Field(None)
+    created_at: datetime | None = Field(None, description="创建时间")
+    updated_at: datetime | None = Field(None, description="更新时间")
 
 
 class UserProfile(BaseModel):
@@ -101,6 +123,16 @@ class ProfileAddItemResponse(BaseModel):
 
 class ProfileAddItemRequest(BaseModel):
     """手动添加画像条目请求"""
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "topic": "interest",
+                "sub_topic": "sport",
+                "content": "喜欢游泳和跑步，每周运动 3 次",
+            }
+        }
+    }
 
     topic: str = Field(..., description="主题 (如 basic_info, interest)", min_length=1)
     sub_topic: str = Field(..., description="子主题 (如 name, hobby)", min_length=1)

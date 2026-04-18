@@ -33,12 +33,87 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("cozymemory.shutdown")
 
 
+_DESCRIPTION = """
+CozyMemory 是一个**统一 AI 记忆服务平台**，通过单一 API 整合三大记忆引擎：
+
+| 引擎 | 域 | 能力 |
+|------|----|------|
+| **Mem0** | 对话记忆 | 自动从对话中提取事实，支持语义搜索 |
+| **Memobase** | 用户画像 | 结构化存储用户偏好、背景信息，生成 LLM 上下文提示词 |
+| **Cognee** | 知识图谱 | 文档添加 → 知识图谱构建 → 图谱检索 |
+
+## 快速上手
+
+```bash
+# 健康检查
+curl http://localhost:8000/api/v1/health
+
+# 添加对话记忆
+curl -X POST http://localhost:8000/api/v1/conversations \\
+  -H "Content-Type: application/json" \\
+  -d '{"user_id":"user_01","messages":[{"role":"user","content":"我喜欢打篮球"}]}'
+
+# 语义搜索
+curl -X POST http://localhost:8000/api/v1/conversations/search \\
+  -H "Content-Type: application/json" \\
+  -d '{"user_id":"user_01","query":"用户喜欢什么运动"}'
+```
+
+## 错误格式
+
+所有错误统一返回 `ErrorResponse`：
+
+```json
+{"success": false, "error": "Mem0Error", "detail": "upstream timeout", "engine": "Mem0"}
+```
+
+- `502` — 引擎后端不可用（5xx 或网络超时）
+- `400` — 请求参数被引擎拒绝（4xx）
+- `404` — 资源不存在
+- `422` — 请求体校验失败
+"""
+
+_TAGS_METADATA = [
+    {
+        "name": "health",
+        "description": "服务及三大引擎的健康状态检查。",
+    },
+    {
+        "name": "conversations",
+        "description": (
+            "**对话记忆**（引擎：Mem0）。\n\n"
+            "添加对话后，Mem0 自动用 LLM 提取事实性记忆（如「用户喜欢篮球」）并向量化存储，"
+            "支持自然语言语义搜索。"
+        ),
+    },
+    {
+        "name": "profiles",
+        "description": (
+            "**用户画像**（引擎：Memobase）。\n\n"
+            "三步流程：`insert`（写入缓冲区）→ `flush`（触发 LLM 处理）"
+            "→ `profile`/`context`（读取结果）。\n\n"
+            "⚠️ `user_id` 必须是 **UUID v4** 格式。"
+        ),
+    },
+    {
+        "name": "knowledge",
+        "description": (
+            "**知识图谱**（引擎：Cognee）。\n\n"
+            "两步流程：`add`（上传文档）→ `cognify`（构建知识图谱，异步，需轮询）"
+            "→ `search`（检索）。\n\n"
+            "注意：`cognify` 完成前搜索会返回空结果。"
+        ),
+    },
+]
+
+
 def create_app() -> FastAPI:
     """创建 FastAPI 应用"""
     app = FastAPI(
         title=settings.APP_NAME,
-        description="统一 AI 记忆服务平台 - 整合 Mem0、Memobase、Cognee 三大引擎",
+        description=_DESCRIPTION,
         version=settings.APP_VERSION,
+        openapi_tags=_TAGS_METADATA,
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",

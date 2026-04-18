@@ -51,7 +51,8 @@ def configure_logging(env: str = "development", level: str = "INFO") -> None:
         renderer = structlog.dev.ConsoleRenderer(colors=True)
 
     structlog.configure(
-        processors=shared_processors + [
+        processors=shared_processors
+        + [
             structlog.processors.format_exc_info,
             renderer,
         ],

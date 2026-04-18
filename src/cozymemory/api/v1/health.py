@@ -14,9 +14,13 @@ logger = structlog.get_logger()
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health", response_model=HealthResponse, summary="服务健康检查")
 async def health_check() -> HealthResponse:
-    """检查服务及所有引擎的健康状态"""
+    """检查服务及三大引擎（Mem0、Memobase、Cognee）的健康状态。
+
+    返回整体状态（`healthy` / `degraded` / `unhealthy`）及每个引擎的响应延迟。
+    部分引擎不可用时整体状态为 `degraded`，不影响其他引擎正常使用。
+    """
     engines: dict[str, EngineStatus] = {}
 
     # 检查 Mem0

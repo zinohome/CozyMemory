@@ -36,6 +36,17 @@ class HealthResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """错误响应"""
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "success": False,
+                "error": "Mem0Error",
+                "detail": "upstream timeout after 3 retries",
+                "engine": "Mem0",
+            }
+        }
+    }
+
     success: bool = False
     error: str = Field(..., description="错误类型")
     detail: str | None = Field(None, description="错误详情")

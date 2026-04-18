@@ -5,13 +5,22 @@
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 
 class KnowledgeAddRequest(BaseModel):
     """添加文档到知识库"""
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "data": "CozyMemory 是统一 AI 记忆平台，整合了 Mem0、Memobase 和 Cognee 三大引擎",
+                "dataset": "default",
+            }
+        }
+    }
 
     data: str = Field(..., description="文本内容或文件路径", min_length=1)
     dataset: str = Field(..., description="数据集名称", min_length=1)
@@ -21,18 +30,41 @@ class KnowledgeAddRequest(BaseModel):
 class KnowledgeCognifyRequest(BaseModel):
     """触发知识图谱构建"""
 
-    datasets: list[str] | None = Field(None, description="要处理的数据集列表")
-    run_in_background: bool = Field(True, description="是否后台运行")
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "datasets": ["default"],
+                "run_in_background": True,
+            }
+        }
+    }
+
+    datasets: list[str] | None = Field(None, description="要处理的数据集列表，为 null 则处理全部")
+    run_in_background: bool = Field(True, description="是否后台运行（推荐 true，图谱构建耗时较长）")
 
 
 class KnowledgeSearchRequest(BaseModel):
     """知识库搜索"""
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "query": "AI 记忆服务有哪些核心能力",
+                "dataset": "default",
+                "search_type": "CHUNKS",
+                "top_k": 5,
+            }
+        }
+    }
+
     query: str = Field(..., description="搜索查询", min_length=1)
-    dataset: str | None = Field(None, description="限定数据集")
-    search_type: str = Field(
+    dataset: str | None = Field(None, description="限定数据集，为 null 则搜索全部")
+    search_type: Literal["CHUNKS", "SUMMARIES", "RAG_COMPLETION", "GRAPH_COMPLETION"] = Field(
         "GRAPH_COMPLETION",
-        description="搜索类型: GRAPH_COMPLETION, SUMMARIES, CHUNKS, RAG_COMPLETION",
+        description=(
+            "搜索类型：CHUNKS（原文片段）/ SUMMARIES（摘要）"
+            "/ RAG_COMPLETION（RAG 生成）/ GRAPH_COMPLETION（图谱推理，最强）"
+        ),
     )
     top_k: int = Field(10, ge=1, le=100, description="返回数量限制")
 
@@ -53,8 +85,8 @@ class KnowledgeDataset(BaseModel):
 
     id: str = Field(..., description="数据集 ID (UUID)")
     name: str = Field(..., description="数据集名称")
-    created_at: datetime | None = Field(None)
-    updated_at: datetime | None = Field(None)
+    created_at: datetime | None = Field(None, description="创建时间")
+    updated_at: datetime | None = Field(None, description="更新时间")
 
 
 class KnowledgeAddResponse(BaseModel):

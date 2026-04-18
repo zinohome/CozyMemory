@@ -14,6 +14,20 @@ from .common import Message
 class ConversationMemoryCreate(BaseModel):
     """添加对话请求 → Mem0 自动提取事实"""
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "user_id": "user_01",
+                "messages": [
+                    {"role": "user", "content": "我最近开始学打篮球，感觉很有趣"},
+                    {"role": "assistant", "content": "太棒了！篮球是很好的运动"},
+                ],
+                "metadata": {"source": "web", "session_id": "sess_abc123"},
+                "infer": True,
+            }
+        }
+    }
+
     user_id: str = Field(..., description="用户 ID", min_length=1)
     messages: list[Message] = Field(..., description="对话消息列表", min_length=1)
     metadata: dict[str, Any] | None = Field(None, description="元数据 (source, session_id 等)")
@@ -22,6 +36,17 @@ class ConversationMemoryCreate(BaseModel):
 
 class ConversationMemorySearch(BaseModel):
     """搜索会话记忆"""
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "user_id": "user_01",
+                "query": "用户喜欢什么运动",
+                "limit": 5,
+                "threshold": 0.7,
+            }
+        }
+    }
 
     user_id: str = Field(..., description="用户 ID", min_length=1)
     query: str = Field(..., description="搜索查询文本", min_length=1)
