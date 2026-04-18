@@ -3,12 +3,9 @@
 薄层封装 Memobase 客户端，负责请求转发和错误转换。
 """
 
-from collections.abc import Sequence
-
 import structlog
 
 from ..clients.memobase import MemobaseClient
-from ..models.common import Message
 from ..models.profile import (
     ProfileAddItemResponse,
     ProfileContextResponse,
@@ -28,14 +25,11 @@ class ProfileService:
         self.client = client
 
     async def insert(
-        self, user_id: str, messages: Sequence[dict[str, str] | Message], sync: bool = False
+        self, user_id: str, messages: list[dict[str, str]], sync: bool = False
     ) -> ProfileInsertResponse:
         """插入对话到 Memobase 缓冲区"""
-        msg_dicts = [
-            {"role": m.role, "content": m.content} if isinstance(m, Message) else m
-            for m in messages
-        ]
-        blob_id = await self.client.insert(user_id=user_id, messages=msg_dicts, sync=sync)
+        blob_id = await self.client.insert(user_id=user_id, messages=messages, sync=sync)
+        logger.info("profile.insert", user_id=user_id, messages=len(messages), sync=sync)
         return ProfileInsertResponse(
             success=True, user_id=user_id, blob_id=blob_id, message="对话已插入缓冲区"
         )

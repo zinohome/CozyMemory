@@ -12,6 +12,7 @@ from ..models.knowledge import (
     KnowledgeDatasetListResponse,
     KnowledgeDeleteResponse,
     KnowledgeSearchResponse,
+    SearchType,
 )
 
 logger = structlog.get_logger()
@@ -46,7 +47,7 @@ class KnowledgeService:
         self,
         query: str,
         dataset: str | None = None,
-        search_type: str = "GRAPH_COMPLETION",
+        search_type: SearchType = "GRAPH_COMPLETION",
         top_k: int = 10,
     ) -> KnowledgeSearchResponse:
         """搜索知识库"""

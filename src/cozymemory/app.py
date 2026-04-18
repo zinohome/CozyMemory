@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from .api.deps import close_all_clients
 from .api.v1.router import router as v1_router
 from .config import settings
 from .logging_config import configure_logging
@@ -30,6 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         debug=settings.DEBUG,
     )
     yield
+    await close_all_clients()
     logger.info("cozymemory.shutdown")
 
 

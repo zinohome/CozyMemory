@@ -9,6 +9,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+SearchType = Literal["CHUNKS", "SUMMARIES", "RAG_COMPLETION", "GRAPH_COMPLETION"]
+
 
 class KnowledgeAddRequest(BaseModel):
     """添加文档到知识库"""
@@ -59,7 +61,7 @@ class KnowledgeSearchRequest(BaseModel):
 
     query: str = Field(..., description="搜索查询", min_length=1)
     dataset: str | None = Field(None, description="限定数据集，为 null 则搜索全部")
-    search_type: Literal["CHUNKS", "SUMMARIES", "RAG_COMPLETION", "GRAPH_COMPLETION"] = Field(
+    search_type: SearchType = Field(
         "GRAPH_COMPLETION",
         description=(
             "搜索类型：CHUNKS（原文片段）/ SUMMARIES（摘要）"

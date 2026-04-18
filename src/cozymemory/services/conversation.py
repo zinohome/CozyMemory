@@ -30,6 +30,7 @@ class ConversationService:
         memories = await self.client.add(
             user_id=user_id, messages=messages, metadata=metadata, infer=infer
         )
+        logger.info("conversation.add", user_id=user_id, extracted=len(memories), infer=infer)
         return ConversationMemoryListResponse(
             success=True,
             data=memories,
@@ -44,6 +45,7 @@ class ConversationService:
         memories = await self.client.search(
             user_id=user_id, query=query, limit=limit, threshold=threshold
         )
+        logger.debug("conversation.search", user_id=user_id, results=len(memories))
         return ConversationMemoryListResponse(success=True, data=memories, total=len(memories))
 
     async def get(self, memory_id: str) -> ConversationMemory | None:

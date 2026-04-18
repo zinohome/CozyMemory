@@ -1,5 +1,6 @@
 """BaseClient 基类测试"""
 
+import time
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -134,3 +135,97 @@ async def test_base_client_context_manager():
     with patch.object(client._client, "aclose", new_callable=AsyncMock):
         async with client as c:
             assert c is client
+
+
+# ===== Circuit Breaker =====
+
+
+@pytest.mark.asyncio
+async def test_circuit_breaker_opens_after_threshold():
+    """连续 5xx 失败达到阈值后熔断器打开，后续请求快速失败"""
+    client = BaseClient(
+        engine_name="Test",
+        api_url="http://localhost:8000",
+        max_retries=1,
+        retry_delay=0.0,
+        failure_threshold=3,
+        circuit_recovery_timeout=60.0,
+    )
+    mock_500 = httpx.Response(500, text="error")
+    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_500):
+        # 3 consecutive 5xx failures — should open the circuit
+        for _ in range(3):
+            with pytest.raises(EngineError):
+                await client._request("GET", "/fail")
+
+    assert client._consecutive_failures >= 3
+    assert client._circuit_open_until > time.monotonic()
+
+    # Next call should fail-fast without hitting the backend
+    with patch.object(client._client, "request", new_callable=AsyncMock) as mock_req:
+        with pytest.raises(EngineError) as exc_info:
+            await client._request("GET", "/fail")
+        mock_req.assert_not_called()
+        assert "circuit open" in exc_info.value.message
+
+
+@pytest.mark.asyncio
+async def test_circuit_breaker_resets_on_success():
+    """成功请求后连续失败计数清零"""
+    client = BaseClient(
+        engine_name="Test",
+        api_url="http://localhost:8000",
+        max_retries=1,
+        retry_delay=0.0,
+        failure_threshold=5,
+    )
+    client._consecutive_failures = 4  # one below threshold
+
+    mock_ok = httpx.Response(200, json={"ok": True})
+    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_ok):
+        await client._request("GET", "/ok")
+
+    assert client._consecutive_failures == 0
+
+
+@pytest.mark.asyncio
+async def test_circuit_breaker_4xx_does_not_count():
+    """4xx 客户端错误不计入熔断器失败计数"""
+    client = BaseClient(
+        engine_name="Test",
+        api_url="http://localhost:8000",
+        max_retries=1,
+        retry_delay=0.0,
+        failure_threshold=3,
+    )
+    mock_400 = httpx.Response(400, text="bad request")
+    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_400):
+        for _ in range(5):
+            with pytest.raises(EngineError):
+                await client._request("GET", "/bad")
+
+    # circuit should still be closed — 4xx errors don't count
+    assert client._circuit_open_until <= time.monotonic()
+
+
+@pytest.mark.asyncio
+async def test_circuit_breaker_half_open_probe():
+    """熔断器恢复窗口过后允许一次探测请求"""
+    client = BaseClient(
+        engine_name="Test",
+        api_url="http://localhost:8000",
+        max_retries=1,
+        retry_delay=0.0,
+        failure_threshold=3,
+        circuit_recovery_timeout=60.0,
+    )
+    # Manually set circuit open state but with expired timeout
+    client._consecutive_failures = 3
+    client._circuit_open_until = time.monotonic() - 1.0  # already expired
+
+    mock_ok = httpx.Response(200, json={"ok": True})
+    with patch.object(client._client, "request", new_callable=AsyncMock, return_value=mock_ok):
+        # Probe should be allowed through
+        await client._request("GET", "/probe")
+
+    assert client._consecutive_failures == 0  # reset after success

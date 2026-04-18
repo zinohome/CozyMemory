@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import time
 from typing import Any
 
 import httpx
@@ -47,6 +48,8 @@ class BaseClient:
         max_keepalive_connections: int = 50,
         max_connections: int = 100,
         enable_http2: bool = True,
+        failure_threshold: int = 5,
+        circuit_recovery_timeout: float = 60.0,
     ):
         self.engine_name = engine_name
         self.api_url = api_url.rstrip("/")
@@ -54,6 +57,10 @@ class BaseClient:
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self._failure_threshold = failure_threshold
+        self._circuit_recovery_timeout = circuit_recovery_timeout
+        self._consecutive_failures: int = 0
+        self._circuit_open_until: float = 0.0
 
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout, connect=10.0),
@@ -64,6 +71,37 @@ class BaseClient:
             follow_redirects=True,
             http2=enable_http2,
         )
+
+    # ── Circuit breaker helpers ──────────────────────────────────────────
+
+    def _is_circuit_open(self) -> bool:
+        """如果熔断器打开且未到恢复时间，返回 True（快速失败）。
+        到达恢复时间后允许一次探测请求（半开状态）。
+        """
+        if self._consecutive_failures >= self._failure_threshold:
+            if time.monotonic() < self._circuit_open_until:
+                return True
+            # 半开：允许一次探测，降低计数使下次失败能重新触发
+            self._consecutive_failures = self._failure_threshold - 1
+        return False
+
+    def _record_success(self) -> None:
+        """请求成功：重置连续失败计数。"""
+        self._consecutive_failures = 0
+
+    def _record_transient_failure(self) -> None:
+        """瞬态失败（5xx / 网络错误）：累计计数，达到阈值则打开熔断器。"""
+        self._consecutive_failures += 1
+        if self._consecutive_failures >= self._failure_threshold:
+            self._circuit_open_until = time.monotonic() + self._circuit_recovery_timeout
+            logger.warning(
+                "circuit_breaker.open",
+                engine=self.engine_name,
+                failures=self._consecutive_failures,
+                recovery_in=self._circuit_recovery_timeout,
+            )
+
+    # ────────────────────────────────────────────────────────────────────
 
     def _get_headers(self, content_type: str = "application/json") -> dict[str, str]:
         """获取请求头，子类可覆盖认证方式"""
@@ -91,6 +129,13 @@ class BaseClient:
         - 5xx: 重试
         - 网络错误: 重试
         """
+        if self._is_circuit_open():
+            raise EngineError(
+                self.engine_name,
+                f"circuit open: upstream unavailable, retry in "
+                f"{self._circuit_open_until - time.monotonic():.0f}s",
+            )
+
         url = f"{self.api_url}{path}"
         merged_headers = {**self._get_headers(), **(headers or {})}
 
@@ -127,12 +172,14 @@ class BaseClient:
                         await asyncio.sleep(self.retry_delay * (2**attempt))
                         continue
 
+                    self._record_transient_failure()
                     raise EngineError(
                         self.engine_name,
                         response.text or f"HTTP {response.status_code}",
                         response.status_code,
                     )
 
+                self._record_success()
                 return response
 
             except EngineError:
@@ -151,11 +198,13 @@ class BaseClient:
                     continue
 
         if last_exception:
+            self._record_transient_failure()
             raise EngineError(
                 self.engine_name,
                 f"Request failed after {self.max_retries} attempts: {last_exception}",
             )
 
+        self._record_transient_failure()
         raise EngineError(self.engine_name, "Request failed for unknown reason")
 
     async def health_check(self) -> bool:

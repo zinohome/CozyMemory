@@ -53,6 +53,16 @@ def get_cognee_client() -> CogneeClient:
     return _cognee_client
 
 
+async def close_all_clients() -> None:
+    """关闭所有引擎客户端的 HTTP 连接（供应用关闭时调用）。"""
+    if _mem0_client:
+        await _mem0_client.close()
+    if _memobase_client:
+        await _memobase_client.close()
+    if _cognee_client:
+        await _cognee_client.close()
+
+
 def get_conversation_service() -> ConversationService:
     """获取会话记忆服务"""
     return ConversationService(client=get_mem0_client())
