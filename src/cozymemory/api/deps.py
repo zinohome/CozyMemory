@@ -7,6 +7,7 @@ from ..clients.cognee import CogneeClient
 from ..clients.mem0 import Mem0Client
 from ..clients.memobase import MemobaseClient
 from ..config import settings
+from ..services.context import ContextService
 from ..services.conversation import ConversationService
 from ..services.knowledge import KnowledgeService
 from ..services.profile import ProfileService
@@ -76,3 +77,12 @@ def get_profile_service() -> ProfileService:
 def get_knowledge_service() -> KnowledgeService:
     """获取知识库服务"""
     return KnowledgeService(client=get_cognee_client())
+
+
+def get_context_service() -> ContextService:
+    """获取统一上下文服务（编排三大引擎）"""
+    return ContextService(
+        conv_service=get_conversation_service(),
+        profile_service=get_profile_service(),
+        knowledge_service=get_knowledge_service(),
+    )
