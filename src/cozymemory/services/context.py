@@ -46,6 +46,12 @@ class ContextService:
         task_keys: list[str] = []
         coros = []
 
+        chats = (
+            [{"role": m.role, "content": m.content} for m in request.chats]
+            if request.chats
+            else None
+        )
+
         if request.include_conversations:
             task_keys.append("conversations")
             if request.query:
@@ -70,6 +76,7 @@ class ContextService:
                 self._profile.get_context(
                     user_id=request.user_id,
                     max_token_size=request.max_token_size,
+                    chats=chats,
                 )
             )
 
@@ -83,8 +90,13 @@ class ContextService:
                 )
             )
 
-        # ── 并发执行 ─────────────────────────────────────────────────────
-        raw_results = await asyncio.gather(*coros, return_exceptions=True)
+        # ── 并发执行（可选每引擎超时）────────────────────────────────────
+        timeout = request.engine_timeout
+        if timeout is not None:
+            wrapped = [asyncio.wait_for(c, timeout=timeout) for c in coros]
+        else:
+            wrapped = coros  # type: ignore[assignment]
+        raw_results = await asyncio.gather(*wrapped, return_exceptions=True)
 
         # ── 结果归并 ─────────────────────────────────────────────────────
         conversations = []
@@ -93,7 +105,11 @@ class ContextService:
         errors: dict[str, str] = {}
 
         for key, result in zip(task_keys, raw_results):
-            if isinstance(result, (EngineError, Exception)):
+            if isinstance(result, asyncio.TimeoutError):
+                msg = f"engine timeout after {timeout}s"
+                errors[key] = msg
+                logger.warning("context.engine_timeout", engine=key, timeout=timeout)
+            elif isinstance(result, (EngineError, Exception)):
                 errors[key] = str(result)
                 logger.warning("context.engine_error", engine=key, error=str(result))
             elif key == "conversations":

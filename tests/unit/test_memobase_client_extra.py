@@ -189,29 +189,3 @@ async def test_memobase_context_no_json_body_on_get(memobase_client):
     assert call_kwargs.get("json") is None
 
 
-@pytest.mark.asyncio
-async def test_memobase_events(memobase_client):
-    """MemobaseClient.events 获取事件"""
-    mock_response = httpx.Response(
-        200,
-        json=[{"id": "evt_1", "content": "事件1"}, {"id": "evt_2", "content": "事件2"}],
-    )
-    with patch.object(
-        memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
-    ):
-        events = await memobase_client.events("user_123", topk=5)
-        assert len(events) == 2
-
-
-@pytest.mark.asyncio
-async def test_memobase_events_dict_response(memobase_client):
-    """MemobaseClient.events 返回字典格式"""
-    mock_response = httpx.Response(
-        200,
-        json={"events": [{"id": "evt_1", "content": "事件1"}]},
-    )
-    with patch.object(
-        memobase_client._client, "request", new_callable=AsyncMock, return_value=mock_response
-    ):
-        events = await memobase_client.events("user_123")
-        assert len(events) == 1

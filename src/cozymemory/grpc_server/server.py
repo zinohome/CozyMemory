@@ -9,6 +9,7 @@ import grpc
 import structlog
 
 from ..api.deps import (
+    get_context_service,
     get_conversation_service,
     get_knowledge_service,
     get_profile_service,
@@ -16,6 +17,8 @@ from ..api.deps import (
 from ..clients.base import EngineError
 from ..config import settings
 from . import (  # noqa: F401
+    context_pb2,
+    context_pb2_grpc,
     conversation_pb2,
     conversation_pb2_grpc,
     knowledge_pb2,
@@ -50,9 +53,12 @@ def _handle_engine_error(exc: EngineError, context: grpc.aio.ServicerContext) ->
 class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer):
     """会话记忆 gRPC 服务实现"""
 
+    def __init__(self) -> None:
+        self._svc = get_conversation_service()
+
     async def AddConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_conversation_service()
+            svc = self._svc
             messages = [{"role": m.role, "content": m.content} for m in request.messages]
             metadata = dict(request.metadata) if request.metadata else None
             result = await svc.add(
@@ -76,7 +82,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 
     async def SearchConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_conversation_service()
+            svc = self._svc
             result = await svc.search(
                 user_id=request.user_id,
                 query=request.query,
@@ -105,7 +111,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 
     async def GetConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_conversation_service()
+            svc = self._svc
             result = await svc.get(request.memory_id)
             if result is None:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -122,7 +128,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 
     async def DeleteConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_conversation_service()
+            svc = self._svc
             result = await svc.delete(request.memory_id)
             return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
         except EngineError as exc:
@@ -131,7 +137,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 
     async def DeleteAllConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_conversation_service()
+            svc = self._svc
             result = await svc.delete_all(request.user_id)
             return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
         except EngineError as exc:
@@ -140,7 +146,7 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 
     async def ListConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_conversation_service()
+            svc = self._svc
             result = await svc.get_all(user_id=request.user_id, limit=request.limit or 100)
             memories = [
                 conversation_pb2.ConversationMemory(id=m.id, user_id=m.user_id, content=m.content)
@@ -160,9 +166,12 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
 class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
     """用户画像 gRPC 服务实现"""
 
+    def __init__(self) -> None:
+        self._svc = get_profile_service()
+
     async def InsertProfile(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_profile_service()
+            svc = self._svc
             messages = [{"role": m.role, "content": m.content} for m in request.messages]
             result = await svc.insert(user_id=request.user_id, messages=messages, sync=request.sync)
             return profile_pb2.InsertProfileResponse(
@@ -177,7 +186,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 
     async def FlushProfile(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_profile_service()
+            svc = self._svc
             result = await svc.flush(user_id=request.user_id, sync=request.sync)
             return profile_pb2.FlushProfileResponse(
                 success=result.success,
@@ -189,7 +198,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 
     async def GetProfile(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_profile_service()
+            svc = self._svc
             result = await svc.get_profile(request.user_id)
             topics = []
             if result.data and hasattr(result.data, "topics"):
@@ -212,7 +221,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 
     async def GetContext(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_profile_service()
+            svc = self._svc
             chats = (
                 [{"role": m.role, "content": m.content} for m in request.chats]
                 if request.chats
@@ -235,7 +244,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 
     async def AddProfileItem(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_profile_service()
+            svc = self._svc
             result = await svc.add_profile_item(
                 user_id=request.user_id,
                 topic=request.topic,
@@ -261,7 +270,7 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 
     async def DeleteProfileItem(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_profile_service()
+            svc = self._svc
             result = await svc.delete_profile_item(
                 user_id=request.user_id,
                 profile_id=request.profile_id,
@@ -275,9 +284,12 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
 class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
     """知识库 gRPC 服务实现"""
 
+    def __init__(self) -> None:
+        self._svc = get_knowledge_service()
+
     async def CreateDataset(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_knowledge_service()
+            svc = self._svc
             result = await svc.create_dataset(name=request.name)
             ds = result.data[0] if result.data else None
             return knowledge_pb2.DatasetInfo(
@@ -290,7 +302,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
 
     async def ListDatasets(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_knowledge_service()
+            svc = self._svc
             result = await svc.list_datasets()
             datasets = [knowledge_pb2.DatasetInfo(id=ds.id, name=ds.name) for ds in result.data]
             return knowledge_pb2.ListDatasetsResponse(
@@ -304,7 +316,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
 
     async def AddKnowledge(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_knowledge_service()
+            svc = self._svc
             result = await svc.add(data=request.data, dataset=request.dataset)
             return knowledge_pb2.AddKnowledgeResponse(
                 success=result.success,
@@ -318,7 +330,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
 
     async def Cognify(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_knowledge_service()
+            svc = self._svc
             datasets = list(request.datasets) if request.datasets else None
             result = await svc.cognify(
                 datasets=datasets, run_in_background=request.run_in_background
@@ -335,7 +347,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
 
     async def SearchKnowledge(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_knowledge_service()
+            svc = self._svc
             result = await svc.search(
                 query=request.query,
                 dataset=request.dataset or None,
@@ -362,12 +374,70 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
 
     async def DeleteKnowledge(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
-            svc = get_knowledge_service()
+            svc = self._svc
             result = await svc.delete(data_id=request.data_id, dataset_id=request.dataset_id)
             return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
         except EngineError as exc:
             _handle_engine_error(exc, context)
             return conversation_pb2.DeleteResponse()
+
+
+class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
+    """统一上下文 gRPC 服务实现"""
+
+    def __init__(self) -> None:
+        self._svc = get_context_service()
+
+    async def GetUnifiedContext(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        from ..models.common import Message
+        from ..models.context import ContextRequest
+
+        try:
+            chats = (
+                [Message(role=m.role, content=m.content) for m in request.chats]
+                if request.chats
+                else None
+            )
+            ctx_request = ContextRequest(
+                user_id=request.user_id,
+                query=request.query or None,
+                include_conversations=request.include_conversations,
+                include_profile=request.include_profile,
+                include_knowledge=request.include_knowledge,
+                conversation_limit=request.conversation_limit or 5,
+                max_token_size=request.max_token_size or 500,
+                knowledge_top_k=request.knowledge_top_k or 3,
+                knowledge_search_type=request.knowledge_search_type or "GRAPH_COMPLETION",
+                engine_timeout=request.engine_timeout or None,
+                chats=chats,
+            )
+            result = await self._svc.get_context(ctx_request)
+            conversations = [
+                conversation_pb2.ConversationMemory(
+                    id=m.id, user_id=m.user_id, content=m.content
+                )
+                for m in result.conversations
+            ]
+            knowledge = [
+                knowledge_pb2.KnowledgeSearchResult(
+                    id=r.id or "",
+                    text=r.text or "",
+                    score=r.score or 0.0,
+                )
+                for r in result.knowledge
+            ]
+            return context_pb2.GetUnifiedContextResponse(
+                success=result.success,
+                user_id=result.user_id,
+                conversations=conversations,
+                profile_context=result.profile_context or "",
+                knowledge=knowledge,
+                errors=result.errors,
+                latency_ms=result.latency_ms,
+            )
+        except EngineError as exc:
+            _handle_engine_error(exc, context)
+            return context_pb2.GetUnifiedContextResponse()
 
 
 async def serve_grpc() -> None:
@@ -380,6 +450,7 @@ async def serve_grpc() -> None:
     )
     profile_pb2_grpc.add_ProfileServiceServicer_to_server(ProfileGrpcServicer(), server)
     knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeGrpcServicer(), server)
+    context_pb2_grpc.add_ContextServiceServicer_to_server(ContextGrpcServicer(), server)
 
     server.add_insecure_port(f"[::]:{settings.GRPC_PORT}")
     await server.start()

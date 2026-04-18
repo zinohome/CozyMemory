@@ -171,7 +171,12 @@ class MemobaseClient(BaseClient):
             raise EngineError(self.engine_name, result.get("errmsg", "add_profile failed"), 500)
         data = result.get("data", result) if isinstance(result, dict) else {}
         return ProfileTopic(
-            id=data.get("id", ""), topic=topic, sub_topic=sub_topic, content=content
+            id=data.get("id", ""),
+            topic=topic,
+            sub_topic=sub_topic,
+            content=content,
+            created_at=data.get("created_at"),
+            updated_at=data.get("updated_at"),
         )
 
     async def delete_profile(self, user_id: str, profile_id: str) -> bool:
@@ -211,12 +216,3 @@ class MemobaseClient(BaseClient):
 
         return ProfileContext(user_id=user_id, context=context_text)
 
-    # ===== 事件 =====
-
-    async def events(self, user_id: str, topk: int = 10) -> list[dict]:
-        """获取用户事件时间线"""
-        response = await self._request(
-            "GET", f"/api/v1/users/event/{user_id}", params={"topk": str(topk)}
-        )
-        data = response.json()
-        return data if isinstance(data, list) else data.get("events", [])

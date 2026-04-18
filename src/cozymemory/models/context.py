@@ -6,6 +6,7 @@
 
 from pydantic import BaseModel, Field
 
+from .common import Message
 from .conversation import ConversationMemory
 from .knowledge import KnowledgeSearchResult, SearchType
 
@@ -25,6 +26,8 @@ class ContextRequest(BaseModel):
                 "max_token_size": 500,
                 "knowledge_top_k": 3,
                 "knowledge_search_type": "GRAPH_COMPLETION",
+                "engine_timeout": 5.0,
+                "chats": [{"role": "user", "content": "你好，我最近喜欢游泳"}],
             }
         }
     }
@@ -52,6 +55,21 @@ class ContextRequest(BaseModel):
     knowledge_top_k: int = Field(3, ge=1, le=50, description="Cognee 返回结果数量")
     knowledge_search_type: SearchType = Field(
         "GRAPH_COMPLETION", description="Cognee 搜索类型"
+    )
+    engine_timeout: float | None = Field(
+        None,
+        gt=0,
+        description=(
+            "每个引擎的超时时间（秒）。超时的引擎结果以错误形式记录在 errors 字段，"
+            "不影响其他引擎的结果。为 null 时不限制单引擎超时"
+        ),
+    )
+    chats: list[Message] | None = Field(
+        None,
+        description=(
+            "当前对话轮次，传给 Memobase 以生成与当前对话更相关的上下文提示词。"
+            "为 null 时 Memobase 仅基于历史画像生成上下文"
+        ),
     )
 
 

@@ -138,19 +138,6 @@ class Mem0Client(BaseClient):
             for item in items
         ]
 
-    async def update(self, memory_id: str, content: str) -> ConversationMemory | None:
-        """更新记忆内容"""
-        response = await self._request(
-            "PUT", f"/api/v1/memories/{memory_id}", json={"memory": content}
-        )
-        item = response.json()
-        return ConversationMemory(
-            id=item.get("id", memory_id),
-            user_id=item.get("user_id", ""),
-            content=item.get("memory", content),
-            metadata=item.get("metadata"),
-        )
-
     async def delete(self, memory_id: str) -> bool:
         """删除单条记忆"""
         try:

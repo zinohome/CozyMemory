@@ -47,21 +47,6 @@ async def test_mem0_get_all_empty_list(mem0_client):
 
 
 @pytest.mark.asyncio
-async def test_mem0_update(mem0_client):
-    """Mem0Client.update 更新记忆"""
-    mock_response = httpx.Response(
-        200,
-        json={"id": "mem_1", "user_id": "u1", "memory": "更新后内容"},
-    )
-    with patch.object(
-        mem0_client._client, "request", new_callable=AsyncMock, return_value=mock_response
-    ):
-        result = await mem0_client.update("mem_1", "更新后内容")
-        assert result is not None
-        assert result.content == "更新后内容"
-
-
-@pytest.mark.asyncio
 async def test_mem0_delete_failure(mem0_client):
     """Mem0Client.delete 5xx 引擎错误向上抛出"""
     with patch.object(

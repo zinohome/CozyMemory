@@ -8,7 +8,7 @@ from typing import Any
 import structlog
 from pydantic import ValidationError
 
-from ..models.knowledge import KnowledgeDataset, KnowledgeSearchResult
+from ..models.knowledge import KnowledgeDataset, KnowledgeSearchResult, SearchType
 from .base import BaseClient, EngineError
 
 logger = structlog.get_logger()
@@ -55,7 +55,7 @@ class CogneeClient(BaseClient):
         self,
         query: str,
         dataset: str | None = None,
-        search_type: str = "GRAPH_COMPLETION",
+        search_type: SearchType = "GRAPH_COMPLETION",
         top_k: int = 10,
     ) -> list[KnowledgeSearchResult]:
         """搜索知识库"""

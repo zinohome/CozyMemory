@@ -158,6 +158,14 @@ class BaseClient:
 
                 if response.status_code >= 400:
                     if response.status_code == 429 and attempt < self.max_retries - 1:
+                        logger.warning(
+                            "engine.retry",
+                            engine=self.engine_name,
+                            attempt=attempt + 1,
+                            max_retries=self.max_retries,
+                            status=429,
+                            reason="rate_limited",
+                        )
                         await asyncio.sleep(self.retry_delay * (2**attempt))
                         continue
 
@@ -169,6 +177,14 @@ class BaseClient:
                         )
 
                     if attempt < self.max_retries - 1:
+                        logger.warning(
+                            "engine.retry",
+                            engine=self.engine_name,
+                            attempt=attempt + 1,
+                            max_retries=self.max_retries,
+                            status=response.status_code,
+                            reason="server_error",
+                        )
                         await asyncio.sleep(self.retry_delay * (2**attempt))
                         continue
 
@@ -188,12 +204,28 @@ class BaseClient:
             except httpx.TimeoutException as e:
                 last_exception = e
                 if attempt < self.max_retries - 1:
+                    logger.warning(
+                        "engine.retry",
+                        engine=self.engine_name,
+                        attempt=attempt + 1,
+                        max_retries=self.max_retries,
+                        reason="timeout",
+                        error=str(e),
+                    )
                     await asyncio.sleep(self.retry_delay * (2**attempt))
                     continue
 
             except httpx.RequestError as e:
                 last_exception = e
                 if attempt < self.max_retries - 1:
+                    logger.warning(
+                        "engine.retry",
+                        engine=self.engine_name,
+                        attempt=attempt + 1,
+                        max_retries=self.max_retries,
+                        reason="network_error",
+                        error=str(e),
+                    )
                     await asyncio.sleep(self.retry_delay * (2**attempt))
                     continue
 

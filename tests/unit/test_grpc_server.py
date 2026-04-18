@@ -14,11 +14,13 @@ import pytest
 
 from cozymemory.clients.base import EngineError
 from cozymemory.grpc_server import (
+    context_pb2,
     conversation_pb2,
     knowledge_pb2,
     profile_pb2,
 )
 from cozymemory.grpc_server.server import (
+    ContextGrpcServicer,
     ConversationGrpcServicer,
     KnowledgeGrpcServicer,
     ProfileGrpcServicer,
@@ -678,9 +680,14 @@ class TestServicerStructure:
         from cozymemory.grpc_server.server import serve_grpc
         assert asyncio.iscoroutinefunction(serve_grpc)
 
+    def test_context_servicer_has_unified_context_method(self):
+        s = ContextGrpcServicer()
+        assert hasattr(s, "GetUnifiedContext")
+
     def test_proto_modules_importable(self):
         from cozymemory.grpc_server import (
             common_pb2,
+            context_pb2,
             conversation_pb2,
             knowledge_pb2,
             profile_pb2,
@@ -689,3 +696,119 @@ class TestServicerStructure:
         assert hasattr(profile_pb2, "InsertProfileRequest")
         assert hasattr(knowledge_pb2, "AddKnowledgeRequest")
         assert hasattr(common_pb2, "HealthRequest")
+        assert hasattr(context_pb2, "GetUnifiedContextRequest")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ContextGrpcServicer
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestContextGrpcServicer:
+
+    @pytest.mark.asyncio
+    async def test_get_unified_context_success(self):
+        """GetUnifiedContext 成功时返回合并后的上下文"""
+        from cozymemory.models.context import ContextResponse
+        from cozymemory.models.conversation import ConversationMemory
+        from cozymemory.models.knowledge import KnowledgeSearchResult
+
+        mock_svc = MagicMock()
+        mock_svc.get_context = AsyncMock(
+            return_value=ContextResponse(
+                success=True,
+                user_id="uid-1",
+                conversations=[ConversationMemory(id="m1", user_id="uid-1", content="喜欢游泳")],
+                profile_context="# 用户背景\n- 姓名: 小明",
+                knowledge=[KnowledgeSearchResult(id="k1", text="游泳知识", score=0.9)],
+                errors={},
+                latency_ms=42.0,
+            )
+        )
+        req = context_pb2.GetUnifiedContextRequest(
+            user_id="uid-1",
+            query="用户喜欢什么",
+            include_conversations=True,
+            include_profile=True,
+            include_knowledge=True,
+            conversation_limit=5,
+            max_token_size=500,
+            knowledge_top_k=3,
+            knowledge_search_type="GRAPH_COMPLETION",
+        )
+        with patch("cozymemory.grpc_server.server.get_context_service", return_value=mock_svc):
+            resp = await ContextGrpcServicer().GetUnifiedContext(req, _ctx())
+
+        assert resp.success is True
+        assert resp.user_id == "uid-1"
+        assert len(resp.conversations) == 1
+        assert resp.conversations[0].content == "喜欢游泳"
+        assert "小明" in resp.profile_context
+        assert len(resp.knowledge) == 1
+        assert resp.knowledge[0].score == pytest.approx(0.9)
+        assert resp.latency_ms == pytest.approx(42.0)
+
+    @pytest.mark.asyncio
+    async def test_get_unified_context_with_partial_errors(self):
+        """部分引擎失败时 errors map 被填充"""
+        from cozymemory.models.context import ContextResponse
+
+        mock_svc = MagicMock()
+        mock_svc.get_context = AsyncMock(
+            return_value=ContextResponse(
+                success=True,
+                user_id="uid-1",
+                conversations=[],
+                profile_context=None,
+                knowledge=[],
+                errors={"profile": "Memobase timeout"},
+                latency_ms=100.0,
+            )
+        )
+        req = context_pb2.GetUnifiedContextRequest(user_id="uid-1", include_profile=True)
+        with patch("cozymemory.grpc_server.server.get_context_service", return_value=mock_svc):
+            resp = await ContextGrpcServicer().GetUnifiedContext(req, _ctx())
+
+        assert resp.success is True
+        assert resp.errors["profile"] == "Memobase timeout"
+
+    @pytest.mark.asyncio
+    async def test_get_unified_context_engine_error_sets_grpc_status(self):
+        """EngineError 映射为 gRPC UNAVAILABLE 状态码"""
+        mock_svc = MagicMock()
+        mock_svc.get_context = AsyncMock(
+            side_effect=EngineError("ContextService", "all engines failed", 503)
+        )
+        req = context_pb2.GetUnifiedContextRequest(user_id="uid-1")
+        ctx = _ctx()
+        with patch("cozymemory.grpc_server.server.get_context_service", return_value=mock_svc):
+            resp = await ContextGrpcServicer().GetUnifiedContext(req, ctx)
+        ctx.set_code.assert_called_once_with(grpc.StatusCode.UNAVAILABLE)
+        assert resp.success is False  # default proto value
+
+    @pytest.mark.asyncio
+    async def test_get_unified_context_chats_forwarded(self):
+        """chats 字段正确转换并传入 ContextRequest"""
+        from cozymemory.models.context import ContextResponse
+
+        captured_request = {}
+
+        async def capture_request(req):
+            captured_request["req"] = req
+            return ContextResponse(
+                success=True, user_id=req.user_id, errors={}, latency_ms=0.0
+            )
+
+        mock_svc = MagicMock()
+        mock_svc.get_context = capture_request
+        req = context_pb2.GetUnifiedContextRequest(
+            user_id="uid-1",
+            chats=[conversation_pb2.Message(role="user", content="你好")],
+        )
+        with patch("cozymemory.grpc_server.server.get_context_service", return_value=mock_svc):
+            await ContextGrpcServicer().GetUnifiedContext(req, _ctx())
+
+        ctx_req = captured_request["req"]
+        assert ctx_req.chats is not None
+        assert ctx_req.chats[0].role == "user"
+        assert ctx_req.chats[0].content == "你好"

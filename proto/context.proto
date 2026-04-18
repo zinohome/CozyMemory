@@ -1,0 +1,33 @@
+syntax = "proto3";
+package cozymemory;
+
+import "conversation.proto";
+import "knowledge.proto";
+
+message GetUnifiedContextRequest {
+  string user_id = 1;
+  optional string query = 2;
+  bool include_conversations = 3;
+  bool include_profile = 4;
+  bool include_knowledge = 5;
+  int32 conversation_limit = 6;
+  int32 max_token_size = 7;
+  int32 knowledge_top_k = 8;
+  string knowledge_search_type = 9;
+  optional double engine_timeout = 10;
+  repeated Message chats = 11;
+}
+
+message GetUnifiedContextResponse {
+  bool success = 1;
+  string user_id = 2;
+  repeated ConversationMemory conversations = 3;
+  string profile_context = 4;
+  repeated KnowledgeSearchResult knowledge = 5;
+  map<string, string> errors = 6;
+  double latency_ms = 7;
+}
+
+service ContextService {
+  rpc GetUnifiedContext(GetUnifiedContextRequest) returns (GetUnifiedContextResponse);
+}

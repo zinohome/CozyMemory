@@ -197,3 +197,69 @@ async def test_profile_context_none_when_data_missing():
     resp = await svc.get_context(req)
 
     assert resp.profile_context is None
+
+
+# ===== engine_timeout =====
+
+
+@pytest.mark.asyncio
+async def test_engine_timeout_captures_error():
+    """engine_timeout 触发时，超时引擎记录专用错误消息，其他引擎结果正常返回"""
+    import asyncio
+
+    async def slow_profile(*args, **kwargs):
+        await asyncio.sleep(10)  # 故意超时
+
+    svc = _make_service()
+    svc._profile.get_context = slow_profile  # type: ignore[method-assign]
+
+    req = ContextRequest(user_id="u1", query="test", engine_timeout=0.05)
+    resp = await svc.get_context(req)
+
+    assert "profile" in resp.errors
+    assert "timeout" in resp.errors["profile"]
+    assert resp.profile_context is None
+    # 其他引擎不受影响
+    assert isinstance(resp.conversations, list)
+
+
+@pytest.mark.asyncio
+async def test_engine_timeout_none_no_wrapping():
+    """engine_timeout=None 时不包装协程，所有引擎正常执行"""
+    svc = _make_service()
+    req = ContextRequest(user_id="u1", query="test", engine_timeout=None)
+    resp = await svc.get_context(req)
+
+    assert resp.errors == {}
+    assert resp.profile_context is not None
+
+
+# ===== chats 参数透传 =====
+
+
+@pytest.mark.asyncio
+async def test_chats_forwarded_to_profile_service():
+    """chats 参数正确转换并传递给 ProfileService.get_context"""
+    from cozymemory.models.common import Message
+
+    svc = _make_service()
+    req = ContextRequest(
+        user_id="u1",
+        include_knowledge=False,
+        chats=[Message(role="user", content="你好")],
+    )
+    await svc.get_context(req)
+
+    call_kwargs = svc._profile.get_context.call_args.kwargs
+    assert call_kwargs["chats"] == [{"role": "user", "content": "你好"}]
+
+
+@pytest.mark.asyncio
+async def test_chats_none_passes_none_to_profile_service():
+    """chats=None 时传给 ProfileService 的 chats 也是 None"""
+    svc = _make_service()
+    req = ContextRequest(user_id="u1", include_knowledge=False, chats=None)
+    await svc.get_context(req)
+
+    call_kwargs = svc._profile.get_context.call_args.kwargs
+    assert call_kwargs["chats"] is None
