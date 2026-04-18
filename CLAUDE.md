@@ -91,8 +91,8 @@ Request → FastAPI/gRPC → Service layer → Client (BaseClient subclass) → 
 ### Key layers
 
 - **API layer** (`src/cozymemory/api/v1/`): FastAPI routers for REST; gRPC servicers in `grpc_server/server.py`. Both share the same service layer.
-- **Service layer** (`src/cozymemory/services/`): Thin wrappers that translate client responses into Pydantic models. One service per domain: `ConversationService`, `ProfileService`, `KnowledgeService`.
-- **Client layer** (`src/cozymemory/clients/`): `BaseClient` provides httpx async connection pooling, exponential backoff retry, and error handling. Each engine (`Mem0Client`, `MemobaseClient`, `CogneeClient`) extends it.
+- **Service layer** (`src/cozymemory/services/`): Thin wrappers that translate client responses into Pydantic models. One service per domain: `ConversationService`, `ProfileService`, `KnowledgeService`. `ContextService` composes all three via `asyncio.gather` for the unified context endpoint.
+- **Client layer** (`src/cozymemory/clients/`): `BaseClient` provides httpx async connection pooling, exponential backoff retry, error handling, and a circuit breaker (opens after `failure_threshold` consecutive 5xx/network failures; 4xx errors don't count). Each engine (`Mem0Client`, `MemobaseClient`, `CogneeClient`) extends it.
 - **Models** (`src/cozymemory/models/`): Pydantic v2 models for request/response serialization. `common.py` has shared types (`Message`, `EngineStatus`, `HealthResponse`, `ErrorResponse`).
 - **Config** (`src/cozymemory/config.py`): `pydantic-settings` based, reads from `.env` file and environment variables. All engine URLs and feature flags are configured here.
 
@@ -127,14 +127,15 @@ Request → FastAPI/gRPC → Service layer → Client (BaseClient subclass) → 
 | POST | `/api/v1/knowledge/cognify` | Trigger knowledge graph build |
 | POST | `/api/v1/knowledge/search` | Search knowledge graph |
 | DELETE | `/api/v1/knowledge` | Delete a document by data_id + dataset_id |
+| POST | `/api/v1/context` | Concurrently fetch all 3 memory types in one call |
 
 ### Dependency injection
 
-`api/deps.py` creates singleton client instances lazily and provides `get_*_service()` functions used as FastAPI `Depends()` injectors. gRPC servicers also use these same dependency functions.
+`api/deps.py` creates singleton client instances lazily and provides `get_*_service()` functions used as FastAPI `Depends()` injectors. gRPC servicers also use these same dependency functions. `close_all_clients()` is called by the lifespan shutdown hook to release HTTP connection pools.
 
 ### Protobuf / gRPC
 
-Proto definitions live in `proto/`. Generated Python code (`*_pb2.py`, `*_pb2_grpc.py`) is checked into `src/cozymemory/grpc_server/` and excluded from ruff/mypy checks. To regenerate:
+Proto definitions live in `proto/`. Generated Python code (`*_pb2.py`, `*_pb2_grpc.py`) is checked into `src/cozymemory/grpc_server/` and excluded from ruff/mypy checks. Total: 18 gRPC methods mirroring the 19 REST endpoints (health is REST-only). To regenerate:
 
 ```bash
 python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --grpc_python_out=src/cozymemory/grpc_server proto/common.proto proto/conversation.proto proto/profile.proto proto/knowledge.proto
@@ -186,7 +187,9 @@ These are non-obvious behaviors discovered during integration testing. Check her
 - Engine errors raised as `EngineError` with engine name and status code; API layer converts to HTTP 400/502
 - Mem0 uses `X-API-Key` header (not Bearer token) — see `Mem0Client._get_headers`; other engines use `Authorization: Bearer`
 - All responses follow `{success: bool, data: ..., message: str}` pattern
-- `DEBUG=True` (default) exposes full exception details in 500 responses; set `APP_ENV=production` / `DEBUG=False` to suppress
+- `DEBUG=False` (default) suppresses exception details in 500 responses; set `DEBUG=True` or `APP_ENV=development` to expose them
+- `SearchType` — `Literal["CHUNKS","SUMMARIES","RAG_COMPLETION","GRAPH_COMPLETION"]` alias exported from `models/knowledge.py`; use it in service/client signatures instead of bare `str`
+- **Unified context pattern**: new cross-engine operations should use `asyncio.gather(..., return_exceptions=True)` and populate an `errors: dict[str, str]` field rather than failing the whole request when one engine is down
 - `structlog` for structured logging: `logging_config.py` configures it; `ConsoleRenderer` in development, `JSONRenderer` in production. Request middleware binds `request_id`, `method`, `path` to every log line via `contextvars`.
 
 ## Project layout
