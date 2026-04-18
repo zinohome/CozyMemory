@@ -113,7 +113,7 @@ run_unit_tests() {
         pip install -e ".[dev]" -q
     fi
 
-    info "运行 234 个单元测试..."
+    info "运行单元测试..."
     if python3 -m pytest tests/unit/ -q --tb=short; then
         log "单元测试全部通过"
     else

@@ -43,13 +43,26 @@ docker compose -f base_runtime/docker-compose.1panel.yml ps       # Check status
 
 # Quick API smoke tests (requires running base_runtime)
 curl http://SERVER_IP:8000/api/v1/health                          # Health check (all 3 engines)
+curl http://SERVER_IP:8000/api/v1/conversations?user_id=u1        # List memories
 curl -X POST http://SERVER_IP:8000/api/v1/conversations \
   -H "Content-Type: application/json" \
   -d '{"user_id":"u1","messages":[{"role":"user","content":"test"}]}'
 curl -X POST http://SERVER_IP:8000/api/v1/profiles/insert \
   -H "Content-Type: application/json" \
   -d '{"user_id":"<uuid-v4>","messages":[{"role":"user","content":"test"}],"sync":true}'
+curl -X POST http://SERVER_IP:8000/api/v1/profiles/<uuid-v4>/items \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"interest","sub_topic":"hobby","content":"reading"}'
+curl -X DELETE http://SERVER_IP:8000/api/v1/profiles/<uuid-v4>/items/<profile-id>
 curl http://SERVER_IP:8000/api/v1/knowledge/datasets
+curl -X DELETE http://SERVER_IP:8000/api/v1/knowledge \
+  -H "Content-Type: application/json" \
+  -d '{"data_id":"<data-id>","dataset_id":"<dataset-id>"}'
+
+# Integration tests (requires running base_runtime)
+COZY_TEST_URL=http://SERVER_IP:8000 pytest tests/integration/ -v          # All 39 tests
+COZY_TEST_URL=http://SERVER_IP:8000 pytest tests/integration/ -k "health" # Subset
+pytest tests/integration/test_api_error_handlers.py -v                    # Error handling (no server needed)
 ```
 
 ## Environment Configuration
@@ -91,6 +104,30 @@ Request → FastAPI/gRPC → Service layer → Client (BaseClient subclass) → 
 | User profile | `ProfileService` | `MemobaseClient` | Memobase |
 | Knowledge graph | `KnowledgeService` | `CogneeClient` | Cognee |
 
+### REST endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/health` | Health check for all 3 engines |
+| GET | `/api/v1/conversations?user_id=` | List all memories for a user |
+| POST | `/api/v1/conversations` | Add conversation, extract memories |
+| POST | `/api/v1/conversations/search` | Semantic search over memories |
+| GET | `/api/v1/conversations/{id}` | Get single memory |
+| DELETE | `/api/v1/conversations/{id}` | Delete single memory |
+| DELETE | `/api/v1/conversations?user_id=` | Delete all memories for user |
+| POST | `/api/v1/profiles/insert` | Insert conversation into Memobase buffer |
+| POST | `/api/v1/profiles/flush` | Trigger buffer processing |
+| GET | `/api/v1/profiles/{user_id}` | Get structured user profile |
+| POST | `/api/v1/profiles/{user_id}/context` | Get LLM-ready context prompt |
+| POST | `/api/v1/profiles/{user_id}/items` | Manually add a profile topic |
+| DELETE | `/api/v1/profiles/{user_id}/items/{profile_id}` | Delete a profile topic |
+| GET | `/api/v1/knowledge/datasets` | List datasets |
+| POST | `/api/v1/knowledge/datasets?name=` | Create dataset |
+| POST | `/api/v1/knowledge/add` | Add document to knowledge base |
+| POST | `/api/v1/knowledge/cognify` | Trigger knowledge graph build |
+| POST | `/api/v1/knowledge/search` | Search knowledge graph |
+| DELETE | `/api/v1/knowledge` | Delete a document by data_id + dataset_id |
+
 ### Dependency injection
 
 `api/deps.py` creates singleton client instances lazily and provides `get_*_service()` functions used as FastAPI `Depends()` injectors. gRPC servicers also use these same dependency functions.
@@ -119,6 +156,7 @@ These are non-obvious behaviors discovered during integration testing. Check her
 - **`add()` response format**: `{"results": [{"id": "...", "memory": "...", "event": "ADD"}]}` — not a bare list. Parse with `data.get("results", [])`.
 - **`search()` / `get_all()` entity params**: The mem0ai library requires entity identifiers in `filters={"user_id": "..."}`, not as top-level kwargs. The server is patched (Fix 8/9 in `apply_server_fixes.py`) to wrap them correctly.
 - **No `/health` endpoint**: `health_check()` probes `GET /` which returns Swagger UI (HTTP 200 after redirect).
+- **`get()` returns null for missing memory**: Mem0 returns JSON `null` (not 404) when a memory ID doesn't exist. `Mem0Client.get()` handles this by returning `None`.
 - **Auth header**: `X-API-Key` (not `Authorization: Bearer`) — see `Mem0Client._get_headers`.
 
 ### Memobase (`MemobaseClient`)
@@ -149,7 +187,7 @@ These are non-obvious behaviors discovered during integration testing. Check her
 - Mem0 uses `X-API-Key` header (not Bearer token) — see `Mem0Client._get_headers`; other engines use `Authorization: Bearer`
 - All responses follow `{success: bool, data: ..., message: str}` pattern
 - `DEBUG=True` (default) exposes full exception details in 500 responses; set `APP_ENV=production` / `DEBUG=False` to suppress
-- `structlog` is listed as a dependency but not yet used; current code uses stdlib `logging`
+- `structlog` for structured logging: `logging_config.py` configures it; `ConsoleRenderer` in development, `JSONRenderer` in production. Request middleware binds `request_id`, `method`, `path` to every log line via `contextvars`.
 
 ## Project layout
 
