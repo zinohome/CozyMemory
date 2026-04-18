@@ -290,6 +290,8 @@ services:
     image: cozymemory:latest
     container_name: cozy_api
     restart: unless-stopped
+    ports:
+      - "50051:50051"
     environment:
       APP_ENV: production
       DEBUG: "false"

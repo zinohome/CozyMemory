@@ -114,6 +114,39 @@ async def test_get_context(http, unique_user_id):
 
 @requires_server
 @pytest.mark.asyncio
+async def test_add_and_delete_profile_item(http, unique_user_id):
+    """POST /profiles/{user_id}/items → DELETE /profiles/{user_id}/items/{id} 完整 CRUD"""
+    # Memobase 要求用户先存在，insert 会自动创建用户
+    await http.post(
+        "/api/v1/profiles/insert",
+        json={
+            "user_id": unique_user_id,
+            "messages": [{"role": "user", "content": "初始化用户"}],
+            "sync": True,
+        },
+    )
+
+    # 添加画像条目
+    add_resp = await http.post(
+        f"/api/v1/profiles/{unique_user_id}/items",
+        json={"topic": "interest", "sub_topic": "sport", "content": "喜欢游泳"},
+    )
+    assert add_resp.status_code == 200
+    body = add_resp.json()
+    assert body["success"] is True
+    profile_id = body["data"]["id"]
+    assert profile_id
+
+    # 删除画像条目
+    del_resp = await http.delete(
+        f"/api/v1/profiles/{unique_user_id}/items/{profile_id}"
+    )
+    assert del_resp.status_code == 200
+    assert del_resp.json()["success"] is True
+
+
+@requires_server
+@pytest.mark.asyncio
 async def test_insert_missing_user_id_422(http):
     """POST /profiles/insert 缺少 user_id → 422"""
     response = await http.post(

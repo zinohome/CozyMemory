@@ -108,6 +108,28 @@ async def test_delete_all_conversations(http):
 
 @requires_server
 @pytest.mark.asyncio
+async def test_delete_single_conversation(http):
+    """POST /conversations → DELETE /conversations/{id} 删除单条记忆"""
+    add_resp = await http.post(
+        "/api/v1/conversations",
+        json={
+            "user_id": USER_ID,
+            "messages": [{"role": "user", "content": "这条记忆将被删除"}],
+        },
+    )
+    assert add_resp.status_code == 200
+    data = add_resp.json().get("data", [])
+    if not data:
+        pytest.skip("Mem0 未提取到记忆，跳过单条删除验证")
+
+    memory_id = data[0]["id"]
+    del_resp = await http.delete(f"/api/v1/conversations/{memory_id}")
+    assert del_resp.status_code == 200
+    assert del_resp.json()["success"] is True
+
+
+@requires_server
+@pytest.mark.asyncio
 async def test_invalid_request_returns_422(http):
     """POST /conversations 缺少必填字段 → 422"""
     response = await http.post(

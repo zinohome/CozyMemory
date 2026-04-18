@@ -121,6 +121,62 @@ async def test_full_knowledge_flow(http_slow):
 
 @requires_server
 @pytest.mark.asyncio
+async def test_create_dataset(http):
+    """POST /knowledge/datasets?name= 创建 dataset"""
+    import uuid
+    ds_name = f"test-ds-{uuid.uuid4().hex[:8]}"
+    response = await http.post("/api/v1/knowledge/datasets", params={"name": ds_name})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    datasets = body["data"]
+    assert isinstance(datasets, list)
+
+
+@requires_server
+@pytest.mark.asyncio
+async def test_delete_knowledge(http_slow):
+    """POST /knowledge/add → POST /knowledge/cognify → DELETE /knowledge 完整删除流程"""
+    import uuid
+    ds_name = f"test-delete-{uuid.uuid4().hex[:8]}"
+    content = f"这是用于删除测试的文档 {uuid.uuid4().hex}"
+
+    # 添加文档
+    add_resp = await http_slow.post(
+        "/api/v1/knowledge/add",
+        json={"data": content, "dataset": ds_name},
+    )
+    assert add_resp.status_code == 200
+    body = add_resp.json()
+    assert body["success"] is True
+    data_id = body.get("data_id", "")
+
+    # 触发 cognify（后台）
+    cognify_resp = await http_slow.post(
+        "/api/v1/knowledge/cognify",
+        json={"datasets": [ds_name], "run_in_background": True},
+    )
+    assert cognify_resp.status_code == 200
+
+    # 如果有 data_id，则删除
+    if data_id:
+        # 先获取 dataset id
+        ds_resp = await http_slow.get("/api/v1/knowledge/datasets")
+        datasets = ds_resp.json().get("data", [])
+        dataset_id = next((d["id"] for d in datasets if d["name"] == ds_name), "")
+
+        if dataset_id:
+            del_resp = await http_slow.request(
+                "DELETE",
+                "/api/v1/knowledge",
+                json={"data_id": data_id, "dataset_id": dataset_id},
+            )
+            assert del_resp.status_code == 200
+            assert del_resp.json()["success"] is True
+
+
+@requires_server
+@pytest.mark.asyncio
 async def test_search_missing_query_422(http):
     """POST /knowledge/search 空 query → 422"""
     response = await http.post(

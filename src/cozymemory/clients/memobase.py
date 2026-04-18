@@ -164,7 +164,8 @@ class MemobaseClient(BaseClient):
         self, user_id: str, topic: str, sub_topic: str, content: str
     ) -> ProfileTopic:
         """手动添加画像条目"""
-        payload = {"topic": topic, "sub_topic": sub_topic, "content": content}
+        # Memobase API 要求 topic/sub_topic 嵌套在 attributes 字段中
+        payload = {"attributes": {"topic": topic, "sub_topic": sub_topic}, "content": content}
         response = await self._request("POST", f"/api/v1/users/profile/{user_id}", json=payload)
         result = response.json()
         if isinstance(result, dict) and result.get("errno", 0) != 0:
