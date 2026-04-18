@@ -138,6 +138,24 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
             _handle_engine_error(exc, context)
             return conversation_pb2.DeleteResponse()
 
+    async def ListConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        try:
+            svc = get_conversation_service()
+            result = await svc.get_all(user_id=request.user_id, limit=request.limit or 100)
+            memories = [
+                conversation_pb2.ConversationMemory(id=m.id, user_id=m.user_id, content=m.content)
+                for m in result.data
+            ]
+            return conversation_pb2.SearchConversationsResponse(
+                success=result.success,
+                data=memories,
+                total=result.total,
+                message=result.message,
+            )
+        except EngineError as exc:
+            _handle_engine_error(exc, context)
+            return conversation_pb2.SearchConversationsResponse()
+
 
 class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
     """用户画像 gRPC 服务实现"""
@@ -214,6 +232,44 @@ class ProfileGrpcServicer(profile_pb2_grpc.ProfileServiceServicer):
         except EngineError as exc:
             _handle_engine_error(exc, context)
             return profile_pb2.GetContextResponse()
+
+    async def AddProfileItem(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        try:
+            svc = get_profile_service()
+            result = await svc.add_profile_item(
+                user_id=request.user_id,
+                topic=request.topic,
+                sub_topic=request.sub_topic,
+                content=request.content,
+            )
+            topic_proto = None
+            if result.data:
+                topic_proto = profile_pb2.ProfileTopic(
+                    id=result.data.id,
+                    topic=result.data.topic,
+                    sub_topic=result.data.sub_topic,
+                    content=result.data.content,
+                )
+            return profile_pb2.AddProfileItemResponse(
+                success=result.success,
+                data=topic_proto,
+                message=result.message,
+            )
+        except EngineError as exc:
+            _handle_engine_error(exc, context)
+            return profile_pb2.AddProfileItemResponse()
+
+    async def DeleteProfileItem(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        try:
+            svc = get_profile_service()
+            result = await svc.delete_profile_item(
+                user_id=request.user_id,
+                profile_id=request.profile_id,
+            )
+            return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
+        except EngineError as exc:
+            _handle_engine_error(exc, context)
+            return conversation_pb2.DeleteResponse()
 
 
 class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
@@ -303,6 +359,15 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
         except EngineError as exc:
             _handle_engine_error(exc, context)
             return knowledge_pb2.SearchKnowledgeResponse()
+
+    async def DeleteKnowledge(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        try:
+            svc = get_knowledge_service()
+            result = await svc.delete(data_id=request.data_id, dataset_id=request.dataset_id)
+            return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
+        except EngineError as exc:
+            _handle_engine_error(exc, context)
+            return conversation_pb2.DeleteResponse()
 
 
 async def serve_grpc() -> None:

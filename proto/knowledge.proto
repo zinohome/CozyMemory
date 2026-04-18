@@ -1,6 +1,8 @@
 syntax = "proto3";
 package cozymemory;
 
+import "conversation.proto";
+
 message AddKnowledgeRequest {
   string data = 1;
   string dataset = 2;
@@ -65,10 +67,16 @@ message ListDatasetsResponse {
   string message = 3;
 }
 
+message DeleteKnowledgeRequest {
+  string data_id = 1;
+  string dataset_id = 2;
+}
+
 service KnowledgeService {
   rpc CreateDataset(CreateDatasetRequest) returns (DatasetInfo);
   rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsResponse);
   rpc AddKnowledge(AddKnowledgeRequest) returns (AddKnowledgeResponse);
   rpc Cognify(CognifyRequest) returns (CognifyResponse);
   rpc SearchKnowledge(SearchKnowledgeRequest) returns (SearchKnowledgeResponse);
+  rpc DeleteKnowledge(DeleteKnowledgeRequest) returns (DeleteResponse);
 }

@@ -3,6 +3,7 @@
 import grpc
 import warnings
 
+from cozymemory.grpc_server import conversation_pb2 as conversation__pb2
 from cozymemory.grpc_server import knowledge_pb2 as knowledge__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
@@ -59,6 +60,11 @@ class KnowledgeServiceStub(object):
                 request_serializer=knowledge__pb2.SearchKnowledgeRequest.SerializeToString,
                 response_deserializer=knowledge__pb2.SearchKnowledgeResponse.FromString,
                 _registered_method=True)
+        self.DeleteKnowledge = channel.unary_unary(
+                '/cozymemory.KnowledgeService/DeleteKnowledge',
+                request_serializer=knowledge__pb2.DeleteKnowledgeRequest.SerializeToString,
+                response_deserializer=conversation__pb2.DeleteResponse.FromString,
+                _registered_method=True)
 
 
 class KnowledgeServiceServicer(object):
@@ -94,6 +100,12 @@ class KnowledgeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def DeleteKnowledge(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_KnowledgeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -121,6 +133,11 @@ def add_KnowledgeServiceServicer_to_server(servicer, server):
                     servicer.SearchKnowledge,
                     request_deserializer=knowledge__pb2.SearchKnowledgeRequest.FromString,
                     response_serializer=knowledge__pb2.SearchKnowledgeResponse.SerializeToString,
+            ),
+            'DeleteKnowledge': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteKnowledge,
+                    request_deserializer=knowledge__pb2.DeleteKnowledgeRequest.FromString,
+                    response_serializer=conversation__pb2.DeleteResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -258,6 +275,33 @@ class KnowledgeService(object):
             '/cozymemory.KnowledgeService/SearchKnowledge',
             knowledge__pb2.SearchKnowledgeRequest.SerializeToString,
             knowledge__pb2.SearchKnowledgeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteKnowledge(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/cozymemory.KnowledgeService/DeleteKnowledge',
+            knowledge__pb2.DeleteKnowledgeRequest.SerializeToString,
+            conversation__pb2.DeleteResponse.FromString,
             options,
             channel_credentials,
             insecure,

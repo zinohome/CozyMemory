@@ -3,6 +3,7 @@
 import grpc
 import warnings
 
+from cozymemory.grpc_server import conversation_pb2 as conversation__pb2
 from cozymemory.grpc_server import profile_pb2 as profile__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
@@ -54,6 +55,16 @@ class ProfileServiceStub(object):
                 request_serializer=profile__pb2.GetContextRequest.SerializeToString,
                 response_deserializer=profile__pb2.GetContextResponse.FromString,
                 _registered_method=True)
+        self.AddProfileItem = channel.unary_unary(
+                '/cozymemory.ProfileService/AddProfileItem',
+                request_serializer=profile__pb2.AddProfileItemRequest.SerializeToString,
+                response_deserializer=profile__pb2.AddProfileItemResponse.FromString,
+                _registered_method=True)
+        self.DeleteProfileItem = channel.unary_unary(
+                '/cozymemory.ProfileService/DeleteProfileItem',
+                request_serializer=profile__pb2.DeleteProfileItemRequest.SerializeToString,
+                response_deserializer=conversation__pb2.DeleteResponse.FromString,
+                _registered_method=True)
 
 
 class ProfileServiceServicer(object):
@@ -83,6 +94,18 @@ class ProfileServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AddProfileItem(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteProfileItem(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ProfileServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -105,6 +128,16 @@ def add_ProfileServiceServicer_to_server(servicer, server):
                     servicer.GetContext,
                     request_deserializer=profile__pb2.GetContextRequest.FromString,
                     response_serializer=profile__pb2.GetContextResponse.SerializeToString,
+            ),
+            'AddProfileItem': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddProfileItem,
+                    request_deserializer=profile__pb2.AddProfileItemRequest.FromString,
+                    response_serializer=profile__pb2.AddProfileItemResponse.SerializeToString,
+            ),
+            'DeleteProfileItem': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteProfileItem,
+                    request_deserializer=profile__pb2.DeleteProfileItemRequest.FromString,
+                    response_serializer=conversation__pb2.DeleteResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -215,6 +248,60 @@ class ProfileService(object):
             '/cozymemory.ProfileService/GetContext',
             profile__pb2.GetContextRequest.SerializeToString,
             profile__pb2.GetContextResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AddProfileItem(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/cozymemory.ProfileService/AddProfileItem',
+            profile__pb2.AddProfileItemRequest.SerializeToString,
+            profile__pb2.AddProfileItemResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteProfileItem(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/cozymemory.ProfileService/DeleteProfileItem',
+            profile__pb2.DeleteProfileItemRequest.SerializeToString,
+            conversation__pb2.DeleteResponse.FromString,
             options,
             channel_credentials,
             insecure,

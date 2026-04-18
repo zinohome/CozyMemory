@@ -57,9 +57,29 @@ message GetContextResponse {
   string context = 3;
 }
 
+message AddProfileItemRequest {
+  string user_id = 1;
+  string topic = 2;
+  string sub_topic = 3;
+  string content = 4;
+}
+
+message AddProfileItemResponse {
+  bool success = 1;
+  ProfileTopic data = 2;
+  string message = 3;
+}
+
+message DeleteProfileItemRequest {
+  string user_id = 1;
+  string profile_id = 2;
+}
+
 service ProfileService {
   rpc InsertProfile(InsertProfileRequest) returns (InsertProfileResponse);
   rpc FlushProfile(FlushProfileRequest) returns (FlushProfileResponse);
   rpc GetProfile(GetProfileRequest) returns (UserProfile);
   rpc GetContext(GetContextRequest) returns (GetContextResponse);
+  rpc AddProfileItem(AddProfileItemRequest) returns (AddProfileItemResponse);
+  rpc DeleteProfileItem(DeleteProfileItemRequest) returns (DeleteResponse);
 }

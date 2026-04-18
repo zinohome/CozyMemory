@@ -59,6 +59,11 @@ class ConversationServiceStub(object):
                 request_serializer=conversation__pb2.DeleteAllConversationsRequest.SerializeToString,
                 response_deserializer=conversation__pb2.DeleteResponse.FromString,
                 _registered_method=True)
+        self.ListConversations = channel.unary_unary(
+                '/cozymemory.ConversationService/ListConversations',
+                request_serializer=conversation__pb2.ListConversationsRequest.SerializeToString,
+                response_deserializer=conversation__pb2.SearchConversationsResponse.FromString,
+                _registered_method=True)
 
 
 class ConversationServiceServicer(object):
@@ -94,6 +99,12 @@ class ConversationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListConversations(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ConversationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -121,6 +132,11 @@ def add_ConversationServiceServicer_to_server(servicer, server):
                     servicer.DeleteAllConversations,
                     request_deserializer=conversation__pb2.DeleteAllConversationsRequest.FromString,
                     response_serializer=conversation__pb2.DeleteResponse.SerializeToString,
+            ),
+            'ListConversations': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListConversations,
+                    request_deserializer=conversation__pb2.ListConversationsRequest.FromString,
+                    response_serializer=conversation__pb2.SearchConversationsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -258,6 +274,33 @@ class ConversationService(object):
             '/cozymemory.ConversationService/DeleteAllConversations',
             conversation__pb2.DeleteAllConversationsRequest.SerializeToString,
             conversation__pb2.DeleteResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListConversations(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/cozymemory.ConversationService/ListConversations',
+            conversation__pb2.ListConversationsRequest.SerializeToString,
+            conversation__pb2.SearchConversationsResponse.FromString,
             options,
             channel_credentials,
             insecure,

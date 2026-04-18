@@ -22,9 +22,10 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from cozymemory.grpc_server import conversation_pb2 as conversation__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fknowledge.proto\x12\ncozymemory\"F\n\x13\x41\x64\x64KnowledgeRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12\x10\n\x08node_set\x18\x03 \x03(\t\"_\n\x14\x41\x64\x64KnowledgeResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07\x64\x61ta_id\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61taset_name\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"=\n\x0e\x43ognifyRequest\x12\x10\n\x08\x64\x61tasets\x18\x01 \x03(\t\x12\x19\n\x11run_in_background\x18\x02 \x01(\x08\"\\\n\x0f\x43ognifyResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x17\n\x0fpipeline_run_id\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"\\\n\x16SearchKnowledgeRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12\x13\n\x0bsearch_type\x18\x03 \x01(\t\x12\r\n\x05top_k\x18\x04 \x01(\x05\"\xc3\x01\n\x15KnowledgeSearchResult\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\x12\x12\n\x05score\x18\x03 \x01(\x01H\x00\x88\x01\x01\x12\x41\n\x08metadata\x18\x04 \x03(\x0b\x32/.cozymemory.KnowledgeSearchResult.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x08\n\x06_score\"{\n\x17SearchKnowledgeResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12/\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32!.cozymemory.KnowledgeSearchResult\x12\r\n\x05total\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\";\n\x0b\x44\x61tasetInfo\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x12\n\ncreated_at\x18\x03 \x01(\t\"$\n\x14\x43reateDatasetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x15\n\x13ListDatasetsRequest\"_\n\x14ListDatasetsResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12%\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x17.cozymemory.DatasetInfo\x12\x0f\n\x07message\x18\x03 \x01(\t2\xa4\x03\n\x10KnowledgeService\x12J\n\rCreateDataset\x12 .cozymemory.CreateDatasetRequest\x1a\x17.cozymemory.DatasetInfo\x12Q\n\x0cListDatasets\x12\x1f.cozymemory.ListDatasetsRequest\x1a .cozymemory.ListDatasetsResponse\x12Q\n\x0c\x41\x64\x64Knowledge\x12\x1f.cozymemory.AddKnowledgeRequest\x1a .cozymemory.AddKnowledgeResponse\x12\x42\n\x07\x43ognify\x12\x1a.cozymemory.CognifyRequest\x1a\x1b.cozymemory.CognifyResponse\x12Z\n\x0fSearchKnowledge\x12\".cozymemory.SearchKnowledgeRequest\x1a#.cozymemory.SearchKnowledgeResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fknowledge.proto\x12\ncozymemory\x1a\x12\x63onversation.proto\"F\n\x13\x41\x64\x64KnowledgeRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12\x10\n\x08node_set\x18\x03 \x03(\t\"_\n\x14\x41\x64\x64KnowledgeResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07\x64\x61ta_id\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61taset_name\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"=\n\x0e\x43ognifyRequest\x12\x10\n\x08\x64\x61tasets\x18\x01 \x03(\t\x12\x19\n\x11run_in_background\x18\x02 \x01(\x08\"\\\n\x0f\x43ognifyResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x17\n\x0fpipeline_run_id\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"\\\n\x16SearchKnowledgeRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12\x13\n\x0bsearch_type\x18\x03 \x01(\t\x12\r\n\x05top_k\x18\x04 \x01(\x05\"\xc3\x01\n\x15KnowledgeSearchResult\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\x12\x12\n\x05score\x18\x03 \x01(\x01H\x00\x88\x01\x01\x12\x41\n\x08metadata\x18\x04 \x03(\x0b\x32/.cozymemory.KnowledgeSearchResult.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x08\n\x06_score\"{\n\x17SearchKnowledgeResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12/\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32!.cozymemory.KnowledgeSearchResult\x12\r\n\x05total\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\";\n\x0b\x44\x61tasetInfo\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x12\n\ncreated_at\x18\x03 \x01(\t\"$\n\x14\x43reateDatasetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x15\n\x13ListDatasetsRequest\"_\n\x14ListDatasetsResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12%\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x17.cozymemory.DatasetInfo\x12\x0f\n\x07message\x18\x03 \x01(\t\"=\n\x16\x44\x65leteKnowledgeRequest\x12\x0f\n\x07\x64\x61ta_id\x18\x01 \x01(\t\x12\x12\n\ndataset_id\x18\x02 \x01(\t2\xf7\x03\n\x10KnowledgeService\x12J\n\rCreateDataset\x12 .cozymemory.CreateDatasetRequest\x1a\x17.cozymemory.DatasetInfo\x12Q\n\x0cListDatasets\x12\x1f.cozymemory.ListDatasetsRequest\x1a .cozymemory.ListDatasetsResponse\x12Q\n\x0c\x41\x64\x64Knowledge\x12\x1f.cozymemory.AddKnowledgeRequest\x1a .cozymemory.AddKnowledgeResponse\x12\x42\n\x07\x43ognify\x12\x1a.cozymemory.CognifyRequest\x1a\x1b.cozymemory.CognifyResponse\x12Z\n\x0fSearchKnowledge\x12\".cozymemory.SearchKnowledgeRequest\x1a#.cozymemory.SearchKnowledgeResponse\x12Q\n\x0f\x44\x65leteKnowledge\x12\".cozymemory.DeleteKnowledgeRequest\x1a\x1a.cozymemory.DeleteResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,30 +34,32 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_KNOWLEDGESEARCHRESULT_METADATAENTRY']._loaded_options = None
   _globals['_KNOWLEDGESEARCHRESULT_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_ADDKNOWLEDGEREQUEST']._serialized_start=31
-  _globals['_ADDKNOWLEDGEREQUEST']._serialized_end=101
-  _globals['_ADDKNOWLEDGERESPONSE']._serialized_start=103
-  _globals['_ADDKNOWLEDGERESPONSE']._serialized_end=198
-  _globals['_COGNIFYREQUEST']._serialized_start=200
-  _globals['_COGNIFYREQUEST']._serialized_end=261
-  _globals['_COGNIFYRESPONSE']._serialized_start=263
-  _globals['_COGNIFYRESPONSE']._serialized_end=355
-  _globals['_SEARCHKNOWLEDGEREQUEST']._serialized_start=357
-  _globals['_SEARCHKNOWLEDGEREQUEST']._serialized_end=449
-  _globals['_KNOWLEDGESEARCHRESULT']._serialized_start=452
-  _globals['_KNOWLEDGESEARCHRESULT']._serialized_end=647
-  _globals['_KNOWLEDGESEARCHRESULT_METADATAENTRY']._serialized_start=590
-  _globals['_KNOWLEDGESEARCHRESULT_METADATAENTRY']._serialized_end=637
-  _globals['_SEARCHKNOWLEDGERESPONSE']._serialized_start=649
-  _globals['_SEARCHKNOWLEDGERESPONSE']._serialized_end=772
-  _globals['_DATASETINFO']._serialized_start=774
-  _globals['_DATASETINFO']._serialized_end=833
-  _globals['_CREATEDATASETREQUEST']._serialized_start=835
-  _globals['_CREATEDATASETREQUEST']._serialized_end=871
-  _globals['_LISTDATASETSREQUEST']._serialized_start=873
-  _globals['_LISTDATASETSREQUEST']._serialized_end=894
-  _globals['_LISTDATASETSRESPONSE']._serialized_start=896
-  _globals['_LISTDATASETSRESPONSE']._serialized_end=991
-  _globals['_KNOWLEDGESERVICE']._serialized_start=994
-  _globals['_KNOWLEDGESERVICE']._serialized_end=1414
+  _globals['_ADDKNOWLEDGEREQUEST']._serialized_start=51
+  _globals['_ADDKNOWLEDGEREQUEST']._serialized_end=121
+  _globals['_ADDKNOWLEDGERESPONSE']._serialized_start=123
+  _globals['_ADDKNOWLEDGERESPONSE']._serialized_end=218
+  _globals['_COGNIFYREQUEST']._serialized_start=220
+  _globals['_COGNIFYREQUEST']._serialized_end=281
+  _globals['_COGNIFYRESPONSE']._serialized_start=283
+  _globals['_COGNIFYRESPONSE']._serialized_end=375
+  _globals['_SEARCHKNOWLEDGEREQUEST']._serialized_start=377
+  _globals['_SEARCHKNOWLEDGEREQUEST']._serialized_end=469
+  _globals['_KNOWLEDGESEARCHRESULT']._serialized_start=472
+  _globals['_KNOWLEDGESEARCHRESULT']._serialized_end=667
+  _globals['_KNOWLEDGESEARCHRESULT_METADATAENTRY']._serialized_start=610
+  _globals['_KNOWLEDGESEARCHRESULT_METADATAENTRY']._serialized_end=657
+  _globals['_SEARCHKNOWLEDGERESPONSE']._serialized_start=669
+  _globals['_SEARCHKNOWLEDGERESPONSE']._serialized_end=792
+  _globals['_DATASETINFO']._serialized_start=794
+  _globals['_DATASETINFO']._serialized_end=853
+  _globals['_CREATEDATASETREQUEST']._serialized_start=855
+  _globals['_CREATEDATASETREQUEST']._serialized_end=891
+  _globals['_LISTDATASETSREQUEST']._serialized_start=893
+  _globals['_LISTDATASETSREQUEST']._serialized_end=914
+  _globals['_LISTDATASETSRESPONSE']._serialized_start=916
+  _globals['_LISTDATASETSRESPONSE']._serialized_end=1011
+  _globals['_DELETEKNOWLEDGEREQUEST']._serialized_start=1013
+  _globals['_DELETEKNOWLEDGEREQUEST']._serialized_end=1074
+  _globals['_KNOWLEDGESERVICE']._serialized_start=1077
+  _globals['_KNOWLEDGESERVICE']._serialized_end=1580
 # @@protoc_insertion_point(module_scope)

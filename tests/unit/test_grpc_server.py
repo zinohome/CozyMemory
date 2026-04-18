@@ -30,12 +30,15 @@ from cozymemory.models.knowledge import (
     KnowledgeCognifyResponse,
     KnowledgeDataset,
     KnowledgeDatasetListResponse,
+    KnowledgeDeleteResponse,
     KnowledgeSearchResponse,
     KnowledgeSearchResult,
 )
 from cozymemory.models.profile import (
+    ProfileAddItemResponse,
     ProfileContext,
     ProfileContextResponse,
+    ProfileDeleteItemResponse,
     ProfileFlushResponse,
     ProfileGetResponse,
     ProfileInsertResponse,
@@ -232,6 +235,40 @@ class TestConversationGrpcServicer:
             resp = await ConversationGrpcServicer().DeleteAllConversations(req, _ctx())
         assert resp.success is True
 
+    # ── ListConversations ────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_list_conversations_success(self):
+        mock_svc = MagicMock()
+        mock_svc.get_all = AsyncMock(
+            return_value=ConversationMemoryListResponse(
+                success=True,
+                data=[
+                    ConversationMemory(id="m1", user_id="u1", content="喜欢咖啡"),
+                    ConversationMemory(id="m2", user_id="u1", content="住在北京"),
+                ],
+                total=2,
+                message="",
+            )
+        )
+        req = conversation_pb2.ListConversationsRequest(user_id="u1", limit=50)
+        with patch("cozymemory.grpc_server.server.get_conversation_service", return_value=mock_svc):
+            resp = await ConversationGrpcServicer().ListConversations(req, _ctx())
+        assert resp.success is True
+        assert resp.total == 2
+        assert resp.data[0].id == "m1"
+        mock_svc.get_all.assert_called_once_with(user_id="u1", limit=50)
+
+    @pytest.mark.asyncio
+    async def test_list_conversations_engine_error(self):
+        mock_svc = MagicMock()
+        mock_svc.get_all = AsyncMock(side_effect=EngineError("Mem0", "upstream error", 503))
+        req = conversation_pb2.ListConversationsRequest(user_id="u1")
+        ctx = _ctx()
+        with patch("cozymemory.grpc_server.server.get_conversation_service", return_value=mock_svc):
+            await ConversationGrpcServicer().ListConversations(req, ctx)
+        ctx.set_code.assert_called_once_with(grpc.StatusCode.UNAVAILABLE)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ProfileGrpcServicer
@@ -363,6 +400,71 @@ class TestProfileGrpcServicer:
         with patch("cozymemory.grpc_server.server.get_profile_service", return_value=mock_svc):
             await ProfileGrpcServicer().GetContext(req, ctx)
         ctx.set_code.assert_called_once_with(grpc.StatusCode.FAILED_PRECONDITION)
+
+    # ── AddProfileItem ───────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_add_profile_item_success(self):
+        mock_svc = MagicMock()
+        mock_svc.add_profile_item = AsyncMock(
+            return_value=ProfileAddItemResponse(
+                success=True,
+                data=ProfileTopic(id="p1", topic="interest", sub_topic="hobby", content="游泳"),
+                message="",
+            )
+        )
+        req = profile_pb2.AddProfileItemRequest(
+            user_id="uid-1", topic="interest", sub_topic="hobby", content="游泳"
+        )
+        with patch("cozymemory.grpc_server.server.get_profile_service", return_value=mock_svc):
+            resp = await ProfileGrpcServicer().AddProfileItem(req, _ctx())
+        assert resp.success is True
+        assert resp.data.id == "p1"
+        assert resp.data.topic == "interest"
+        mock_svc.add_profile_item.assert_called_once_with(
+            user_id="uid-1", topic="interest", sub_topic="hobby", content="游泳"
+        )
+
+    @pytest.mark.asyncio
+    async def test_add_profile_item_engine_error(self):
+        mock_svc = MagicMock()
+        mock_svc.add_profile_item = AsyncMock(
+            side_effect=EngineError("Memobase", "insert failed", 500)
+        )
+        req = profile_pb2.AddProfileItemRequest(
+            user_id="uid-1", topic="interest", sub_topic="hobby", content="游泳"
+        )
+        ctx = _ctx()
+        with patch("cozymemory.grpc_server.server.get_profile_service", return_value=mock_svc):
+            await ProfileGrpcServicer().AddProfileItem(req, ctx)
+        ctx.set_code.assert_called_once_with(grpc.StatusCode.UNAVAILABLE)
+
+    # ── DeleteProfileItem ────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_delete_profile_item_success(self):
+        mock_svc = MagicMock()
+        mock_svc.delete_profile_item = AsyncMock(
+            return_value=ProfileDeleteItemResponse(success=True, message="已删除")
+        )
+        req = profile_pb2.DeleteProfileItemRequest(user_id="uid-1", profile_id="p1")
+        with patch("cozymemory.grpc_server.server.get_profile_service", return_value=mock_svc):
+            resp = await ProfileGrpcServicer().DeleteProfileItem(req, _ctx())
+        assert resp.success is True
+        assert resp.message == "已删除"
+        mock_svc.delete_profile_item.assert_called_once_with(user_id="uid-1", profile_id="p1")
+
+    @pytest.mark.asyncio
+    async def test_delete_profile_item_engine_error(self):
+        mock_svc = MagicMock()
+        mock_svc.delete_profile_item = AsyncMock(
+            side_effect=EngineError("Memobase", "delete failed", 500)
+        )
+        req = profile_pb2.DeleteProfileItemRequest(user_id="uid-1", profile_id="p1")
+        ctx = _ctx()
+        with patch("cozymemory.grpc_server.server.get_profile_service", return_value=mock_svc):
+            await ProfileGrpcServicer().DeleteProfileItem(req, ctx)
+        ctx.set_code.assert_called_once_with(grpc.StatusCode.UNAVAILABLE)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -519,6 +621,31 @@ class TestKnowledgeGrpcServicer:
             )
         ctx.set_code.assert_called_once_with(grpc.StatusCode.UNAVAILABLE)
 
+    # ── DeleteKnowledge ──────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_delete_knowledge_success(self):
+        mock_svc = MagicMock()
+        mock_svc.delete = AsyncMock(
+            return_value=KnowledgeDeleteResponse(success=True, message="已删除")
+        )
+        req = knowledge_pb2.DeleteKnowledgeRequest(data_id="doc-1", dataset_id="ds-1")
+        with patch("cozymemory.grpc_server.server.get_knowledge_service", return_value=mock_svc):
+            resp = await KnowledgeGrpcServicer().DeleteKnowledge(req, _ctx())
+        assert resp.success is True
+        assert resp.message == "已删除"
+        mock_svc.delete.assert_called_once_with(data_id="doc-1", dataset_id="ds-1")
+
+    @pytest.mark.asyncio
+    async def test_delete_knowledge_engine_error(self):
+        mock_svc = MagicMock()
+        mock_svc.delete = AsyncMock(side_effect=EngineError("Cognee", "delete failed", 500))
+        req = knowledge_pb2.DeleteKnowledgeRequest(data_id="doc-1", dataset_id="ds-1")
+        ctx = _ctx()
+        with patch("cozymemory.grpc_server.server.get_knowledge_service", return_value=mock_svc):
+            await KnowledgeGrpcServicer().DeleteKnowledge(req, ctx)
+        ctx.set_code.assert_called_once_with(grpc.StatusCode.UNAVAILABLE)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 烟雾测试：类结构与 proto 模块可导入性（保留原有检查）
@@ -530,18 +657,19 @@ class TestServicerStructure:
     def test_conversation_servicer_has_all_methods(self):
         s = ConversationGrpcServicer()
         for method in ("AddConversation", "SearchConversations", "GetConversation",
-                       "DeleteConversation", "DeleteAllConversations"):
+                       "DeleteConversation", "DeleteAllConversations", "ListConversations"):
             assert hasattr(s, method)
 
     def test_profile_servicer_has_all_methods(self):
         s = ProfileGrpcServicer()
-        for method in ("InsertProfile", "FlushProfile", "GetProfile", "GetContext"):
+        for method in ("InsertProfile", "FlushProfile", "GetProfile", "GetContext",
+                       "AddProfileItem", "DeleteProfileItem"):
             assert hasattr(s, method)
 
     def test_knowledge_servicer_has_all_methods(self):
         s = KnowledgeGrpcServicer()
         for method in ("CreateDataset", "ListDatasets", "AddKnowledge",
-                       "Cognify", "SearchKnowledge"):
+                       "Cognify", "SearchKnowledge", "DeleteKnowledge"):
             assert hasattr(s, method)
 
     def test_serve_grpc_is_coroutine(self):
