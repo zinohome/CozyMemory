@@ -15,10 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Zap, MessageSquare, User, BookOpen, AlertTriangle } from "lucide-react";
+import { UserSelector } from "@/components/user-selector";
 
 interface ContextParams {
   user_id: string;
   query: string;
+  agent_id: string;
+  session_id: string;
   enable_conversations: boolean;
   enable_profile: boolean;
   enable_knowledge: boolean;
@@ -28,12 +31,27 @@ interface ContextParams {
   timeout_ms: number;
 }
 
+const DEFAULT_PARAMS: ContextParams = {
+  user_id: "",
+  query: "",
+  agent_id: "",
+  session_id: "",
+  enable_conversations: true,
+  enable_profile: true,
+  enable_knowledge: true,
+  memory_scope: "long_term",
+  top_k: 5,
+  max_token_size: 500,
+  timeout_ms: 10000,
+};
+
 function MemoryCard({ mem }: { mem: ConversationMemory }) {
   return (
     <div className="rounded-md border p-3 text-sm space-y-1">
       <p>{mem.memory}</p>
-      <div className="flex gap-2 text-xs text-muted-foreground">
+      <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
         {mem.session_id && <span>session: {mem.session_id}</span>}
+        {mem.agent_id && <span>agent: {mem.agent_id}</span>}
         {mem.created_at && <span>{new Date(mem.created_at).toLocaleDateString()}</span>}
       </div>
     </div>
@@ -45,7 +63,7 @@ function KnowledgeCard({ item }: { item: KnowledgeSearchResult }) {
     <div className="rounded-md border p-3 text-sm space-y-1">
       <p>{item.text ?? JSON.stringify(item)}</p>
       {item.score != null && (
-        <span className="text-xs text-muted-foreground">score: {item.score.toFixed(3)}</span>
+        <span className="text-xs text-muted-foreground">score: {(item.score as number).toFixed(3)}</span>
       )}
     </div>
   );
@@ -53,18 +71,7 @@ function KnowledgeCard({ item }: { item: KnowledgeSearchResult }) {
 
 export default function ContextStudioPage() {
   const { currentUserId, setCurrentUserId } = useAppStore();
-  const [params, setParams] = useState<ContextParams>({
-    user_id: currentUserId,
-    query: "",
-    enable_conversations: true,
-    enable_profile: true,
-    enable_knowledge: true,
-    memory_scope: "long_term",
-    top_k: 5,
-    max_token_size: 500,
-    timeout_ms: 10000,
-  });
-
+  const [params, setParams] = useState<ContextParams>({ ...DEFAULT_PARAMS, user_id: currentUserId });
   const [result, setResult] = useState<ContextResponse | null>(null);
   const [elapsed, setElapsed] = useState<number | null>(null);
 
@@ -88,8 +95,12 @@ export default function ContextStudioPage() {
     onSuccess: (data) => setResult(data),
   });
 
+  function handleUserSelect(id: string) {
+    setCurrentUserId(id);
+    setParams((p) => ({ ...p, user_id: id }));
+  }
+
   function handleFetch() {
-    if (params.user_id) setCurrentUserId(params.user_id);
     mutation.mutate(params);
   }
 
@@ -105,21 +116,17 @@ export default function ContextStudioPage() {
       </div>
 
       <div className="grid lg:grid-cols-[320px_1fr] gap-4 flex-1 min-h-0">
-        {/* Left panel — parameters */}
+        {/* ── Left panel — parameters ── */}
         <Card className="h-fit">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Parameters</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="user_id">User ID</Label>
-              <Input
-                id="user_id"
-                placeholder="user_01"
-                value={params.user_id}
-                onChange={(e) => setParams((p) => ({ ...p, user_id: e.target.value }))}
-              />
-            </div>
+            <UserSelector
+              label="User ID"
+              onConfirm={handleUserSelect}
+              withButton={false}
+            />
 
             <div className="space-y-1.5">
               <Label htmlFor="query">Query (optional)</Label>
@@ -130,6 +137,27 @@ export default function ContextStudioPage() {
                 value={params.query}
                 onChange={(e) => setParams((p) => ({ ...p, query: e.target.value }))}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="agent_id">Agent ID</Label>
+                <Input
+                  id="agent_id"
+                  placeholder="optional"
+                  value={params.agent_id}
+                  onChange={(e) => setParams((p) => ({ ...p, agent_id: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="session_id">Session ID</Label>
+                <Input
+                  id="session_id"
+                  placeholder="optional"
+                  value={params.session_id}
+                  onChange={(e) => setParams((p) => ({ ...p, session_id: e.target.value }))}
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -196,7 +224,11 @@ export default function ContextStudioPage() {
               ))}
             </div>
 
-            <Button onClick={handleFetch} disabled={!params.user_id || mutation.isPending} className="w-full">
+            <Button
+              onClick={handleFetch}
+              disabled={!params.user_id || mutation.isPending}
+              className="w-full"
+            >
               {mutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -216,13 +248,14 @@ export default function ContextStudioPage() {
           </CardContent>
         </Card>
 
-        {/* Right panel — results */}
+        {/* ── Right panel — results ── */}
         <div className="flex flex-col gap-3 min-h-0">
           {result && (
             <>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                {elapsed != null && <span>Client latency: {elapsed}ms</span>}
-                {result.latency_ms != null && <span>Server latency: {result.latency_ms}ms</span>}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                <Badge variant="outline">{result.user_id}</Badge>
+                {elapsed != null && <span>client: {elapsed}ms</span>}
+                {result.latency_ms != null && <span>server: {result.latency_ms}ms</span>}
                 {hasErrors && (
                   <span className="flex items-center gap-1 text-amber-500">
                     <AlertTriangle className="h-3.5 w-3.5" />
@@ -306,13 +339,13 @@ export default function ContextStudioPage() {
           )}
 
           {!result && !mutation.isPending && (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-lg">
-              Enter a user ID and click &quot;Fetch Context&quot; to see results.
+            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-lg min-h-48">
+              Select a user and click &quot;Fetch Context&quot; to see results.
             </div>
           )}
 
           {mutation.isPending && (
-            <div className="flex-1 flex items-center justify-center gap-2 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+            <div className="flex-1 flex items-center justify-center gap-2 text-muted-foreground text-sm border-2 border-dashed rounded-lg min-h-48">
               <Loader2 className="h-5 w-5 animate-spin" />
               Querying all three engines in parallel…
             </div>

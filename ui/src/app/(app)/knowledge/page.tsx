@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { knowledgeApi, type KnowledgeDataset, type KnowledgeSearchResult } from "@/lib/api";
+import { knowledgeApi, type KnowledgeDataset } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, BookOpen, RefreshCw, Search, Plus, GitBranch } from "lucide-react";
+import { Loader2, RefreshCw, Search, Plus, GitBranch, Network } from "lucide-react";
+import { KnowledgeGraph } from "@/components/knowledge-graph";
 
 function DatasetRow({
   ds,
@@ -43,10 +44,18 @@ export default function KnowledgePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState("GRAPH_COMPLETION");
   const [cognifyJobId, setCognifyJobId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("add");
 
   const datasetsQuery = useQuery({
     queryKey: ["datasets"],
     queryFn: knowledgeApi.listDatasets,
+  });
+
+  const graphQuery = useQuery({
+    queryKey: ["graph", selectedDataset?.id],
+    queryFn: () => knowledgeApi.getGraph(selectedDataset!.id),
+    enabled: !!selectedDataset && activeTab === "graph",
+    staleTime: 60_000,
   });
 
   const cognifyStatusQuery = useQuery({
@@ -60,14 +69,12 @@ export default function KnowledgePage() {
   });
 
   const addMutation = useMutation({
-    mutationFn: () =>
-      knowledgeApi.add(addText, selectedDataset?.name ?? "default"),
+    mutationFn: () => knowledgeApi.add(addText, selectedDataset?.name ?? "default"),
     onSuccess: () => setAddText(""),
   });
 
   const cognifyMutation = useMutation({
-    mutationFn: () =>
-      knowledgeApi.cognify(selectedDataset ? [selectedDataset.name] : undefined),
+    mutationFn: () => knowledgeApi.cognify(selectedDataset ? [selectedDataset.name] : undefined),
     onSuccess: (data) => {
       if (data.pipeline_run_id) setCognifyJobId(data.pipeline_run_id);
     },
@@ -91,7 +98,7 @@ export default function KnowledgePage() {
       </div>
 
       <div className="grid lg:grid-cols-[240px_1fr] gap-4">
-        {/* Dataset list */}
+        {/* ── Dataset list ── */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Datasets</p>
@@ -104,7 +111,7 @@ export default function KnowledgePage() {
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <ScrollArea className="h-64">
+          <ScrollArea className="h-72">
             <div className="space-y-1 pr-2">
               {datasetsQuery.data?.data.map((ds) => (
                 <DatasetRow
@@ -115,38 +122,61 @@ export default function KnowledgePage() {
                 />
               ))}
               {datasetsQuery.isLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto mt-4" />}
+              {datasetsQuery.data?.data.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">No datasets yet.</p>
+              )}
             </div>
           </ScrollArea>
+          <div className="flex gap-1">
+            <Input
+              placeholder="New dataset name"
+              id="new-ds"
+              className="text-xs h-8"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value.trim();
+                  if (val) {
+                    knowledgeApi.createDataset(val).then(() =>
+                      qc.invalidateQueries({ queryKey: ["datasets"] })
+                    );
+                    (e.target as HTMLInputElement).value = "";
+                  }
+                }
+              }}
+            />
+            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
 
-        {/* Actions */}
-        <Tabs defaultValue="add">
+        {/* ── Main panel ── */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="add">Add Data</TabsTrigger>
             <TabsTrigger value="search">Search</TabsTrigger>
             <TabsTrigger value="cognify">Cognify</TabsTrigger>
+            <TabsTrigger value="graph" disabled={!selectedDataset} className="gap-1.5">
+              <Network className="h-3.5 w-3.5" />
+              Graph
+            </TabsTrigger>
           </TabsList>
 
+          {/* ─ Add ─ */}
           <TabsContent value="add" className="space-y-3 mt-3">
             <div className="space-y-1.5">
               <Label>Dataset</Label>
               <p className="text-sm text-muted-foreground">
-                {selectedDataset ? selectedDataset.name : "default (no dataset selected)"}
+                {selectedDataset ? selectedDataset.name : <span className="italic">default (no dataset selected)</span>}
               </p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Content</Label>
-              <Textarea
-                rows={5}
-                placeholder="Enter text to add to the knowledge base…"
-                value={addText}
-                onChange={(e) => setAddText(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={() => addMutation.mutate()}
-              disabled={!addText || addMutation.isPending}
-            >
+            <Textarea
+              rows={5}
+              placeholder="Enter text to add to the knowledge base…"
+              value={addText}
+              onChange={(e) => setAddText(e.target.value)}
+            />
+            <Button onClick={() => addMutation.mutate()} disabled={!addText || addMutation.isPending}>
               {addMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -155,12 +185,13 @@ export default function KnowledgePage() {
               Add to Knowledge Base
             </Button>
             {addMutation.isSuccess && (
-              <p className="text-xs text-green-600">
+              <p className="text-xs text-green-600 dark:text-green-400">
                 Added! data_id: {addMutation.data?.data_id}
               </p>
             )}
           </TabsContent>
 
+          {/* ─ Search ─ */}
           <TabsContent value="search" className="space-y-3 mt-3">
             <div className="flex gap-2">
               <Input
@@ -204,15 +235,19 @@ export default function KnowledgePage() {
                     )}
                   </div>
                 ))}
+                {searchMutation.isSuccess && searchMutation.data?.data.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No results. Try a different query or run cognify first.</p>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
 
+          {/* ─ Cognify ─ */}
           <TabsContent value="cognify" className="space-y-3 mt-3">
             <p className="text-sm text-muted-foreground">
               Build the knowledge graph for{" "}
               <strong>{selectedDataset ? selectedDataset.name : "all datasets"}</strong>.
-              This may take 30–120s.
+              This may take 30–120 seconds.
             </p>
             <Button onClick={() => cognifyMutation.mutate()} disabled={cognifyMutation.isPending}>
               {cognifyMutation.isPending ? (
@@ -227,12 +262,12 @@ export default function KnowledgePage() {
               <Card>
                 <CardContent className="pt-3 pb-3 text-sm space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Job ID:</span>
+                    <span className="text-muted-foreground text-xs">Job ID:</span>
                     <span className="font-mono text-xs">{cognifyJobId}</span>
                   </div>
                   {cognifyStatusQuery.data && (
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Status:</span>
+                      <span className="text-muted-foreground text-xs">Status:</span>
                       <Badge
                         variant={
                           cognifyStatusQuery.data.status === "completed"
@@ -248,10 +283,53 @@ export default function KnowledgePage() {
                         cognifyStatusQuery.data.status === "pending") && (
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                       )}
+                      {cognifyStatusQuery.data.status === "completed" && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setActiveTab("graph")}
+                        >
+                          View graph →
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* ─ Graph ─ */}
+          <TabsContent value="graph" className="mt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Dataset: <strong>{selectedDataset?.name}</strong>
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => qc.invalidateQueries({ queryKey: ["graph", selectedDataset?.id] })}
+                disabled={graphQuery.isFetching}
+              >
+                {graphQuery.isFetching ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                <span className="ml-1.5">Refresh</span>
+              </Button>
+            </div>
+
+            {graphQuery.isFetching && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading graph…
+              </div>
+            )}
+
+            {graphQuery.data && (
+              <KnowledgeGraph data={graphQuery.data.data} width={680} height={480} />
             )}
           </TabsContent>
         </Tabs>

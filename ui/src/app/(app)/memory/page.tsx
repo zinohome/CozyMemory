@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { conversationsApi, type ConversationMemory } from "@/lib/api";
-import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search, Trash2, MessageSquare } from "lucide-react";
+import { UserSelector } from "@/components/user-selector";
 
 function MemoryRow({
   mem,
@@ -25,6 +23,7 @@ function MemoryRow({
         <p>{mem.memory}</p>
         <div className="flex gap-2 text-xs text-muted-foreground flex-wrap">
           <span className="font-mono">{mem.id}</span>
+          {mem.session_id && <span>session: {mem.session_id}</span>}
           {mem.created_at && <span>{new Date(mem.created_at).toLocaleString()}</span>}
         </div>
       </div>
@@ -36,8 +35,7 @@ function MemoryRow({
 }
 
 export default function MemoryLabPage() {
-  const { currentUserId, setCurrentUserId } = useAppStore();
-  const [userId, setUserId] = useState(currentUserId);
+  const [userId, setUserId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
 
@@ -56,9 +54,9 @@ export default function MemoryLabPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["memories", userId] }),
   });
 
-  function handleLoad() {
-    setCurrentUserId(userId);
-    qc.invalidateQueries({ queryKey: ["memories", userId] });
+  function handleLoad(id: string) {
+    setUserId(id);
+    searchMutation.reset();
   }
 
   const displayList: ConversationMemory[] =
@@ -73,29 +71,19 @@ export default function MemoryLabPage() {
 
       <Card>
         <CardContent className="pt-4 space-y-3">
-          <div className="flex gap-2">
-            <div className="flex-1 space-y-1">
-              <Label>User ID</Label>
-              <Input
-                placeholder="user_01"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLoad()}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={handleLoad} disabled={!userId || listQuery.isFetching}>
-                {listQuery.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
-              </Button>
-            </div>
-          </div>
+          <UserSelector
+            onConfirm={handleLoad}
+            loading={listQuery.isFetching}
+            buttonLabel="Load"
+          />
 
           <div className="flex gap-2">
             <Input
               placeholder="Semantic search…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && searchMutation.mutate()}
+              onKeyDown={(e) => e.key === "Enter" && userId && searchMutation.mutate()}
+              disabled={!userId}
             />
             <Button
               variant="outline"
@@ -117,9 +105,9 @@ export default function MemoryLabPage() {
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {searchMutation.data ? (
-              <>Showing {displayList.length} search results</>
+              <>Showing {displayList.length} search results for &ldquo;{searchQuery}&rdquo;</>
             ) : (
-              <>{listQuery.data.total} memories</>
+              <>{listQuery.data.total} memories for <strong>{userId}</strong></>
             )}
           </span>
           {searchMutation.data && (
@@ -137,6 +125,9 @@ export default function MemoryLabPage() {
           ))}
           {listQuery.data && displayList.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">No memories found.</p>
+          )}
+          {!userId && (
+            <p className="text-sm text-muted-foreground text-center py-8">Select a user to view memories.</p>
           )}
         </div>
       </ScrollArea>

@@ -3,23 +3,20 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profilesApi, type ProfileItem } from "@/lib/api";
-import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Trash2, User } from "lucide-react";
+import { UserSelector } from "@/components/user-selector";
 
 function ProfileItemRow({
   item,
-  userId,
   onDelete,
 }: {
   item: ProfileItem;
-  userId: string;
   onDelete: (id: string) => void;
 }) {
   return (
@@ -44,8 +41,7 @@ function ProfileItemRow({
 }
 
 export default function ProfilesPage() {
-  const { currentUserId, setCurrentUserId } = useAppStore();
-  const [userId, setUserId] = useState(currentUserId);
+  const [userId, setUserId] = useState("");
   const [newItem, setNewItem] = useState({ topic: "", sub_topic: "", content: "" });
   const qc = useQueryClient();
 
@@ -74,10 +70,8 @@ export default function ProfilesPage() {
     },
   });
 
-  function handleLoad() {
-    setCurrentUserId(userId);
-    qc.invalidateQueries({ queryKey: ["profile", userId] });
-    qc.invalidateQueries({ queryKey: ["profile-context", userId] });
+  function handleLoad(id: string) {
+    setUserId(id);
   }
 
   return (
@@ -89,22 +83,11 @@ export default function ProfilesPage() {
 
       <Card>
         <CardContent className="pt-4">
-          <div className="flex gap-2">
-            <div className="flex-1 space-y-1">
-              <Label>User ID</Label>
-              <Input
-                placeholder="user_01"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLoad()}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={handleLoad} disabled={!userId || profileQuery.isFetching}>
-                {profileQuery.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
-              </Button>
-            </div>
-          </div>
+          <UserSelector
+            onConfirm={handleLoad}
+            loading={profileQuery.isFetching}
+            buttonLabel="Load"
+          />
         </CardContent>
       </Card>
 
@@ -127,6 +110,7 @@ export default function ProfilesPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{profileQuery.data.total} profile items</span>
+            <span className="text-xs text-muted-foreground">for {userId}</span>
           </div>
           <ScrollArea className="h-64">
             <div className="space-y-2 pr-2">
@@ -134,7 +118,6 @@ export default function ProfilesPage() {
                 <ProfileItemRow
                   key={item.id}
                   item={item}
-                  userId={userId}
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />
               ))}
@@ -168,13 +151,19 @@ export default function ProfilesPage() {
               />
               <Button
                 onClick={() => addMutation.mutate()}
-                disabled={!newItem.topic || !newItem.content || addMutation.isPending}
+                disabled={!newItem.topic || !newItem.content || addMutation.isPending || !userId}
               >
                 {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
               </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {!userId && (
+        <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-lg">
+          Select a user to view their profile.
+        </p>
       )}
     </div>
   );
