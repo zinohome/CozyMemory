@@ -138,3 +138,24 @@ class KnowledgeDeleteResponse(BaseModel):
 
     success: bool = True
     message: str = ""
+
+
+class CognifyStatusResponse(BaseModel):
+    """Cognify 任务状态响应（透传 Cognee 原始响应）"""
+
+    success: bool = True
+    job_id: str
+    status: str = Field("unknown", description="状态: pending/running/completed/failed/unknown")
+    data: dict[str, Any] | None = Field(None, description="Cognee 原始响应数据")
+
+    model_config = {"extra": "allow"}
+
+
+class DatasetGraphResponse(BaseModel):
+    """数据集知识图谱响应（透传 Cognee 原始图谱数据）"""
+
+    success: bool = True
+    dataset_id: str
+    data: Any = Field(None, description="Cognee 图谱原始数据（nodes + edges）")
+
+    model_config = {"extra": "allow"}

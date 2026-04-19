@@ -12,6 +12,8 @@ from ...api.deps import get_knowledge_service
 from ...clients.base import EngineError
 from ...models.common import ErrorResponse
 from ...models.knowledge import (
+    CognifyStatusResponse,
+    DatasetGraphResponse,
     KnowledgeAddRequest,
     KnowledgeAddResponse,
     KnowledgeCognifyRequest,
@@ -129,6 +131,57 @@ async def search_knowledge(
             top_k=request.top_k,
         )
     except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.get(
+    "/cognify/status/{job_id}",
+    response_model=CognifyStatusResponse,
+    responses={502: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="查询 Cognify 任务状态",
+)
+async def get_cognify_status(
+    job_id: str,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> CognifyStatusResponse | JSONResponse:
+    """查询知识图谱构建任务的当前状态。
+
+    `job_id` 为 `POST /knowledge/cognify` 返回的 `pipeline_run_id`。
+    """
+    try:
+        return await service.get_cognify_status(job_id=job_id)
+    except EngineError as e:
+        if e.status_code == 404:
+            return JSONResponse(
+                status_code=404,
+                content=ErrorResponse(
+                    success=False, error="NotFoundError", detail=f"任务 '{job_id}' 不存在"
+                ).model_dump(),
+            )
+        return _engine_error_response(e)
+
+
+@router.get(
+    "/datasets/{dataset_id}/graph",
+    response_model=DatasetGraphResponse,
+    responses={502: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="获取数据集知识图谱",
+)
+async def get_dataset_graph(
+    dataset_id: str,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> DatasetGraphResponse | JSONResponse:
+    """获取指定数据集的知识图谱结构（节点 + 边），供前端可视化使用。"""
+    try:
+        return await service.get_dataset_graph(dataset_id=dataset_id)
+    except EngineError as e:
+        if e.status_code == 404:
+            return JSONResponse(
+                status_code=404,
+                content=ErrorResponse(
+                    success=False, error="NotFoundError", detail=f"数据集 '{dataset_id}' 不存在"
+                ).model_dump(),
+            )
         return _engine_error_response(e)
 
 

@@ -7,6 +7,8 @@ import structlog
 
 from ..clients.cognee import CogneeClient
 from ..models.knowledge import (
+    CognifyStatusResponse,
+    DatasetGraphResponse,
     KnowledgeAddResponse,
     KnowledgeCognifyResponse,
     KnowledgeDatasetListResponse,
@@ -65,6 +67,21 @@ class KnowledgeService:
         """列出所有数据集"""
         datasets = await self.client.list_datasets()
         return KnowledgeDatasetListResponse(success=True, data=datasets)
+
+    async def get_cognify_status(self, job_id: str) -> CognifyStatusResponse:
+        """查询 Cognify 任务状态"""
+        data = await self.client.get_cognify_status(job_id=job_id)
+        return CognifyStatusResponse(
+            success=True,
+            job_id=job_id,
+            status=str(data.get("status", "unknown")),
+            data=data,
+        )
+
+    async def get_dataset_graph(self, dataset_id: str) -> DatasetGraphResponse:
+        """获取数据集知识图谱数据"""
+        data = await self.client.get_dataset_graph(dataset_id=dataset_id)
+        return DatasetGraphResponse(success=True, dataset_id=dataset_id, data=data)
 
     async def delete(self, data_id: str, dataset_id: str) -> KnowledgeDeleteResponse:
         """删除知识数据"""

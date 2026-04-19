@@ -98,6 +98,16 @@ class CogneeClient(BaseClient):
             created_at=data.get("createdAt") or data.get("created_at"),
         )
 
+    async def get_cognify_status(self, job_id: str) -> dict[str, Any]:
+        """查询 Cognify 任务状态（代理到 Cognee /api/v1/cognify/{job_id}）"""
+        response = await self._request("GET", f"/api/v1/cognify/{job_id}")
+        return dict(response.json())
+
+    async def get_dataset_graph(self, dataset_id: str) -> Any:
+        """获取数据集知识图谱（代理到 Cognee /api/v1/datasets/{id}/graph）"""
+        response = await self._request("GET", f"/api/v1/datasets/{dataset_id}/graph")
+        return response.json()
+
     async def delete(self, data_id: str, dataset_id: str) -> bool:
         """删除数据"""
         try:

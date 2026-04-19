@@ -529,6 +529,26 @@ curl "http://localhost:8000/api/v1/users/user_01/uuid?create=true"
 
 ---
 
+#### `GET /users` — 列出所有已知用户
+
+扫描 Redis `cm:uid:*` 键，返回所有已建立 UUID 映射的 `user_id` 列表，按字母排序。
+
+```bash
+curl http://localhost:8000/api/v1/users
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "data": ["alice", "bob", "user_01"],
+  "total": 3
+}
+```
+
+---
+
 #### `DELETE /users/{user_id}/uuid` — 删除映射记录
 
 删除 Redis 中的映射记录（不影响 Memobase 实际数据）。  
@@ -630,6 +650,67 @@ curl -X POST http://localhost:8000/api/v1/knowledge/add \
 ```
 
 > cognify 完成前调用 search 返回空结果，这是正常现象，轮询等待即可。
+
+---
+
+#### `GET /knowledge/cognify/status/{job_id}` — 查询构建任务状态
+
+轮询 `POST /knowledge/cognify` 返回的 `pipeline_run_id` 对应的任务状态。
+
+```bash
+curl http://localhost:8000/api/v1/knowledge/cognify/status/run_xyz456
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "job_id": "run_xyz456",
+  "status": "running",
+  "data": { "run_id": "run_xyz456", "status": "running" }
+}
+```
+
+| `status` 值 | 说明 |
+|------------|------|
+| `pending` | 任务已提交，排队等待 |
+| `running` | 正在处理 |
+| `completed` | 已完成，search 现在可以返回结果 |
+| `failed` | 构建失败，查看 `data` 字段获取错误详情 |
+| `unknown` | 无法从 Cognee 获取状态 |
+
+> **404**：`job_id` 不存在（任务已过期或 ID 错误）
+
+---
+
+#### `GET /knowledge/datasets/{dataset_id}/graph` — 获取知识图谱
+
+获取指定数据集的完整知识图谱结构（节点 + 边），供前端图谱可视化使用。  
+`dataset_id` 为 `GET /knowledge/datasets` 返回的 UUID。
+
+```bash
+curl http://localhost:8000/api/v1/knowledge/datasets/ds_uuid_001/graph
+```
+
+**响应**（透传 Cognee 原始图谱数据）
+
+```json
+{
+  "success": true,
+  "dataset_id": "ds_uuid_001",
+  "data": {
+    "nodes": [
+      {"id": "node_001", "label": "CozyMemory", "type": "Entity"}
+    ],
+    "edges": [
+      {"source": "node_001", "target": "node_002", "relation": "INTEGRATES"}
+    ]
+  }
+}
+```
+
+> 需在 `cognify` 完成后调用，否则 `data` 为空图谱。
 
 ---
 

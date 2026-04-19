@@ -30,6 +30,28 @@ class UserMappingDeleteResponse(BaseModel):
     warning: str = ""  # 数据安全提示
 
 
+class UserListResponse(BaseModel):
+    success: bool = True
+    data: list[str]
+    total: int
+
+
+@router.get(
+    "",
+    response_model=UserListResponse,
+    summary="列出所有已知用户",
+)
+async def list_users(
+    service: UserMappingService = Depends(get_user_mapping_service),
+) -> UserListResponse:
+    """列出 Redis 中所有已建立 UUID 映射的 user_id，按字母排序。
+
+    扫描 `cm:uid:*` 键空间，适用于用户管理和调试场景。
+    """
+    users = await service.list_users()
+    return UserListResponse(data=users, total=len(users))
+
+
 @router.get(
     "/{user_id}/uuid",
     response_model=UserMappingResponse,

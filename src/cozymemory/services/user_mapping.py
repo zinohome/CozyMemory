@@ -97,6 +97,18 @@ class UserMappingService:
         """根据 UUID 反查原始 user_id，不存在返回 None。"""
         return _decode(await self._redis.get(_UUID_PREFIX + uuid_str))
 
+    async def list_users(self) -> list[str]:
+        """返回所有已映射的 user_id 列表（扫描 Redis cm:uid:* 键）。
+
+        使用 SCAN 而非 KEYS 避免阻塞 Redis 服务器。
+        """
+        user_ids: list[str] = []
+        async for key in self._redis.scan_iter(match=f"{_UID_PREFIX}*"):
+            decoded = _decode(key)
+            if decoded:
+                user_ids.append(decoded.removeprefix(_UID_PREFIX))
+        return sorted(user_ids)
+
     async def delete_mapping(self, user_id: str) -> bool:
         """删除 user_id 的全部映射记录，返回是否存在过该映射。
 
