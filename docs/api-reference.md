@@ -791,6 +791,34 @@ curl -X POST "http://localhost:8000/api/v1/knowledge/datasets?name=my-new-datase
 
 ---
 
+#### `DELETE /knowledge/datasets/{dataset_id}` — 删除数据集
+
+删除指定数据集及其中所有文档与图谱数据。**此操作不可逆。**  
+`dataset_id` 为 `GET /knowledge/datasets` 返回的 UUID。
+
+```bash
+curl -X DELETE http://localhost:8000/api/v1/knowledge/datasets/ds_uuid_001
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "数据集已删除"
+}
+```
+
+| HTTP 状态码 | 含义 |
+|------------|------|
+| `200` | 删除成功（幂等：数据集已不存在时同样返回 200） |
+| `404` | 数据集 ID 不存在 |
+| `502` | Cognee 引擎不可达 |
+
+> **注意**：此接口仅 REST 可用，gRPC `KnowledgeService` 暂未实现对应方法。
+
+---
+
 #### `DELETE /knowledge` — 删除知识数据
 
 先通过 `GET /knowledge/datasets` 获取 `dataset_id`，再结合 add 时返回的 `data_id` 执行删除。
@@ -1159,6 +1187,7 @@ service KnowledgeService {
   rpc Cognify        (CognifyRequest)         returns (CognifyResponse);
   rpc SearchKnowledge(SearchKnowledgeRequest) returns (SearchKnowledgeResponse);
   rpc DeleteKnowledge(DeleteKnowledgeRequest) returns (DeleteResponse);
+  // DeleteDataset — 暂未实现，请使用 REST DELETE /knowledge/datasets/{dataset_id}
 }
 ```
 
