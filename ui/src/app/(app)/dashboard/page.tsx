@@ -1,13 +1,15 @@
 "use client";
 
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueries, useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { healthApi, usersApi, knowledgeApi, conversationsApi, type EngineStatus, type KnowledgeDataset } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Brain, MessageSquare, User, BookOpen,
-  Wifi, WifiOff, Loader2, Users, Database, MemoryStick,
+  Wifi, WifiOff, Loader2, Users, Database, MemoryStick, RefreshCw,
 } from "lucide-react";
 
 // ── Engine health card ────────────────────────────────────────────────────
@@ -203,6 +205,19 @@ function DatasetsTable({ datasets }: { datasets: KnowledgeDataset[] }) {
 // ── Dashboard page ────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const qc = useQueryClient();
+  const fetchingCount = useIsFetching();
+  const isRefreshing = fetchingCount > 0;
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+  function handleRefresh() {
+    qc.invalidateQueries({ queryKey: ["health"] });
+    qc.invalidateQueries({ queryKey: ["users"] });
+    qc.invalidateQueries({ queryKey: ["datasets"] });
+    qc.invalidateQueries({ queryKey: ["mem-count"] }); // invalidates all mem-count/* entries
+    setLastRefreshed(new Date());
+  }
+
   const healthQuery = useQuery({
     queryKey: ["health"],
     queryFn: healthApi.check,
@@ -221,18 +236,35 @@ export default function DashboardPage() {
     staleTime: 30_000,
   });
 
-  // Total memories = sum of per-user counts (loaded lazily by UsersTable)
-  // We show a placeholder here until UsersTable has fetched them
   const userIds = usersQuery.data?.data ?? [];
   const datasetList = datasetsQuery.data?.data ?? [];
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Overview of all memory engines and stored data.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Overview of all memory engines and stored data.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {lastRefreshed && !isRefreshing && (
+            <span className="text-xs text-muted-foreground hidden sm:block">
+              Updated {lastRefreshed.toLocaleTimeString()}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="gap-1.5"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "Refreshing…" : "Refresh"}
+          </Button>
+        </div>
       </div>
 
       {/* ── Stat tiles ── */}
