@@ -186,16 +186,14 @@
 
     /* ── Large screen: tree ── */
     @media (min-width: 720px) {
-      .arch {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
+      /* .arch stays display:block — do NOT use flex here, it breaks inner grid */
 
-      /* CozyMemory card — same width as each engine card */
+      /* CozyMemory card — centered, same width as each engine card */
       .arch-top {
         width: calc((100% - 40px) / 3);
         min-width: 260px;
+        margin: 0 auto;
+        display: block;
       }
 
       /* Connector lines */
@@ -203,7 +201,6 @@
         position: relative;
         width: 100%;
         height: 64px;
-        flex-shrink: 0;
         pointer-events: none;
       }
 
@@ -268,18 +265,12 @@
 
     /* ── Small screen: vertical stack ── */
     @media (max-width: 719px) {
-      .arch {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .arch-top    { width: 100%; }
-      .arch-links  { display: none; }
+      .arch-top   { width: 100%; margin-bottom: 16px; }
+      .arch-links { display: none; }
       .arch-engines {
         display: flex;
         flex-direction: column;
         gap: 16px;
-        width: 100%;
       }
     }
 
@@ -338,7 +329,7 @@
 
   <!-- Top node: CozyMemory unified API -->
   <div class="arch-top">
-    <a class="card" data-port="8000" style="--card-color:var(--purple); --card-color-dim:#3b2f6e;">
+    <div class="card" data-port="8000" style="--card-color:var(--purple); --card-color-dim:#3b2f6e;">
       <div class="card-header">
         <div class="card-icon">🔮</div>
         <div class="card-title">CozyMemory API</div>
@@ -362,7 +353,7 @@
         <span class="dot checking" data-status-port="8000"></span>
         <span data-status-text-port="8000">检测中…</span>
       </div>
-    </a>
+    </div>
   </div>
 
   <!-- Connector lines (desktop only, aria-hidden) -->
@@ -376,7 +367,7 @@
   <div class="arch-engines">
 
     <!-- Mem0 -->
-    <a class="card" data-port="8081" style="--card-color:var(--blue); --card-color-dim:#1e3a5f;">
+    <div class="card" data-port="8081" style="--card-color:var(--blue); --card-color-dim:#1e3a5f;">
       <div class="card-header">
         <div class="card-icon">💬</div>
         <div class="card-title">Mem0</div>
@@ -397,10 +388,10 @@
         <span class="dot checking" data-status-port="8081"></span>
         <span data-status-text-port="8081">检测中…</span>
       </div>
-    </a>
+    </div>
 
     <!-- Memobase -->
-    <a class="card" data-port="8019" style="--card-color:var(--orange); --card-color-dim:#4a2a12;">
+    <div class="card" data-port="8019" style="--card-color:var(--orange); --card-color-dim:#4a2a12;">
       <div class="card-header">
         <div class="card-icon">🪪</div>
         <div class="card-title">Memobase</div>
@@ -421,10 +412,10 @@
         <span class="dot checking" data-status-port="8019"></span>
         <span data-status-text-port="8019">检测中…</span>
       </div>
-    </a>
+    </div>
 
     <!-- Cognee -->
-    <a class="card" data-port="8080" style="--card-color:var(--green); --card-color-dim:#0f3b2a;">
+    <div class="card" data-port="8080" style="--card-color:var(--green); --card-color-dim:#0f3b2a;">
       <div class="card-header">
         <div class="card-icon">🕸️</div>
         <div class="card-title">Cognee</div>
@@ -445,7 +436,7 @@
         <span class="dot checking" data-status-port="8080"></span>
         <span data-status-text-port="8080">检测中…</span>
       </div>
-    </a>
+    </div>
 
   </div><!-- .arch-engines -->
 </div><!-- .arch -->
@@ -479,14 +470,13 @@
 <script>
   const host = location.hostname;
 
-  // Card click → open port root
+  // Card click → open port root (div cards use onclick, not href)
   document.querySelectorAll('.card[data-port]').forEach(card => {
-    card.href   = `http://${host}:${card.dataset.port}/`;
-    card.target = '_blank';
-    card.rel    = 'noopener';
+    const url = `http://${host}:${card.dataset.port}/`;
+    card.addEventListener('click', () => window.open(url, '_blank', 'noopener'));
   });
 
-  // Chip click → open specific path (stop propagation to card)
+  // Chip click → open specific path (stop propagation so card click doesn't also fire)
   document.querySelectorAll('.chip[data-port]').forEach(chip => {
     chip.href   = `http://${host}:${chip.dataset.port}${chip.dataset.path}`;
     chip.target = '_blank';
