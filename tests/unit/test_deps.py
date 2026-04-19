@@ -27,6 +27,7 @@ def setup_function():
     deps_module._memobase_client = None
     deps_module._cognee_client = None
     deps_module._redis_client = None
+    deps_module._user_mapping_service = None
 
 
 def test_get_mem0_client_creates_singleton():

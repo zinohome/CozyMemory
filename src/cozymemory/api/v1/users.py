@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -21,44 +21,48 @@ class UserMappingResponse(BaseModel):
     success: bool = True
     user_id: str
     uuid: str
+    created: bool = False  # True 表示本次请求新建了映射
 
 
 class UserMappingDeleteResponse(BaseModel):
     success: bool
     message: str
+    warning: str = ""  # 数据安全提示
 
 
 @router.get(
     "/{user_id}/uuid",
     response_model=UserMappingResponse,
-    responses={200: {"description": "返回（或新建）该 user_id 对应的 UUID v4"}},
-    summary="获取或创建用户 UUID 映射",
-)
-async def get_or_create_uuid(
-    user_id: str,
-    service: UserMappingService = Depends(get_user_mapping_service),
-) -> UserMappingResponse:
-    """查询 user_id 对应的 UUID v4 映射；若不存在则自动创建。
-
-    Memobase 要求 user_id 必须是 UUID v4，本接口隐藏该细节。
-    """
-    uuid_str = await service.get_or_create_uuid(user_id)
-    return UserMappingResponse(user_id=user_id, uuid=uuid_str)
-
-
-@router.get(
-    "/{user_id}/uuid/lookup",
-    response_model=UserMappingResponse,
     responses={
-        404: {"model": ErrorResponse, "description": "映射不存在"},
+        200: {"description": "返回已有映射或（create=true 时）新建的 UUID v4"},
+        404: {"model": ErrorResponse, "description": "映射不存在（create=false 时）"},
     },
-    summary="查询用户 UUID 映射（不自动创建）",
+    summary="查询用户 UUID 映射",
 )
-async def lookup_uuid(
+async def get_uuid(
     user_id: str,
+    create: bool = Query(
+        False,
+        description=(
+            "为 true 时：若映射不存在则自动创建（幂等）；"
+            "为 false 时（默认）：映射不存在返回 404，不写入 Redis。"
+        ),
+    ),
     service: UserMappingService = Depends(get_user_mapping_service),
 ) -> UserMappingResponse | JSONResponse:
-    """仅查询已存在的映射，若不存在返回 404（不自动创建新 UUID）。"""
+    """查询 user_id 对应的 UUID v4 映射。
+
+    - `create=false`（默认）：只读，映射不存在返回 404。
+    - `create=true`：若映射不存在则原子创建并返回，同时 `created=true` 标识本次新建。
+
+    Memobase 要求 user_id 必须是 UUID v4，本接口供调试或预热映射使用。
+    正常调用画像接口时映射会自动创建，无需手动调用。
+    """
+    if create:
+        existing = await service.get_uuid(user_id)
+        uuid_str = await service.get_or_create_uuid(user_id)
+        return UserMappingResponse(user_id=user_id, uuid=uuid_str, created=(existing is None))
+
     uuid_str = await service.get_uuid(user_id)
     if uuid_str is None:
         return JSONResponse(
@@ -81,12 +85,24 @@ async def delete_uuid_mapping(
     user_id: str,
     service: UserMappingService = Depends(get_user_mapping_service),
 ) -> UserMappingDeleteResponse:
-    """删除 user_id 的 UUID 映射记录（不影响 Memobase 实际数据）。
+    """删除 user_id 的 Redis 映射记录。
 
-    下次调用画像接口时会自动生成新的 UUID（映射到新的 Memobase 用户）。
-    若需要彻底清除数据，请同时调用 DELETE /api/v1/profiles/{user_id}。
+    **警告**：此操作不会删除 Memobase 中的实际画像数据。
+    删除映射后，下次调用画像接口将自动生成新的 UUID，旧 UUID 对应的
+    Memobase 用户数据将永久无法通过 CozyMemory 接口访问（数据孤立）。
+
+    若需彻底清除画像数据，请在删除映射前先调用
+    `DELETE /api/v1/profiles/{user_id}/items/{profile_id}` 逐条删除，
+    或通过 Memobase 直接操作。
     """
     existed = await service.delete_mapping(user_id)
     if existed:
-        return UserMappingDeleteResponse(success=True, message="映射已删除")
+        return UserMappingDeleteResponse(
+            success=True,
+            message="映射已删除",
+            warning=(
+                "Memobase 中该用户的历史画像数据已孤立，"
+                "无法通过 CozyMemory 接口访问。"
+            ),
+        )
     return UserMappingDeleteResponse(success=True, message="映射不存在，无需删除")

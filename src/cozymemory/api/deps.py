@@ -20,6 +20,7 @@ _mem0_client: Mem0Client | None = None
 _memobase_client: MemobaseClient | None = None
 _cognee_client: CogneeClient | None = None
 _redis_client: aioredis.Redis | None = None
+_user_mapping_service: UserMappingService | None = None
 
 
 def get_mem0_client() -> Mem0Client:
@@ -71,15 +72,19 @@ def get_redis_client() -> aioredis.Redis:
 
 
 def get_user_mapping_service() -> UserMappingService:
-    """获取用户 ID 映射服务"""
-    return UserMappingService(
-        redis=get_redis_client(),
-        ttl=settings.REDIS_USER_MAPPING_TTL,
-    )
+    """获取用户 ID 映射服务单例"""
+    global _user_mapping_service
+    if _user_mapping_service is None:
+        _user_mapping_service = UserMappingService(
+            redis=get_redis_client(),
+            ttl=settings.REDIS_USER_MAPPING_TTL,
+        )
+    return _user_mapping_service
 
 
 async def close_all_clients() -> None:
     """关闭所有引擎客户端的 HTTP 连接（供应用关闭时调用）。"""
+    global _user_mapping_service
     if _mem0_client:
         await _mem0_client.close()
     if _memobase_client:
@@ -88,6 +93,7 @@ async def close_all_clients() -> None:
         await _cognee_client.close()
     if _redis_client:
         await _redis_client.aclose()
+    _user_mapping_service = None
 
 
 def get_conversation_service() -> ConversationService:

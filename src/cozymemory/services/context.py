@@ -11,7 +11,7 @@ import structlog
 
 from ..clients.base import EngineError
 from ..models.context import ContextRequest, ContextResponse
-from ..models.conversation import ConversationMemory
+from ..models.conversation import ConversationMemory, ConversationMemoryListResponse
 from .conversation import ConversationService
 from .knowledge import KnowledgeService
 from .profile import ProfileService
@@ -156,14 +156,19 @@ class ContextService:
                 continue
 
             if key == "conversations_short":
-                # result 是 list[ConversationMemory]（来自 search_short / get_all_short）
+                # search_short / get_all_short 直接返回 list[ConversationMemory]
                 short_term_memories = result if isinstance(result, list) else result.data
             elif key == "conversations_long":
-                # result 是 ConversationMemoryListResponse
-                long_term_memories = result.data if hasattr(result, "data") else result
+                # search / get_all 返回 ConversationMemoryListResponse
+                long_term_memories = (
+                    result.data if isinstance(result, ConversationMemoryListResponse) else result
+                )
                 conversations = long_term_memories  # 向后兼容
             elif key == "conversations":
-                data = result.data if hasattr(result, "data") else result
+                # memory_scope != both：单次调用，返回 ConversationMemoryListResponse
+                data: list[ConversationMemory] = (
+                    result if isinstance(result, list) else result.data
+                )
                 conversations = data
                 if request.memory_scope == "short":
                     short_term_memories = data
@@ -172,7 +177,8 @@ class ContextService:
             elif key == "profile":
                 profile_context = result.data.context if result.data else None
             elif key.startswith("knowledge"):
-                knowledge.extend(result.data if hasattr(result, "data") else result)
+                items = result if isinstance(result, list) else result.data
+                knowledge.extend(items)
 
         latency_ms = round((time.monotonic() - start) * 1000, 1)
         logger.info(

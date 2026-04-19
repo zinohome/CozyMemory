@@ -87,9 +87,21 @@ class ConversationMemory(BaseModel):
 
 
 class ConversationMemoryListResponse(BaseModel):
-    """记忆列表响应"""
+    """记忆列表响应
+
+    memory_scope=both 时，short_term_memories / long_term_memories 分别填充；
+    data 保持向后兼容，等同于 long_term_memories（或 short_term_memories 当 scope=short）。
+    """
 
     success: bool = True
     data: list[ConversationMemory] = Field(default_factory=list)
     total: int = Field(0, description="总数")
     message: str = ""
+    short_term_memories: list[ConversationMemory] = Field(
+        default_factory=list,
+        description="会话级短期记忆（memory_scope=short/both 时填充）",
+    )
+    long_term_memories: list[ConversationMemory] = Field(
+        default_factory=list,
+        description="跨会话长期记忆（memory_scope=long/both 时填充）",
+    )

@@ -91,22 +91,16 @@ class ConversationService:
                 agent_id=agent_id, session_id=None,
             )
             short_mems, long_mems = await asyncio.gather(short_task, long_task)
-            # 返回长期记忆作为主列表（向后兼容），短期/长期分别通过 extra 字段标记
-            for m in short_mems:
-                m.metadata = {**(m.metadata or {}), "_scope": "short"}
-            for m in long_mems:
-                m.metadata = {**(m.metadata or {}), "_scope": "long"}
-            memories = long_mems  # 主列表用长期
-            # 将两组记忆均返回，service 层携带 short 组供 ContextService 解析
             logger.debug(
                 "conversation.search.both",
                 user_id=user_id, short=len(short_mems), long=len(long_mems),
             )
             return ConversationMemoryListResponse(
                 success=True,
-                data=long_mems,
+                data=long_mems,           # 向后兼容：主列表 = 长期记忆
                 total=len(long_mems),
-                _short_term=short_mems,  # type: ignore[call-arg]
+                short_term_memories=short_mems,
+                long_term_memories=long_mems,
             )
 
         logger.debug(
@@ -148,7 +142,7 @@ class ConversationService:
         memory_scope:
           long  — 全量历史（默认）
           short — 仅本 session
-          both  — 两者（返回长期，短期存于 _short_term）
+          both  — 两者（short_term_memories + long_term_memories 分别填充）
         """
         if memory_scope == "short":
             memories = await self.client.get_all(
@@ -171,9 +165,10 @@ class ConversationService:
             short_mems, long_mems = await asyncio.gather(short_task, long_task)
             return ConversationMemoryListResponse(
                 success=True,
-                data=long_mems,
+                data=long_mems,           # 向后兼容：主列表 = 长期记忆
                 total=len(long_mems),
-                _short_term=short_mems,  # type: ignore[call-arg]
+                short_term_memories=short_mems,
+                long_term_memories=long_mems,
             )
 
     async def get_all_short(
