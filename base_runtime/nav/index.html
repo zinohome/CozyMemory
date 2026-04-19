@@ -20,6 +20,7 @@
       --orange:    #fb923c;
       --purple:    #a78bfa;
       --pink:      #f472b6;
+      --line:      #3a3d56;
     }
 
     body {
@@ -36,7 +37,7 @@
     /* ── Header ── */
     header {
       text-align: center;
-      margin-bottom: 48px;
+      margin-bottom: 56px;
     }
     .logo {
       display: inline-flex;
@@ -63,15 +64,6 @@
       color: var(--muted);
       font-size: 0.95rem;
       margin-top: 6px;
-    }
-
-    /* ── Grid ── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-      width: 100%;
-      max-width: 1100px;
     }
 
     /* ── Card ── */
@@ -167,14 +159,138 @@
       flex-shrink: 0;
     }
 
-    /* ── Divider section ── */
+    /* ── Status ── */
+    .status-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; color: var(--muted);
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+    .dot.checking { background: #f59e0b; animation: pulse 1.2s infinite; }
+    .dot.ok  { background: var(--green); }
+    .dot.err { background: #f87171; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    /* ═══════════════════════════════════════════
+       Architecture layout
+       Large screen : tree (1-top + 3-bottom)
+       Small screen : vertical stack
+       ═══════════════════════════════════════════ */
+
+    .arch {
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    /* ── Large screen: tree ── */
+    @media (min-width: 720px) {
+      .arch {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      /* CozyMemory card — same width as each engine card */
+      .arch-top {
+        width: calc((100% - 40px) / 3);
+        min-width: 260px;
+      }
+
+      /* Connector lines */
+      .arch-links {
+        position: relative;
+        width: 100%;
+        height: 64px;
+        flex-shrink: 0;
+        pointer-events: none;
+      }
+
+      /* Vertical drop from CozyMemory */
+      .arch-links::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 0;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 32px;
+        background: var(--line);
+      }
+
+      /* Horizontal bar spanning all three engine centers */
+      .arch-links::after {
+        content: '';
+        position: absolute;
+        left:  calc((100% - 40px) / 6);
+        right: calc((100% - 40px) / 6);
+        top: 32px;
+        height: 2px;
+        background: var(--line);
+      }
+
+      /* Three vertical drops down to each engine card */
+      .arch-links .drop {
+        position: absolute;
+        top: 32px;
+        bottom: 0;
+        width: 2px;
+        background: var(--line);
+        transform: translateX(-50%);
+      }
+      .arch-links .drop:nth-child(1) { left: calc((100% - 40px) / 6); }
+      .arch-links .drop:nth-child(2) { left: 50%; }
+      .arch-links .drop:nth-child(3) { left: calc(100% - (100% - 40px) / 6); }
+
+      /* Junction dot on the horizontal bar at each drop point */
+      .arch-links .drop::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--line);
+        box-shadow: 0 0 0 2px var(--bg);
+      }
+
+      /* Three-column grid for engines */
+      .arch-engines {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+    }
+
+    /* ── Small screen: vertical stack ── */
+    @media (max-width: 719px) {
+      .arch {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .arch-top    { width: 100%; }
+      .arch-links  { display: none; }
+      .arch-engines {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+      }
+    }
+
+    /* ── Section divider ── */
     .section-label {
       width: 100%;
       max-width: 1100px;
       display: flex;
       align-items: center;
       gap: 12px;
-      margin: 32px 0 4px;
+      margin: 40px 0 16px;
       color: var(--muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -188,6 +304,15 @@
       background: var(--border);
     }
 
+    /* ── Other grid (gRPC, etc.) ── */
+    .other-grid {
+      width: 100%;
+      max-width: 1100px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
     /* ── Footer ── */
     footer {
       margin-top: 56px;
@@ -195,21 +320,6 @@
       font-size: 0.78rem;
       text-align: center;
       line-height: 1.8;
-    }
-    footer a { color: var(--muted); text-decoration: underline; }
-
-    /* ── Status dot ── */
-    .status-row {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.75rem; color: var(--muted);
-    }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
-    .dot.checking { background: #f59e0b; animation: pulse 1.2s infinite; }
-    .dot.ok  { background: var(--green); }
-    .dot.err { background: #f87171; }
-    @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.3; }
     }
   </style>
 </head>
@@ -223,136 +333,135 @@
   <p class="tagline">统一 AI 记忆服务平台 · Mem0 · Memobase · Cognee</p>
 </header>
 
-<!-- ─── 核心服务 ─── -->
-<span class="section-label">核心服务</span>
+<!-- ═══ Architecture tree ═══ -->
+<div class="arch">
 
-<div class="grid" id="main-grid">
-
-  <!-- CozyMemory 统一 API -->
-  <a class="card" data-port="8000" style="--card-color:var(--purple); --card-color-dim:#3b2f6e;">
-    <div class="card-header">
-      <div class="card-icon">🔮</div>
-      <div>
+  <!-- Top node: CozyMemory unified API -->
+  <div class="arch-top">
+    <a class="card" data-port="8000" style="--card-color:var(--purple); --card-color-dim:#3b2f6e;">
+      <div class="card-header">
+        <div class="card-icon">🔮</div>
         <div class="card-title">CozyMemory API</div>
+        <span class="card-port">:8000</span>
       </div>
-      <span class="card-port">:8000</span>
-    </div>
-    <p class="card-desc">
-      统一 REST 服务层，整合三大记忆引擎。提供对话记忆、用户画像、知识图谱及统一上下文接口。
-    </p>
-    <div class="card-links">
-      <a class="chip" data-port="8000" data-path="/docs">
-        <span class="chip-dot"></span>Swagger UI
-      </a>
-      <a class="chip" data-port="8000" data-path="/redoc">
-        <span class="chip-dot"></span>ReDoc
-      </a>
-      <a class="chip" data-port="8000" data-path="/api/v1/health">
-        <span class="chip-dot"></span>Health
-      </a>
-    </div>
-    <div class="status-row">
-      <span class="dot checking" data-status-port="8000"></span>
-      <span data-status-text-port="8000">检测中…</span>
-    </div>
-  </a>
+      <p class="card-desc">
+        统一 REST 服务层，整合三大记忆引擎。提供对话记忆、用户画像、知识图谱及统一上下文接口。
+      </p>
+      <div class="card-links">
+        <a class="chip" data-port="8000" data-path="/docs">
+          <span class="chip-dot"></span>Swagger UI
+        </a>
+        <a class="chip" data-port="8000" data-path="/redoc">
+          <span class="chip-dot"></span>ReDoc
+        </a>
+        <a class="chip" data-port="8000" data-path="/api/v1/health">
+          <span class="chip-dot"></span>Health
+        </a>
+      </div>
+      <div class="status-row">
+        <span class="dot checking" data-status-port="8000"></span>
+        <span data-status-text-port="8000">检测中…</span>
+      </div>
+    </a>
+  </div>
 
-  <!-- Mem0 -->
-  <a class="card" data-port="8081" style="--card-color:var(--blue); --card-color-dim:#1e3a5f;">
-    <div class="card-header">
-      <div class="card-icon">💬</div>
-      <div>
+  <!-- Connector lines (desktop only, aria-hidden) -->
+  <div class="arch-links" aria-hidden="true">
+    <span class="drop"></span>
+    <span class="drop"></span>
+    <span class="drop"></span>
+  </div>
+
+  <!-- Bottom nodes: 3 engine cards -->
+  <div class="arch-engines">
+
+    <!-- Mem0 -->
+    <a class="card" data-port="8081" style="--card-color:var(--blue); --card-color-dim:#1e3a5f;">
+      <div class="card-header">
+        <div class="card-icon">💬</div>
         <div class="card-title">Mem0</div>
+        <span class="card-port">:8081</span>
       </div>
-      <span class="card-port">:8081</span>
-    </div>
-    <p class="card-desc">
-      对话记忆引擎。通过 LLM 自动提取对话中的事实性记忆，支持语义搜索与 agent / session 隔离。
-    </p>
-    <div class="card-links">
-      <a class="chip" data-port="8081" data-path="/">
-        <span class="chip-dot"></span>Web UI
-      </a>
-      <a class="chip" data-port="8081" data-path="/api/v1/docs">
-        <span class="chip-dot"></span>API 文档
-      </a>
-    </div>
-    <div class="status-row">
-      <span class="dot checking" data-status-port="8081"></span>
-      <span data-status-text-port="8081">检测中…</span>
-    </div>
-  </a>
+      <p class="card-desc">
+        对话记忆引擎。通过 LLM 自动提取对话中的事实性记忆，支持语义搜索与 agent / session 隔离。
+      </p>
+      <div class="card-links">
+        <a class="chip" data-port="8081" data-path="/">
+          <span class="chip-dot"></span>Web UI
+        </a>
+        <a class="chip" data-port="8081" data-path="/api/v1/docs">
+          <span class="chip-dot"></span>API 文档
+        </a>
+      </div>
+      <div class="status-row">
+        <span class="dot checking" data-status-port="8081"></span>
+        <span data-status-text-port="8081">检测中…</span>
+      </div>
+    </a>
 
-  <!-- Memobase -->
-  <a class="card" data-port="8019" style="--card-color:var(--orange); --card-color-dim:#4a2a12;">
-    <div class="card-header">
-      <div class="card-icon">🪪</div>
-      <div>
+    <!-- Memobase -->
+    <a class="card" data-port="8019" style="--card-color:var(--orange); --card-color-dim:#4a2a12;">
+      <div class="card-header">
+        <div class="card-icon">🪪</div>
         <div class="card-title">Memobase</div>
+        <span class="card-port">:8019</span>
       </div>
-      <span class="card-port">:8019</span>
-    </div>
-    <p class="card-desc">
-      用户画像引擎。将对话提炼为结构化 topic/sub_topic 画像，生成可直接插入 system prompt 的上下文文本。
-    </p>
-    <div class="card-links">
-      <a class="chip" data-port="8019" data-path="/api/v1/healthcheck">
-        <span class="chip-dot"></span>Health
-      </a>
-      <a class="chip" data-port="8019" data-path="/docs">
-        <span class="chip-dot"></span>API 文档
-      </a>
-    </div>
-    <div class="status-row">
-      <span class="dot checking" data-status-port="8019"></span>
-      <span data-status-text-port="8019">检测中…</span>
-    </div>
-  </a>
+      <p class="card-desc">
+        用户画像引擎。将对话提炼为结构化 topic/sub_topic 画像，生成可直接插入 system prompt 的上下文文本。
+      </p>
+      <div class="card-links">
+        <a class="chip" data-port="8019" data-path="/api/v1/healthcheck">
+          <span class="chip-dot"></span>Health
+        </a>
+        <a class="chip" data-port="8019" data-path="/docs">
+          <span class="chip-dot"></span>API 文档
+        </a>
+      </div>
+      <div class="status-row">
+        <span class="dot checking" data-status-port="8019"></span>
+        <span data-status-text-port="8019">检测中…</span>
+      </div>
+    </a>
 
-  <!-- Cognee -->
-  <a class="card" data-port="8080" style="--card-color:var(--green); --card-color-dim:#0f3b2a;">
-    <div class="card-header">
-      <div class="card-icon">🕸️</div>
-      <div>
+    <!-- Cognee -->
+    <a class="card" data-port="8080" style="--card-color:var(--green); --card-color-dim:#0f3b2a;">
+      <div class="card-header">
+        <div class="card-icon">🕸️</div>
         <div class="card-title">Cognee</div>
+        <span class="card-port">:8080</span>
       </div>
-      <span class="card-port">:8080</span>
-    </div>
-    <p class="card-desc">
-      知识图谱引擎。将文档构建为实体-关系图谱，支持 RAG、图谱推理、语义摘要等多种搜索模式。
-    </p>
-    <div class="card-links">
-      <a class="chip" data-port="8080" data-path="/">
-        <span class="chip-dot"></span>Web UI
-      </a>
-      <a class="chip" data-port="8080" data-path="/api/v1/docs">
-        <span class="chip-dot"></span>API 文档
-      </a>
-    </div>
-    <div class="status-row">
-      <span class="dot checking" data-status-port="8080"></span>
-      <span data-status-text-port="8080">检测中…</span>
-    </div>
-  </a>
+      <p class="card-desc">
+        知识图谱引擎。将文档构建为实体-关系图谱，支持 RAG、图谱推理、语义摘要等多种搜索模式。
+      </p>
+      <div class="card-links">
+        <a class="chip" data-port="8080" data-path="/">
+          <span class="chip-dot"></span>Web UI
+        </a>
+        <a class="chip" data-port="8080" data-path="/api/v1/docs">
+          <span class="chip-dot"></span>API 文档
+        </a>
+      </div>
+      <div class="status-row">
+        <span class="dot checking" data-status-port="8080"></span>
+        <span data-status-text-port="8080">检测中…</span>
+      </div>
+    </a>
 
-</div>
+  </div><!-- .arch-engines -->
+</div><!-- .arch -->
 
-<!-- ─── gRPC ─── -->
+<!-- ═══ Other: gRPC ═══ -->
 <span class="section-label">其他接口</span>
 
-<div class="grid" style="max-width:1100px; width:100%;">
-
+<div class="other-grid">
   <div class="card" style="--card-color:var(--pink); --card-color-dim:#4a1a3a; cursor:default;">
     <div class="card-header">
       <div class="card-icon">⚡</div>
-      <div>
-        <div class="card-title">CozyMemory gRPC</div>
-      </div>
+      <div class="card-title">CozyMemory gRPC</div>
       <span class="card-port">:50051</span>
     </div>
     <p class="card-desc">
-      高性能 gRPC 接口，18 个方法镜像全部 REST 端点。直连容器（明文 TCP），无 Caddy 代理。<br>
-      适合低延迟内网服务调用。
+      高性能 gRPC 接口，18 个方法镜像全部 REST 端点。直连容器（明文 TCP），无 Caddy 代理。适合低延迟内网服务调用。
     </p>
     <div class="card-links">
       <span class="chip" style="cursor:default; opacity:.6">
@@ -360,7 +469,6 @@
       </span>
     </div>
   </div>
-
 </div>
 
 <footer>
@@ -371,22 +479,22 @@
 <script>
   const host = location.hostname;
 
-  // 卡片整体点击 → 打开对应端口根路径
+  // Card click → open port root
   document.querySelectorAll('.card[data-port]').forEach(card => {
-    card.href = `http://${host}:${card.dataset.port}/`;
+    card.href   = `http://${host}:${card.dataset.port}/`;
     card.target = '_blank';
-    card.rel = 'noopener';
+    card.rel    = 'noopener';
   });
 
-  // 子 chip 链接点击 → 打开对应端口 + 路径（阻止冒泡到 card）
+  // Chip click → open specific path (stop propagation to card)
   document.querySelectorAll('.chip[data-port]').forEach(chip => {
-    chip.href = `http://${host}:${chip.dataset.port}${chip.dataset.path}`;
+    chip.href   = `http://${host}:${chip.dataset.port}${chip.dataset.path}`;
     chip.target = '_blank';
-    chip.rel = 'noopener';
+    chip.rel    = 'noopener';
     chip.addEventListener('click', e => e.stopPropagation());
   });
 
-  // 健康检测：用 fetch 带 no-cors 模式判断是否可达
+  // Health check via no-cors fetch
   async function checkPort(port) {
     const dot  = document.querySelector(`[data-status-port="${port}"]`);
     const text = document.querySelector(`[data-status-text-port="${port}"]`);
@@ -395,10 +503,10 @@
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 4000);
       await fetch(`http://${host}:${port}/`, { mode: 'no-cors', signal: ctrl.signal });
-      dot.className  = 'dot ok';
+      dot.className    = 'dot ok';
       text.textContent = '服务正常';
     } catch {
-      dot.className  = 'dot err';
+      dot.className    = 'dot err';
       text.textContent = '无法连接';
     }
   }
