@@ -60,6 +60,33 @@ async def create_dataset(
         return _engine_error_response(e)
 
 
+@router.delete(
+    "/datasets/{dataset_id}",
+    response_model=KnowledgeDeleteResponse,
+    responses={502: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="删除数据集",
+)
+async def delete_dataset(
+    dataset_id: str,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> KnowledgeDeleteResponse | JSONResponse:
+    """删除指定数据集及其中所有文档与图谱数据。此操作不可逆。
+
+    `dataset_id` 为 `GET /knowledge/datasets` 返回的 UUID。
+    """
+    try:
+        return await service.delete_dataset(dataset_id=dataset_id)
+    except EngineError as e:
+        if e.status_code == 404:
+            return JSONResponse(
+                status_code=404,
+                content=ErrorResponse(
+                    success=False, error="NotFoundError", detail=f"数据集 '{dataset_id}' 不存在"
+                ).model_dump(),
+            )
+        return _engine_error_response(e)
+
+
 @router.get(
     "/datasets",
     response_model=KnowledgeDatasetListResponse,

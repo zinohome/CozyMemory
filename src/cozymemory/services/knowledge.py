@@ -83,6 +83,12 @@ class KnowledgeService:
         data = await self.client.get_dataset_graph(dataset_id=dataset_id)
         return DatasetGraphResponse(success=True, dataset_id=dataset_id, data=data)
 
+    async def delete_dataset(self, dataset_id: str) -> KnowledgeDeleteResponse:
+        """删除数据集（含其中所有数据）"""
+        success = await self.client.delete_dataset(dataset_id=dataset_id)
+        msg = "数据集已删除" if success else "删除失败"
+        return KnowledgeDeleteResponse(success=success, message=msg)
+
     async def delete(self, data_id: str, dataset_id: str) -> KnowledgeDeleteResponse:
         """删除知识数据"""
         success = await self.client.delete(data_id=data_id, dataset_id=dataset_id)

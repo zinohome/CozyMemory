@@ -12,28 +12,77 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, Search, Plus, GitBranch, Network } from "lucide-react";
+import { Loader2, RefreshCw, Search, Plus, GitBranch, Network, Trash2 } from "lucide-react";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
+
+// ── Dataset row with inline delete confirm ────────────────────────────────
 
 function DatasetRow({
   ds,
   selected,
   onClick,
+  onDelete,
+  isDeleting,
 }: {
   ds: KnowledgeDataset;
   selected: boolean;
   onClick: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
 }) {
+  const [confirming, setConfirming] = useState(false);
+
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left rounded-md border px-3 py-2 text-sm transition-colors ${
+    <div
+      className={`group flex items-center gap-1 rounded-md border transition-colors ${
         selected ? "bg-primary/10 border-primary" : "hover:bg-muted"
       }`}
     >
-      <p className="font-medium">{ds.name}</p>
-      <p className="text-xs text-muted-foreground font-mono truncate">{ds.id}</p>
-    </button>
+      {/* Clickable name area */}
+      <button
+        onClick={onClick}
+        className="flex-1 text-left px-3 py-2 text-sm min-w-0"
+      >
+        <p className="font-medium truncate">{ds.name}</p>
+        <p className="text-xs text-muted-foreground font-mono truncate">{ds.id}</p>
+      </button>
+
+      {/* Delete / confirm */}
+      <div className="px-1.5 shrink-0">
+        {isDeleting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        ) : confirming ? (
+          <span className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-6 px-2 text-xs"
+              onClick={(e) => { e.stopPropagation(); setConfirming(false); onDelete(); }}
+            >
+              Yes
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-xs"
+              onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
+            >
+              No
+            </Button>
+          </span>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+            title="Delete dataset"
+            onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -65,6 +114,19 @@ export default function KnowledgePage() {
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status === "running" || status === "pending" ? 3000 : false;
+    },
+  });
+
+  const deleteDatasetMutation = useMutation({
+    mutationFn: (datasetId: string) => knowledgeApi.deleteDataset(datasetId),
+    onSuccess: (_, datasetId) => {
+      qc.invalidateQueries({ queryKey: ["datasets"] });
+      qc.removeQueries({ queryKey: ["graph", datasetId] });
+      // Clear selection if the deleted dataset was selected
+      if (selectedDataset?.id === datasetId) {
+        setSelectedDataset(null);
+        setActiveTab("add");
+      }
     },
   });
 
@@ -119,6 +181,8 @@ export default function KnowledgePage() {
                   ds={ds}
                   selected={selectedDataset?.id === ds.id}
                   onClick={() => setSelectedDataset(ds)}
+                  onDelete={() => deleteDatasetMutation.mutate(ds.id)}
+                  isDeleting={deleteDatasetMutation.isPending && deleteDatasetMutation.variables === ds.id}
                 />
               ))}
               {datasetsQuery.isLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto mt-4" />}

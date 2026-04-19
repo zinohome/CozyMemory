@@ -103,6 +103,16 @@ class CogneeClient(BaseClient):
         response = await self._request("GET", f"/api/v1/cognify/{job_id}")
         return dict(response.json())
 
+    async def delete_dataset(self, dataset_id: str) -> bool:
+        """删除数据集（代理到 Cognee DELETE /api/v1/datasets/{id}）"""
+        try:
+            await self._request("DELETE", f"/api/v1/datasets/{dataset_id}")
+            return True
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise
+
     async def get_dataset_graph(self, dataset_id: str) -> Any:
         """获取数据集知识图谱（代理到 Cognee /api/v1/datasets/{id}/graph）"""
         response = await self._request("GET", f"/api/v1/datasets/{dataset_id}/graph")
