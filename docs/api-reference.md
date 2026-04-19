@@ -171,9 +171,32 @@ curl -X POST http://localhost:8000/api/v1/conversations \
 |------|------|------|------|------|
 | `user_id` | string | 是 | — | |
 | `limit` | int | 否 | 100 | 最大返回数量 |
+| `agent_id` | string | 否 | null | 限定 agent 视角 |
+| `session_id` | string | 否 | null | 限定 session（`memory_scope=short/both` 时生效） |
+| `memory_scope` | enum | 否 | `long` | `short`：会话级；`long`：跨会话长期；`both`：两者 |
+
+**响应**（`memory_scope=both` 时）
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 2,
+  "short_term_memories": [
+    {"id": "mem_s1", "user_id": "user_01", "content": "本次会话：喜欢篮球", "score": null, ...}
+  ],
+  "long_term_memories": [
+    {"id": "mem_l1", "user_id": "user_01", "content": "长期记忆：喜欢游泳", "score": null, ...}
+  ],
+  "message": ""
+}
+```
+
+`memory_scope=long`（默认）时 `short_term_memories` 为空列表；`memory_scope=short` 时 `long_term_memories` 为空列表；`data` 始终返回长期记忆列表（向后兼容）。
 
 ```bash
 curl "http://localhost:8000/api/v1/conversations?user_id=user_01&limit=20"
+curl "http://localhost:8000/api/v1/conversations?user_id=user_01&memory_scope=both&session_id=sess_abc123"
 ```
 
 ---
@@ -206,10 +229,33 @@ curl "http://localhost:8000/api/v1/conversations?user_id=user_01&limit=20"
 
 每条结果的 `score` 字段反映语义相关度（越高越相关）。
 
+**响应**（`memory_scope=both` 时）
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 3,
+  "short_term_memories": [
+    {"id": "mem_s1", "user_id": "user_01", "content": "本次会话记忆", "score": 0.92, ...}
+  ],
+  "long_term_memories": [
+    {"id": "mem_l1", "user_id": "user_01", "content": "长期记忆：喜欢游泳", "score": 0.87, ...}
+  ],
+  "message": ""
+}
+```
+
+`memory_scope=long/short` 时，对应的另一个字段为空列表；`data` 始终等同于 `long_term_memories`（向后兼容）。
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/conversations/search \
   -H "Content-Type: application/json" \
   -d '{"user_id":"user_01","query":"用户喜欢什么运动","limit":5}'
+# memory_scope=both 示例
+curl -X POST http://localhost:8000/api/v1/conversations/search \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user_01","query":"用户喜欢什么","memory_scope":"both","session_id":"sess_abc123"}'
 ```
 
 ---
@@ -447,29 +493,39 @@ curl -X DELETE \
 管理 `user_id` ↔ UUID v4 的双向映射关系（由 Redis 维护）。  
 通常无需手动调用——所有画像接口自动完成映射。以下接口供调试、跨系统 ID 对齐或清理使用。
 
-#### `GET /users/{user_id}/uuid` — 获取或创建映射
+#### `GET /users/{user_id}/uuid` — 查询（或创建）映射
 
-返回该 `user_id` 对应的 UUID；若不存在则自动创建。
+**查询参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|------|------|------|------|------|
+| `create` | bool | 否 | `false` | `false`（默认）：仅读取，映射不存在时返回 `404`；`true`：不存在时自动创建新 UUID |
+
+默认行为是**只读**，不会产生副作用。需要在首次访问时自动分配 UUID，请传 `?create=true`。
 
 ```bash
+# 仅查询（默认）：不存在返回 404
 curl http://localhost:8000/api/v1/users/user_01/uuid
+
+# 自动创建（不存在时生成新 UUID）
+curl "http://localhost:8000/api/v1/users/user_01/uuid?create=true"
 ```
 
 **响应**
 
 ```json
-{"success": true, "user_id": "user_01", "uuid": "550e8400-e29b-41d4-a716-446655440000"}
+{
+  "success": true,
+  "user_id": "user_01",
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "created": false
+}
 ```
 
----
-
-#### `GET /users/{user_id}/uuid/lookup` — 仅查询映射（不自动创建）
-
-映射不存在时返回 `404`，而非自动生成新 UUID。
-
-```bash
-curl http://localhost:8000/api/v1/users/user_01/uuid/lookup
-```
+| 字段 | 说明 |
+|------|------|
+| `uuid` | 对应的 UUID v4 字符串 |
+| `created` | `true` 表示本次请求新分配了 UUID（首次调用 `?create=true` 时）；`false` 表示返回已有映射 |
 
 ---
 
@@ -483,7 +539,19 @@ curl http://localhost:8000/api/v1/users/user_01/uuid/lookup
 curl -X DELETE http://localhost:8000/api/v1/users/user_01/uuid
 ```
 
-**响应**：`{"success": true, "message": "映射已删除"}`
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "映射已删除",
+  "warning": "Memobase 中对应 UUID 的数据未被删除，下次访问将生成新 UUID 并切换到空白用户"
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `warning` | 提示 Memobase 侧数据未被清除；若不需要保留历史数据可忽略 |
 
 ---
 
@@ -1158,10 +1226,11 @@ print(resp.latency_ms)
 
 | 服务 | 协议 | 端口 | 说明 |
 |------|------|------|------|
+| **导航页** | HTTP | `:80` | 服务总览，可点击跳转各端口，含实时健康检测 |
 | CozyMemory REST | HTTP | `:8000` | 通过 Caddy 反向代理 |
 | CozyMemory gRPC | TCP | `:50051` | 直连容器，无代理 |
-| Cognee API | HTTP | `:8080` | 通过 Caddy |
-| Mem0 API | HTTP | `:8081` | 通过 Caddy |
+| Cognee API + 前端 | HTTP | `:8080` | 通过 Caddy |
+| Mem0 API + 前端 | HTTP | `:8081` | 通过 Caddy |
 | Memobase API | HTTP | `:8019` | 通过 Caddy |
 | Swagger UI | HTTP | `:8000/docs` | CozyMemory 交互式文档 |
 | ReDoc | HTTP | `:8000/redoc` | 另一种风格的 REST 文档 |
@@ -1176,10 +1245,16 @@ print(resp.latency_ms)
 不需要。CozyMemory 内置 Redis 透明映射层，任意字符串 `user_id` 均自动映射为 Memobase 所需的 UUID v4。  
 直接传 `"user_01"` 即可，CozyMemory 内部完成转换。
 
-如需查看某个 `user_id` 对应的 UUID，调用：
+如需查看某个 `user_id` 对应的 UUID，调用（默认只读，不存在返回 404）：
 
 ```bash
 curl http://localhost:8000/api/v1/users/user_01/uuid
+```
+
+若想在不存在时自动创建映射，加 `?create=true`：
+
+```bash
+curl "http://localhost:8000/api/v1/users/user_01/uuid?create=true"
 ```
 
 ### Q: 添加文档后搜索没有结果？
