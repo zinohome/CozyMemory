@@ -39,11 +39,17 @@ class Mem0Client(BaseClient):
         messages: list[dict[str, str]],
         metadata: dict[str, Any] | None = None,
         infer: bool = True,
+        agent_id: str | None = None,
+        session_id: str | None = None,
     ) -> list[ConversationMemory]:
         """添加对话，Mem0 自动提取事实"""
         payload: dict[str, Any] = {"messages": messages, "user_id": user_id, "infer": infer}
         if metadata:
             payload["metadata"] = metadata
+        if agent_id:
+            payload["agent_id"] = agent_id
+        if session_id:
+            payload["run_id"] = session_id
 
         response = await self._request("POST", "/api/v1/memories", json=payload)
         data = response.json()
@@ -67,12 +73,22 @@ class Mem0Client(BaseClient):
         ]
 
     async def search(
-        self, user_id: str, query: str, limit: int = 10, threshold: float | None = None
+        self,
+        user_id: str,
+        query: str,
+        limit: int = 10,
+        threshold: float | None = None,
+        agent_id: str | None = None,
+        session_id: str | None = None,
     ) -> list[ConversationMemory]:
         """语义搜索会话记忆"""
         payload: dict[str, Any] = {"query": query, "user_id": user_id, "limit": limit}
         if threshold is not None:
             payload["threshold"] = threshold
+        if agent_id:
+            payload["agent_id"] = agent_id
+        if session_id:
+            payload["run_id"] = session_id
 
         response = await self._request("POST", "/api/v1/search", json=payload)
         data = response.json()
@@ -114,11 +130,20 @@ class Mem0Client(BaseClient):
                 return None
             raise
 
-    async def get_all(self, user_id: str, limit: int = 100) -> list[ConversationMemory]:
+    async def get_all(
+        self,
+        user_id: str,
+        limit: int = 100,
+        agent_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[ConversationMemory]:
         """获取用户所有记忆"""
-        response = await self._request(
-            "GET", "/api/v1/memories", params={"user_id": user_id, "limit": limit}
-        )
+        params: dict[str, Any] = {"user_id": user_id, "limit": limit}
+        if agent_id:
+            params["agent_id"] = agent_id
+        if session_id:
+            params["run_id"] = session_id
+        response = await self._request("GET", "/api/v1/memories", params=params)
         data = response.json()
 
         items = (

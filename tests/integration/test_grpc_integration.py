@@ -178,7 +178,7 @@ async def test_grpc_insert_profile(grpc_channel):
     response = await stub.InsertProfile(
         profile_pb2.InsertProfileRequest(
             user_id=user_id,
-            messages=[conversation_pb2.Message(role="user", content="我叫 gRPC 测试用户，喜欢阅读")],
+            messages=[conversation_pb2.Message(role="user", content="我叫 gRPC 测试用户")],
             sync=True,
         ),
         timeout=60,

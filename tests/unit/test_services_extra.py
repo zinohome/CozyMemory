@@ -1,6 +1,6 @@
 """服务层补充测试 - 覆盖错误路径"""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -8,6 +8,7 @@ from cozymemory.clients.base import EngineError
 from cozymemory.services.conversation import ConversationService
 from cozymemory.services.knowledge import KnowledgeService
 from cozymemory.services.profile import ProfileService
+from cozymemory.services.user_mapping import UserMappingService
 
 
 @pytest.fixture
@@ -23,6 +24,13 @@ def mock_memobase_client():
 @pytest.fixture
 def mock_cognee_client():
     return AsyncMock()
+
+
+@pytest.fixture
+def mock_user_mapping():
+    mapping = MagicMock(spec=UserMappingService)
+    mapping.get_or_create_uuid = AsyncMock(return_value="550e8400-e29b-41d4-a716-446655440000")
+    return mapping
 
 
 # --- ConversationService ---
@@ -77,57 +85,61 @@ async def test_conversation_service_delete_all_failure_raises(mock_mem0_client):
 
 
 @pytest.mark.asyncio
-async def test_profile_service_insert_failure_raises(mock_memobase_client):
+async def test_profile_service_insert_failure_raises(mock_memobase_client, mock_user_mapping):
     """ProfileService.insert 失败时抛出 EngineError"""
     mock_memobase_client.insert = AsyncMock(side_effect=EngineError("Memobase", "error", 500))
-    svc = ProfileService(mock_memobase_client)
+    svc = ProfileService(mock_memobase_client, mock_user_mapping)
     with pytest.raises(EngineError):
         await svc.insert("user_1", [{"role": "user", "content": "hello"}])
 
 
 @pytest.mark.asyncio
-async def test_profile_service_flush_failure_raises(mock_memobase_client):
+async def test_profile_service_flush_failure_raises(mock_memobase_client, mock_user_mapping):
     """ProfileService.flush 失败时抛出 EngineError"""
     mock_memobase_client.flush = AsyncMock(side_effect=EngineError("Memobase", "error", 500))
-    svc = ProfileService(mock_memobase_client)
+    svc = ProfileService(mock_memobase_client, mock_user_mapping)
     with pytest.raises(EngineError):
         await svc.flush("user_1")
 
 
 @pytest.mark.asyncio
-async def test_profile_service_get_profile_failure_raises(mock_memobase_client):
+async def test_profile_service_get_profile_failure_raises(mock_memobase_client, mock_user_mapping):
     """ProfileService.get_profile 失败时抛出 EngineError"""
     mock_memobase_client.profile = AsyncMock(side_effect=EngineError("Memobase", "error", 500))
-    svc = ProfileService(mock_memobase_client)
+    svc = ProfileService(mock_memobase_client, mock_user_mapping)
     with pytest.raises(EngineError):
         await svc.get_profile("user_1")
 
 
 @pytest.mark.asyncio
-async def test_profile_service_get_context_failure_raises(mock_memobase_client):
+async def test_profile_service_get_context_failure_raises(mock_memobase_client, mock_user_mapping):
     """ProfileService.get_context 失败时抛出 EngineError"""
     mock_memobase_client.context = AsyncMock(side_effect=EngineError("Memobase", "error", 500))
-    svc = ProfileService(mock_memobase_client)
+    svc = ProfileService(mock_memobase_client, mock_user_mapping)
     with pytest.raises(EngineError):
         await svc.get_context("user_1", max_token_size=300)
 
 
 @pytest.mark.asyncio
-async def test_profile_service_add_profile_item_failure_raises(mock_memobase_client):
+async def test_profile_service_add_profile_item_failure_raises(
+    mock_memobase_client, mock_user_mapping
+):
     """ProfileService.add_profile_item 失败时抛出 EngineError"""
     mock_memobase_client.add_profile = AsyncMock(side_effect=EngineError("Memobase", "error", 500))
-    svc = ProfileService(mock_memobase_client)
+    svc = ProfileService(mock_memobase_client, mock_user_mapping)
     with pytest.raises(EngineError):
         await svc.add_profile_item("user_1", "interest", "hobby", "游泳")
 
 
 @pytest.mark.asyncio
-async def test_profile_service_delete_profile_item_failure_raises(mock_memobase_client):
+async def test_profile_service_delete_profile_item_failure_raises(
+    mock_memobase_client, mock_user_mapping
+):
     """ProfileService.delete_profile_item 失败时抛出 EngineError"""
     mock_memobase_client.delete_profile = AsyncMock(
         side_effect=EngineError("Memobase", "error", 500)
     )
-    svc = ProfileService(mock_memobase_client)
+    svc = ProfileService(mock_memobase_client, mock_user_mapping)
     with pytest.raises(EngineError):
         await svc.delete_profile_item("user_1", "prof_1")
 

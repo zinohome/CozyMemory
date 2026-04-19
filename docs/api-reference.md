@@ -118,8 +118,10 @@ curl http://localhost:8000/api/v1/health
     {"role": "user",      "content": "我最近开始学打篮球，感觉很有趣"},
     {"role": "assistant", "content": "太棒了！篮球是很好的运动"}
   ],
-  "metadata": {"source": "web", "session_id": "sess_abc123"},
-  "infer": true
+  "metadata": {"source": "web"},
+  "infer": true,
+  "agent_id": "sales-bot",
+  "session_id": "sess_abc123"
 }
 ```
 
@@ -129,6 +131,8 @@ curl http://localhost:8000/api/v1/health
 | `messages` | Message[] | 是 | — | 至少 1 条 |
 | `metadata` | object | 否 | null | 随记忆存储的自定义元数据 |
 | `infer` | bool | 否 | `true` | `true`：LLM 提取事实；`false`：原样存储 |
+| `agent_id` | string | 否 | null | 智能体 ID，按 agent 隔离记忆视角（不同 agent 只看自己的记忆） |
+| `session_id` | string | 否 | null | 会话 ID，映射为 Mem0 `run_id`，实现短期记忆隔离 |
 
 **响应**
 
@@ -183,7 +187,10 @@ curl "http://localhost:8000/api/v1/conversations?user_id=user_01&limit=20"
   "user_id": "user_01",
   "query": "用户喜欢什么运动",
   "limit": 5,
-  "threshold": 0.7
+  "threshold": 0.7,
+  "agent_id": "sales-bot",
+  "session_id": "sess_abc123",
+  "memory_scope": "long"
 }
 ```
 
@@ -193,6 +200,9 @@ curl "http://localhost:8000/api/v1/conversations?user_id=user_01&limit=20"
 | `query` | string | 是 | — | 自然语言查询文本 |
 | `limit` | int | 否 | 10 | 返回数量，1~100 |
 | `threshold` | float | 否 | null | 最低相似度，0~1，null 不过滤 |
+| `agent_id` | string | 否 | null | 限定 agent 视角 |
+| `session_id` | string | 否 | null | 限定 session（`memory_scope=short/both` 时生效） |
+| `memory_scope` | enum | 否 | `long` | `short`：会话级记忆；`long`：跨会话长期记忆；`both`：两者都搜索 |
 
 每条结果的 `score` 字段反映语义相关度（越高越相关）。
 
@@ -236,8 +246,8 @@ curl -X DELETE "http://localhost:8000/api/v1/conversations?user_id=user_01"
 
 底层引擎：**Memobase**。
 
-> **重要**：`user_id` 必须是 **UUID v4** 格式（如 `550e8400-e29b-41d4-a716-446655440000`）。  
-> 传入非 UUID 字符串（如 `"user_01"`）会被 Memobase 拒绝，返回 400/422。
+> **user_id 透明映射**：CozyMemory 通过 Redis 自动将任意字符串 `user_id` 映射为 Memobase 所需的 UUID v4，调用方无需自己生成 UUID。  
+> 若需查看或管理映射关系，参见下方的 [用户 ID 映射（Users）](#用户-id-映射users) 章节。
 
 **工作流程**
 
@@ -251,7 +261,7 @@ insert（写入缓冲区）→ 自动/手动 flush（LLM 提取）→ GET /{user
 
 ```json
 {
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "user_01",
   "messages": [
     {"role": "user",      "content": "我叫小明，今年 28 岁，住在北京"},
     {"role": "assistant", "content": "好的，我已记录您的基本信息"}
@@ -262,7 +272,7 @@ insert（写入缓冲区）→ 自动/手动 flush（LLM 提取）→ GET /{user
 
 | 字段 | 类型 | 必填 | 默认 | 说明 |
 |------|------|------|------|------|
-| `user_id` | string (UUID v4) | 是 | — | 用户不存在时自动创建 |
+| `user_id` | string | 是 | — | 任意字符串，内部自动映射为 UUID v4；用户不存在时自动创建 |
 | `messages` | Message[] | 是 | — | |
 | `sync` | bool | 否 | `false` | `true`：同步等待 LLM 处理完成后返回 |
 
@@ -271,16 +281,16 @@ insert（写入缓冲区）→ 自动/手动 flush（LLM 提取）→ GET /{user
 ```json
 {
   "success": true,
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "user_01",
   "blob_id": "blob_xyz789",
-  "message": ""
+  "message": "对话已插入缓冲区"
 }
 ```
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/profiles/insert \
   -H "Content-Type: application/json" \
-  -d '{"user_id":"550e8400-e29b-41d4-a716-446655440000","messages":[{"role":"user","content":"我叫小明，喜欢游泳"}],"sync":true}'
+  -d '{"user_id":"user_01","messages":[{"role":"user","content":"我叫小明，喜欢游泳"}],"sync":true}'
 ```
 
 ---
@@ -292,7 +302,7 @@ curl -X POST http://localhost:8000/api/v1/profiles/insert \
 **请求体**
 
 ```json
-{"user_id": "550e8400-e29b-41d4-a716-446655440000", "sync": true}
+{"user_id": "user_01", "sync": true}
 ```
 
 ---
@@ -331,7 +341,7 @@ curl -X POST http://localhost:8000/api/v1/profiles/insert \
 ```
 
 ```bash
-curl http://localhost:8000/api/v1/profiles/550e8400-e29b-41d4-a716-446655440000
+curl http://localhost:8000/api/v1/profiles/user_01
 ```
 
 ---
@@ -366,7 +376,7 @@ curl http://localhost:8000/api/v1/profiles/550e8400-e29b-41d4-a716-446655440000
 
 ```bash
 curl -X POST \
-  http://localhost:8000/api/v1/profiles/550e8400-e29b-41d4-a716-446655440000/context \
+  http://localhost:8000/api/v1/profiles/user_01/context \
   -H "Content-Type: application/json" \
   -d '{"max_token_size":500}'
 ```
@@ -414,7 +424,7 @@ curl -X POST \
 
 ```bash
 curl -X POST \
-  http://localhost:8000/api/v1/profiles/550e8400-e29b-41d4-a716-446655440000/items \
+  http://localhost:8000/api/v1/profiles/user_01/items \
   -H "Content-Type: application/json" \
   -d '{"topic":"interest","sub_topic":"sport","content":"喜欢游泳"}'
 ```
@@ -425,10 +435,55 @@ curl -X POST \
 
 ```bash
 curl -X DELETE \
-  http://localhost:8000/api/v1/profiles/550e8400-e29b-41d4-a716-446655440000/items/profile_003
+  http://localhost:8000/api/v1/profiles/user_01/items/profile_003
 ```
 
 **响应**：`{"success": true, "message": ""}`
+
+---
+
+### 用户 ID 映射（Users）
+
+管理 `user_id` ↔ UUID v4 的双向映射关系（由 Redis 维护）。  
+通常无需手动调用——所有画像接口自动完成映射。以下接口供调试、跨系统 ID 对齐或清理使用。
+
+#### `GET /users/{user_id}/uuid` — 获取或创建映射
+
+返回该 `user_id` 对应的 UUID；若不存在则自动创建。
+
+```bash
+curl http://localhost:8000/api/v1/users/user_01/uuid
+```
+
+**响应**
+
+```json
+{"success": true, "user_id": "user_01", "uuid": "550e8400-e29b-41d4-a716-446655440000"}
+```
+
+---
+
+#### `GET /users/{user_id}/uuid/lookup` — 仅查询映射（不自动创建）
+
+映射不存在时返回 `404`，而非自动生成新 UUID。
+
+```bash
+curl http://localhost:8000/api/v1/users/user_01/uuid/lookup
+```
+
+---
+
+#### `DELETE /users/{user_id}/uuid` — 删除映射记录
+
+删除 Redis 中的映射记录（不影响 Memobase 实际数据）。  
+> 删除后下次调用画像接口将生成新 UUID，相当于切换到新的 Memobase 用户。  
+> 若需彻底清除数据，请先调用 `DELETE /profiles/{user_id}/items/*` 清空画像。
+
+```bash
+curl -X DELETE http://localhost:8000/api/v1/users/user_01/uuid
+```
+
+**响应**：`{"success": true, "message": "映射已删除"}`
 
 ---
 
@@ -615,7 +670,7 @@ curl -X DELETE http://localhost:8000/api/v1/knowledge \
 
 ```json
 {
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "user_01",
   "query": "用户最近关心什么话题",
   "include_conversations": true,
   "include_profile": true,
@@ -625,13 +680,17 @@ curl -X DELETE http://localhost:8000/api/v1/knowledge \
   "knowledge_top_k": 3,
   "knowledge_search_type": "GRAPH_COMPLETION",
   "engine_timeout": 5.0,
-  "chats": null
+  "chats": null,
+  "agent_id": "sales-bot",
+  "session_id": "sess_abc123",
+  "memory_scope": "both",
+  "knowledge_datasets": ["product-docs", "faq"]
 }
 ```
 
 | 字段 | 类型 | 必填 | 默认 | 说明 |
 |------|------|------|------|------|
-| `user_id` | string | 是 | — | `include_profile=true` 时须为 UUID v4 |
+| `user_id` | string | 是 | — | 任意字符串，画像透明映射 UUID |
 | `query` | string | 否 | null | 有值→语义搜索；null→Mem0 全量，Cognee 跳过 |
 | `include_conversations` | bool | 否 | `true` | 是否调用 Mem0 |
 | `include_profile` | bool | 否 | `true` | 是否调用 Memobase |
@@ -642,23 +701,31 @@ curl -X DELETE http://localhost:8000/api/v1/knowledge \
 | `knowledge_search_type` | enum | 否 | `GRAPH_COMPLETION` | 同 knowledge search_type |
 | `engine_timeout` | float | 否 | null | 每引擎超时秒数；超时记入 errors，不中断整体 |
 | `chats` | Message[] | 否 | null | 当前对话轮次（传给 Memobase） |
+| `agent_id` | string | 否 | null | 限定 agent 视角（Mem0） |
+| `session_id` | string | 否 | null | 限定 session（`memory_scope=short/both` 时生效） |
+| `memory_scope` | enum | 否 | `long` | `short`/`long`/`both`；`both` 时并发两路 Mem0 查询，响应中分别填充 `short_term_memories` 和 `long_term_memories` |
+| `knowledge_datasets` | string[] | 否 | null | 限定检索数据集列表；null 搜索全部；多个数据集并发搜索后合并 |
 
 **响应**
 
 ```json
 {
   "success": true,
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "user_01",
   "conversations": [
     {
       "id": "mem_abc123",
-      "user_id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "user_01",
       "content": "用户喜欢篮球运动",
       "score": 0.88,
       "metadata": {},
       "created_at": "2026-04-19T10:00:00Z",
       "updated_at": "2026-04-19T10:00:00Z"
     }
+  ],
+  "short_term_memories": [],
+  "long_term_memories": [
+    {"id": "mem_abc123", "user_id": "user_01", "content": "用户喜欢篮球运动", "score": 0.88}
   ],
   "profile_context": "## User Profile\n- Interests: Basketball, Swimming\n...",
   "knowledge": [
@@ -671,7 +738,9 @@ curl -X DELETE http://localhost:8000/api/v1/knowledge \
 
 | 响应字段 | 说明 |
 |---------|------|
-| `conversations` | Mem0 记忆列表；未启用或失败时为 `[]` |
+| `conversations` | Mem0 记忆列表（向后兼容字段，等同于 `long_term_memories`）；未启用或失败时为 `[]` |
+| `short_term_memories` | 会话级短期记忆，`memory_scope=short/both` 时填充 |
+| `long_term_memories` | 跨会话长期记忆，`memory_scope=long/both` 时填充 |
 | `profile_context` | Memobase 生成文本，可直接插入 system prompt；未启用或无画像时为 `null` |
 | `knowledge` | Cognee 搜索结果；未启用、无 query 或失败时为 `[]` |
 | `errors` | 各引擎错误，键为 `conversations`/`profile`/`knowledge`；无错误时为 `{}` |
@@ -698,11 +767,13 @@ curl -X DELETE http://localhost:8000/api/v1/knowledge \
 curl -X POST http://localhost:8000/api/v1/context \
   -H "Content-Type: application/json" \
   -d '{
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "user_01",
     "query": "用户喜欢什么运动",
     "include_conversations": true,
     "include_profile": true,
-    "include_knowledge": false
+    "include_knowledge": false,
+    "memory_scope": "both",
+    "agent_id": "sales-bot"
   }'
 ```
 
@@ -762,7 +833,9 @@ message AddConversationRequest {
   string user_id = 1;
   repeated Message messages = 2;
   map<string, string> metadata = 3;
-  bool infer = 4;          // true = LLM 提取；false = 原样存储
+  bool infer = 4;           // true = LLM 提取；false = 原样存储
+  string agent_id = 5;      // 按 agent 隔离记忆视角，空字符串表示不限制
+  string session_id = 6;    // 会话 ID，映射到 Mem0 run_id（短期记忆）
 }
 message AddConversationResponse {
   bool success = 1;
@@ -778,6 +851,8 @@ resp = await stub.AddConversation(
         user_id="user_01",
         messages=[conversation_pb2.Message(role="user", content="我喜欢打篮球")],
         infer=True,
+        agent_id="sales-bot",
+        session_id="sess_abc123",
     ),
     timeout=30,
 )
@@ -791,6 +866,9 @@ memory_id = resp.data[0].id
 message ListConversationsRequest {
   string user_id = 1;
   int32 limit = 2;
+  string agent_id = 3;      // 限定 agent 视角
+  string session_id = 4;    // 限定 session
+  string memory_scope = 5;  // short / long / both（默认 long）
 }
 // 返回 SearchConversationsResponse
 ```
@@ -803,6 +881,9 @@ message SearchConversationsRequest {
   string query = 2;
   int32 limit = 3;
   optional double threshold = 4;
+  string agent_id = 5;      // 限定 agent 视角
+  string session_id = 6;    // 限定 session（memory_scope=short/both 时生效）
+  string memory_scope = 7;  // short / long / both（默认 long）
 }
 message SearchConversationsResponse {
   bool success = 1;
@@ -853,7 +934,7 @@ service ProfileService {
 
 ```protobuf
 message InsertProfileRequest {
-  string user_id = 1;          // UUID v4
+  string user_id = 1;          // 任意字符串，内部自动映射为 UUID v4
   repeated Message messages = 2;
   bool sync = 3;               // true = 等待 LLM 处理完成
 }
@@ -866,7 +947,7 @@ message InsertProfileResponse {
 stub = profile_pb2_grpc.ProfileServiceStub(channel)
 resp = await stub.InsertProfile(
     profile_pb2.InsertProfileRequest(
-        user_id="550e8400-e29b-41d4-a716-446655440000",
+        user_id="user_01",   # 任意 ID，无需 UUID v4
         messages=[conversation_pb2.Message(role="user", content="我叫小明，喜欢游泳")],
         sync=True,
     ),
@@ -913,7 +994,7 @@ message DeleteProfileItemRequest {
 }
 ```
 
-> `AddProfileItem` 要求用户已存在（先调用 `InsertProfile`），否则返回 `FAILED_PRECONDITION`。
+> `AddProfileItem` 要求用户已在 Memobase 创建（先调用 `InsertProfile`），否则返回 `FAILED_PRECONDITION`。
 
 ---
 
@@ -1027,16 +1108,22 @@ message GetUnifiedContextRequest {
   string knowledge_search_type = 9;
   optional double engine_timeout = 10;
   repeated Message chats = 11;
+  string agent_id = 12;              // 智能体 ID，按 agent 隔离记忆视角
+  string session_id = 13;            // 会话 ID，短期记忆隔离
+  string memory_scope = 14;          // short / long / both（默认 long）
+  repeated string knowledge_datasets = 15; // 指定数据集，空 = 搜索全部
 }
 
 message GetUnifiedContextResponse {
   bool success = 1;
   string user_id = 2;
-  repeated ConversationMemory conversations = 3;
+  repeated ConversationMemory conversations = 3;       // 向后兼容
   string profile_context = 4;
   repeated KnowledgeSearchResult knowledge = 5;
   map<string, string> errors = 6;      // 各引擎错误，无错误时为空 map
   double latency_ms = 7;
+  repeated ConversationMemory short_term_memories = 8; // memory_scope=short/both 时填充
+  repeated ConversationMemory long_term_memories = 9;  // memory_scope=long/both 时填充
 }
 ```
 
@@ -1044,7 +1131,7 @@ message GetUnifiedContextResponse {
 stub = context_pb2_grpc.ContextServiceStub(channel)
 resp = await stub.GetUnifiedContext(
     context_pb2.GetUnifiedContextRequest(
-        user_id="550e8400-e29b-41d4-a716-446655440000",
+        user_id="user_01",
         query="用户喜欢什么运动",
         include_conversations=True,
         include_profile=True,
@@ -1052,12 +1139,16 @@ resp = await stub.GetUnifiedContext(
         conversation_limit=5,
         max_token_size=300,
         engine_timeout=5.0,
+        agent_id="sales-bot",
+        memory_scope="both",         # 同时获取短期和长期记忆
     ),
     timeout=30,
 )
 assert resp.success
-print(resp.profile_context)   # 可直接插入 system prompt
-print(dict(resp.errors))      # {} 表示全部引擎正常
+print(resp.profile_context)                  # 可直接插入 system prompt
+print(list(resp.short_term_memories))        # 本次会话记忆
+print(list(resp.long_term_memories))         # 跨会话长期记忆
+print(dict(resp.errors))                     # {} 表示全部引擎正常
 print(resp.latency_ms)
 ```
 
@@ -1080,13 +1171,15 @@ print(resp.latency_ms)
 
 ## 常见问题
 
-### Q: Memobase 为什么要求 UUID v4？
+### Q: 调用画像接口时要自己处理 UUID v4 吗？
 
-Memobase 在数据库层对 user_id 做 UUID 类型校验。传入 `"user_01"` 等非 UUID 字符串会返回 400/422。
+不需要。CozyMemory 内置 Redis 透明映射层，任意字符串 `user_id` 均自动映射为 Memobase 所需的 UUID v4。  
+直接传 `"user_01"` 即可，CozyMemory 内部完成转换。
 
-```python
-import uuid
-user_id = str(uuid.uuid4())   # 每次生成新用户用这个
+如需查看某个 `user_id` 对应的 UUID，调用：
+
+```bash
+curl http://localhost:8000/api/v1/users/user_01/uuid
 ```
 
 ### Q: 添加文档后搜索没有结果？

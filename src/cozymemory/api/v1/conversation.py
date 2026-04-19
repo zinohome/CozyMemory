@@ -76,6 +76,8 @@ async def add_conversation(
             messages=messages,
             metadata=request.metadata,
             infer=request.infer,
+            agent_id=request.agent_id,
+            session_id=request.session_id,
         )
     except EngineError as e:
         return _engine_error_response(e)
@@ -98,6 +100,9 @@ async def search_conversations(
             query=request.query,
             limit=request.limit,
             threshold=request.threshold,
+            agent_id=request.agent_id,
+            session_id=request.session_id,
+            memory_scope=request.memory_scope,
         )
     except EngineError as e:
         return _engine_error_response(e)

@@ -19,6 +19,7 @@ dependencies = [
     "grpcio-tools>=1.80.0",
     "protobuf>=4.25.0",
     "structlog>=24.0",
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]

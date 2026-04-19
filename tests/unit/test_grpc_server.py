@@ -259,7 +259,9 @@ class TestConversationGrpcServicer:
         assert resp.success is True
         assert resp.total == 2
         assert resp.data[0].id == "m1"
-        mock_svc.get_all.assert_called_once_with(user_id="u1", limit=50)
+        mock_svc.get_all.assert_called_once_with(
+            user_id="u1", limit=50, agent_id=None, session_id=None, memory_scope="long"
+        )
 
     @pytest.mark.asyncio
     async def test_list_conversations_engine_error(self):

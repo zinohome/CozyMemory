@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     COGNEE_TIMEOUT: float = 300.0
     COGNEE_ENABLED: bool = True
 
+    # Redis（用户 ID 映射）
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_USER_MAPPING_TTL: int = 0  # 0 = 永不过期；正整数 = 秒
+
     # 日志
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"

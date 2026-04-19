@@ -26,7 +26,7 @@ from cozymemory.grpc_server import conversation_pb2 as conversation__pb2
 from cozymemory.grpc_server import knowledge_pb2 as knowledge__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcontext.proto\x12\ncozymemory\x1a\x12\x63onversation.proto\x1a\x0fknowledge.proto\"\xdc\x02\n\x18GetUnifiedContextRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x12\n\x05query\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x1d\n\x15include_conversations\x18\x03 \x01(\x08\x12\x17\n\x0finclude_profile\x18\x04 \x01(\x08\x12\x19\n\x11include_knowledge\x18\x05 \x01(\x08\x12\x1a\n\x12\x63onversation_limit\x18\x06 \x01(\x05\x12\x16\n\x0emax_token_size\x18\x07 \x01(\x05\x12\x17\n\x0fknowledge_top_k\x18\x08 \x01(\x05\x12\x1d\n\x15knowledge_search_type\x18\t \x01(\t\x12\x1b\n\x0e\x65ngine_timeout\x18\n \x01(\x01H\x01\x88\x01\x01\x12\"\n\x05\x63hats\x18\x0b \x03(\x0b\x32\x13.cozymemory.MessageB\x08\n\x06_queryB\x11\n\x0f_engine_timeout\"\xc9\x02\n\x19GetUnifiedContextResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07user_id\x18\x02 \x01(\t\x12\x35\n\rconversations\x18\x03 \x03(\x0b\x32\x1e.cozymemory.ConversationMemory\x12\x17\n\x0fprofile_context\x18\x04 \x01(\t\x12\x34\n\tknowledge\x18\x05 \x03(\x0b\x32!.cozymemory.KnowledgeSearchResult\x12\x41\n\x06\x65rrors\x18\x06 \x03(\x0b\x32\x31.cozymemory.GetUnifiedContextResponse.ErrorsEntry\x12\x12\n\nlatency_ms\x18\x07 \x01(\x01\x1a-\n\x0b\x45rrorsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x32r\n\x0e\x43ontextService\x12`\n\x11GetUnifiedContext\x12$.cozymemory.GetUnifiedContextRequest\x1a%.cozymemory.GetUnifiedContextResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcontext.proto\x12\ncozymemory\x1a\x12\x63onversation.proto\x1a\x0fknowledge.proto\"\xb4\x03\n\x18GetUnifiedContextRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x12\n\x05query\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x1d\n\x15include_conversations\x18\x03 \x01(\x08\x12\x17\n\x0finclude_profile\x18\x04 \x01(\x08\x12\x19\n\x11include_knowledge\x18\x05 \x01(\x08\x12\x1a\n\x12\x63onversation_limit\x18\x06 \x01(\x05\x12\x16\n\x0emax_token_size\x18\x07 \x01(\x05\x12\x17\n\x0fknowledge_top_k\x18\x08 \x01(\x05\x12\x1d\n\x15knowledge_search_type\x18\t \x01(\t\x12\x1b\n\x0e\x65ngine_timeout\x18\n \x01(\x01H\x01\x88\x01\x01\x12\"\n\x05\x63hats\x18\x0b \x03(\x0b\x32\x13.cozymemory.Message\x12\x10\n\x08\x61gent_id\x18\x0c \x01(\t\x12\x12\n\nsession_id\x18\r \x01(\t\x12\x14\n\x0cmemory_scope\x18\x0e \x01(\t\x12\x1a\n\x12knowledge_datasets\x18\x0f \x03(\tB\x08\n\x06_queryB\x11\n\x0f_engine_timeout\"\xc2\x03\n\x19GetUnifiedContextResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07user_id\x18\x02 \x01(\t\x12\x35\n\rconversations\x18\x03 \x03(\x0b\x32\x1e.cozymemory.ConversationMemory\x12\x17\n\x0fprofile_context\x18\x04 \x01(\t\x12\x34\n\tknowledge\x18\x05 \x03(\x0b\x32!.cozymemory.KnowledgeSearchResult\x12\x41\n\x06\x65rrors\x18\x06 \x03(\x0b\x32\x31.cozymemory.GetUnifiedContextResponse.ErrorsEntry\x12\x12\n\nlatency_ms\x18\x07 \x01(\x01\x12;\n\x13short_term_memories\x18\x08 \x03(\x0b\x32\x1e.cozymemory.ConversationMemory\x12:\n\x12long_term_memories\x18\t \x03(\x0b\x32\x1e.cozymemory.ConversationMemory\x1a-\n\x0b\x45rrorsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x32r\n\x0e\x43ontextService\x12`\n\x11GetUnifiedContext\x12$.cozymemory.GetUnifiedContextRequest\x1a%.cozymemory.GetUnifiedContextResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,11 +36,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GETUNIFIEDCONTEXTRESPONSE_ERRORSENTRY']._loaded_options = None
   _globals['_GETUNIFIEDCONTEXTRESPONSE_ERRORSENTRY']._serialized_options = b'8\001'
   _globals['_GETUNIFIEDCONTEXTREQUEST']._serialized_start=67
-  _globals['_GETUNIFIEDCONTEXTREQUEST']._serialized_end=415
-  _globals['_GETUNIFIEDCONTEXTRESPONSE']._serialized_start=418
-  _globals['_GETUNIFIEDCONTEXTRESPONSE']._serialized_end=747
-  _globals['_GETUNIFIEDCONTEXTRESPONSE_ERRORSENTRY']._serialized_start=702
-  _globals['_GETUNIFIEDCONTEXTRESPONSE_ERRORSENTRY']._serialized_end=747
-  _globals['_CONTEXTSERVICE']._serialized_start=749
-  _globals['_CONTEXTSERVICE']._serialized_end=863
+  _globals['_GETUNIFIEDCONTEXTREQUEST']._serialized_end=503
+  _globals['_GETUNIFIEDCONTEXTRESPONSE']._serialized_start=506
+  _globals['_GETUNIFIEDCONTEXTRESPONSE']._serialized_end=956
+  _globals['_GETUNIFIEDCONTEXTRESPONSE_ERRORSENTRY']._serialized_start=911
+  _globals['_GETUNIFIEDCONTEXTRESPONSE_ERRORSENTRY']._serialized_end=956
+  _globals['_CONTEXTSERVICE']._serialized_start=958
+  _globals['_CONTEXTSERVICE']._serialized_end=1072
 # @@protoc_insertion_point(module_scope)

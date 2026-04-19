@@ -16,16 +16,22 @@ message GetUnifiedContextRequest {
   string knowledge_search_type = 9;
   optional double engine_timeout = 10;
   repeated Message chats = 11;
+  string agent_id = 12;              // 智能体 ID，用于按 agent 隔离记忆视角
+  string session_id = 13;            // 会话 ID，短期记忆隔离
+  string memory_scope = 14;          // short / long / both（默认 long）
+  repeated string knowledge_datasets = 15; // 指定查询的数据集，空 = 全部
 }
 
 message GetUnifiedContextResponse {
   bool success = 1;
   string user_id = 2;
-  repeated ConversationMemory conversations = 3;
+  repeated ConversationMemory conversations = 3;       // 向后兼容
   string profile_context = 4;
   repeated KnowledgeSearchResult knowledge = 5;
   map<string, string> errors = 6;
   double latency_ms = 7;
+  repeated ConversationMemory short_term_memories = 8; // memory_scope=short/both 时填充
+  repeated ConversationMemory long_term_memories = 9;  // memory_scope=long/both 时填充
 }
 
 service ContextService {

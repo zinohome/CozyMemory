@@ -66,6 +66,8 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
                 messages=messages,
                 metadata=metadata,
                 infer=request.infer,
+                agent_id=request.agent_id or None,
+                session_id=request.session_id or None,
             )
             memories = [
                 conversation_pb2.ConversationMemory(id=m.id, user_id=m.user_id, content=m.content)
@@ -88,6 +90,9 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
                 query=request.query,
                 limit=request.limit,
                 threshold=request.threshold if request.HasField("threshold") else None,
+                agent_id=request.agent_id or None,
+                session_id=request.session_id or None,
+                memory_scope=request.memory_scope or "long",
             )
             memories = []
             for m in result.data:
@@ -147,7 +152,13 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
     async def ListConversations(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
             svc = self._svc
-            result = await svc.get_all(user_id=request.user_id, limit=request.limit or 100)
+            result = await svc.get_all(
+                user_id=request.user_id,
+                limit=request.limit or 100,
+                agent_id=request.agent_id or None,
+                session_id=request.session_id or None,
+                memory_scope=request.memory_scope or "long",
+            )
             memories = [
                 conversation_pb2.ConversationMemory(id=m.id, user_id=m.user_id, content=m.content)
                 for m in result.data
@@ -401,6 +412,9 @@ class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
             ctx_request = ContextRequest(
                 user_id=request.user_id,
                 query=request.query or None,
+                agent_id=request.agent_id or None,
+                session_id=request.session_id or None,
+                memory_scope=request.memory_scope or "long",
                 include_conversations=request.include_conversations,
                 include_profile=request.include_profile,
                 include_knowledge=request.include_knowledge,
@@ -408,16 +422,20 @@ class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
                 max_token_size=request.max_token_size or 500,
                 knowledge_top_k=request.knowledge_top_k or 3,
                 knowledge_search_type=request.knowledge_search_type or "GRAPH_COMPLETION",
+                knowledge_datasets=list(request.knowledge_datasets) or None,
                 engine_timeout=request.engine_timeout or None,
                 chats=chats,
             )
             result = await self._svc.get_context(ctx_request)
-            conversations = [
-                conversation_pb2.ConversationMemory(
-                    id=m.id, user_id=m.user_id, content=m.content
-                )
-                for m in result.conversations
-            ]
+
+            def _to_conv_proto(mems):
+                return [
+                    conversation_pb2.ConversationMemory(
+                        id=m.id, user_id=m.user_id, content=m.content
+                    )
+                    for m in mems
+                ]
+
             knowledge = [
                 knowledge_pb2.KnowledgeSearchResult(
                     id=r.id or "",
@@ -429,7 +447,9 @@ class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
             return context_pb2.GetUnifiedContextResponse(
                 success=result.success,
                 user_id=result.user_id,
-                conversations=conversations,
+                conversations=_to_conv_proto(result.conversations),
+                short_term_memories=_to_conv_proto(result.short_term_memories),
+                long_term_memories=_to_conv_proto(result.long_term_memories),
                 profile_context=result.profile_context or "",
                 knowledge=knowledge,
                 errors=result.errors,

@@ -11,6 +11,7 @@ import structlog
 
 from ..clients.base import EngineError
 from ..models.context import ContextRequest, ContextResponse
+from ..models.conversation import ConversationMemory
 from .conversation import ConversationService
 from .knowledge import KnowledgeService
 from .profile import ProfileService
@@ -36,39 +37,65 @@ class ContextService:
 
         执行策略：
         - asyncio.gather(..., return_exceptions=True) 保证单引擎失败不影响其他引擎
-        - query 有值 → Mem0 语义搜索 + Cognee 图谱搜索
-        - query 为 None → Mem0 get_all，Cognee 跳过（搜索需要 query）
-        - Memobase get_context 始终执行（不依赖 query）
+        - memory_scope=both 时对 Mem0 发起两次并发查询（短期 + 长期）
+        - knowledge_datasets 有值时对每个 dataset 并发搜索后合并结果
         """
         start = time.monotonic()
-
-        # ── 构建并发任务列表 ──────────────────────────────────────────────
-        task_keys: list[str] = []
-        coros = []
 
         chats = (
             [{"role": m.role, "content": m.content} for m in request.chats]
             if request.chats
             else None
         )
+        need_both = request.memory_scope == "both"
+
+        # ── 构建并发任务列表 ──────────────────────────────────────────────
+        task_keys: list[str] = []
+        coros = []
 
         if request.include_conversations:
-            task_keys.append("conversations")
-            if request.query:
-                coros.append(
-                    self._conv.search(
-                        user_id=request.user_id,
-                        query=request.query,
+            if need_both:
+                # 两次并发：短期（带 session）+ 长期（不带 session）
+                task_keys.append("conversations_short")
+                task_keys.append("conversations_long")
+                if request.query:
+                    coros.append(self._conv.search_short(
+                        user_id=request.user_id, query=request.query,
                         limit=request.conversation_limit,
-                    )
-                )
+                        agent_id=request.agent_id, session_id=request.session_id,
+                    ))
+                    coros.append(self._conv.search(
+                        user_id=request.user_id, query=request.query,
+                        limit=request.conversation_limit,
+                        agent_id=request.agent_id, session_id=None,
+                        memory_scope="long",
+                    ))
+                else:
+                    coros.append(self._conv.get_all_short(
+                        user_id=request.user_id, limit=request.conversation_limit,
+                        agent_id=request.agent_id, session_id=request.session_id,
+                    ))
+                    coros.append(self._conv.get_all(
+                        user_id=request.user_id, limit=request.conversation_limit,
+                        agent_id=request.agent_id, session_id=None,
+                        memory_scope="long",
+                    ))
             else:
-                coros.append(
-                    self._conv.get_all(
-                        user_id=request.user_id,
+                task_keys.append("conversations")
+                session_id = request.session_id if request.memory_scope == "short" else None
+                if request.query:
+                    coros.append(self._conv.search(
+                        user_id=request.user_id, query=request.query,
                         limit=request.conversation_limit,
-                    )
-                )
+                        agent_id=request.agent_id, session_id=session_id,
+                        memory_scope=request.memory_scope,
+                    ))
+                else:
+                    coros.append(self._conv.get_all(
+                        user_id=request.user_id, limit=request.conversation_limit,
+                        agent_id=request.agent_id, session_id=session_id,
+                        memory_scope=request.memory_scope,
+                    ))
 
         if request.include_profile:
             task_keys.append("profile")
@@ -81,14 +108,18 @@ class ContextService:
             )
 
         if request.include_knowledge and request.query:
-            task_keys.append("knowledge")
-            coros.append(
-                self._knowledge.search(
-                    query=request.query,
-                    search_type=request.knowledge_search_type,
-                    top_k=request.knowledge_top_k,
+            datasets = request.knowledge_datasets or [None]  # None = 搜索全部
+            for ds in datasets:
+                key = f"knowledge:{ds}" if ds else "knowledge"
+                task_keys.append(key)
+                coros.append(
+                    self._knowledge.search(
+                        query=request.query,
+                        dataset=ds,
+                        search_type=request.knowledge_search_type,
+                        top_k=request.knowledge_top_k,
+                    )
                 )
-            )
 
         # ── 并发执行（可选每引擎超时）────────────────────────────────────
         timeout = request.engine_timeout
@@ -99,30 +130,57 @@ class ContextService:
         raw_results = await asyncio.gather(*wrapped, return_exceptions=True)
 
         # ── 结果归并 ─────────────────────────────────────────────────────
-        conversations = []
+        conversations: list[ConversationMemory] = []
+        short_term_memories: list[ConversationMemory] = []
+        long_term_memories: list[ConversationMemory] = []
         profile_context = None
         knowledge = []
         errors: dict[str, str] = {}
 
         for key, result in zip(task_keys, raw_results):
             if isinstance(result, asyncio.TimeoutError):
+                # 超时：提取引擎域名作为 error key
+                domain = key.split(":")[0] if ":" in key else key
+                if "conversations" in domain:
+                    domain = "conversations"
                 msg = f"engine timeout after {timeout}s"
-                errors[key] = msg
+                errors[domain] = msg
                 logger.warning("context.engine_timeout", engine=key, timeout=timeout)
-            elif isinstance(result, (EngineError, Exception)):
-                errors[key] = str(result)
+                continue
+            if isinstance(result, (EngineError, Exception)):
+                domain = key.split(":")[0] if ":" in key else key
+                if "conversations" in domain:
+                    domain = "conversations"
+                errors[domain] = str(result)
                 logger.warning("context.engine_error", engine=key, error=str(result))
+                continue
+
+            if key == "conversations_short":
+                # result 是 list[ConversationMemory]（来自 search_short / get_all_short）
+                short_term_memories = result if isinstance(result, list) else result.data
+            elif key == "conversations_long":
+                # result 是 ConversationMemoryListResponse
+                long_term_memories = result.data if hasattr(result, "data") else result
+                conversations = long_term_memories  # 向后兼容
             elif key == "conversations":
-                conversations = result.data
+                data = result.data if hasattr(result, "data") else result
+                conversations = data
+                if request.memory_scope == "short":
+                    short_term_memories = data
+                else:
+                    long_term_memories = data
             elif key == "profile":
                 profile_context = result.data.context if result.data else None
-            elif key == "knowledge":
-                knowledge = result.data
+            elif key.startswith("knowledge"):
+                knowledge.extend(result.data if hasattr(result, "data") else result)
 
         latency_ms = round((time.monotonic() - start) * 1000, 1)
         logger.info(
             "context.get",
             user_id=request.user_id,
+            agent_id=request.agent_id,
+            session_id=request.session_id,
+            memory_scope=request.memory_scope,
             engines=task_keys,
             errors=list(errors.keys()),
             latency_ms=latency_ms,
@@ -131,6 +189,8 @@ class ContextService:
         return ContextResponse(
             user_id=request.user_id,
             conversations=conversations,
+            short_term_memories=short_term_memories,
+            long_term_memories=long_term_memories,
             profile_context=profile_context,
             knowledge=knowledge,
             errors=errors,

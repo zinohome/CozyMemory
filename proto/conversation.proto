@@ -12,6 +12,8 @@ message AddConversationRequest {
   repeated Message messages = 2;
   map<string, string> metadata = 3;
   bool infer = 4;
+  string agent_id = 5;    // 智能体 ID，用于按 agent 隔离记忆视角（空字符串表示不限制）
+  string session_id = 6;  // 会话 ID，映射到 Mem0 run_id（短期记忆）
 }
 
 message ConversationMemory {
@@ -35,6 +37,9 @@ message SearchConversationsRequest {
   string query = 2;
   int32 limit = 3;
   optional double threshold = 4;
+  string agent_id = 5;    // 限定 agent 视角
+  string session_id = 6;  // 限定 session（memory_scope=short/both 时生效）
+  string memory_scope = 7; // short / long / both（默认 long）
 }
 
 message SearchConversationsResponse {
@@ -59,6 +64,9 @@ message DeleteAllConversationsRequest {
 message ListConversationsRequest {
   string user_id = 1;
   int32 limit = 2;
+  string agent_id = 3;    // 限定 agent 视角
+  string session_id = 4;  // 限定 session
+  string memory_scope = 5; // short / long / both（默认 long）
 }
 
 message DeleteResponse {

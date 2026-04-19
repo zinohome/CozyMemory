@@ -306,10 +306,14 @@ services:
       COGNEE_API_URL: http://cognee:8000
       COGNEE_API_KEY: ""
       COGNEE_ENABLED: "true"
+      # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
+      REDIS_URL: redis://:cozy_redis_pass@redis:6379/2
+      REDIS_USER_MAPPING_TTL: "0"
     depends_on:
       - mem0-api
       - memobase-server-api
       - cognee
+      - redis
     networks:
       - 1panel-network
     labels:

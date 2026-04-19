@@ -10,6 +10,7 @@ from cozymemory.api.deps import (
     get_mem0_client,
     get_memobase_client,
     get_profile_service,
+    get_user_mapping_service,
 )
 from cozymemory.clients.cognee import CogneeClient
 from cozymemory.clients.mem0 import Mem0Client
@@ -17,6 +18,7 @@ from cozymemory.clients.memobase import MemobaseClient
 from cozymemory.services.conversation import ConversationService
 from cozymemory.services.knowledge import KnowledgeService
 from cozymemory.services.profile import ProfileService
+from cozymemory.services.user_mapping import UserMappingService
 
 
 def setup_function():
@@ -24,6 +26,7 @@ def setup_function():
     deps_module._mem0_client = None
     deps_module._memobase_client = None
     deps_module._cognee_client = None
+    deps_module._redis_client = None
 
 
 def test_get_mem0_client_creates_singleton():
@@ -63,11 +66,19 @@ def test_get_conversation_service():
 
 
 def test_get_profile_service():
-    """get_profile_service 返回 ProfileService"""
+    """get_profile_service 返回 ProfileService（含 UserMappingService）"""
     setup_function()
     service = get_profile_service()
     assert isinstance(service, ProfileService)
     assert isinstance(service.client, MemobaseClient)
+    assert isinstance(service._mapping, UserMappingService)
+
+
+def test_get_user_mapping_service():
+    """get_user_mapping_service 返回 UserMappingService"""
+    setup_function()
+    svc = get_user_mapping_service()
+    assert isinstance(svc, UserMappingService)
 
 
 def test_get_knowledge_service():
