@@ -4,7 +4,7 @@
 #
 # 用法：
 #   ./build.sh          # 构建全部镜像
-#   ./build.sh cognee   # 仅构建指定镜像（可选值：cognee, cognee-frontend, mem0-api, mem0-webui, memobase）
+#   ./build.sh cognee   # 仅构建指定镜像（可选值见下方）
 
 set -e
 
@@ -18,13 +18,24 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 err()  { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 # ---- mem0-api ----
+# 使用 staging 目录组装构建上下文，Dockerfile 和 main.py 来自 CozyMem0/deployment/mem0/。
+# main.py 替换了上游版本：使用 Qdrant（无 psycopg 依赖）、APIRouter /api/v1、CORS 中间件。
 build_mem0_api() {
     log "Building mem0-api:latest ..."
-    [ -d "$PROJECTS_DIR/CozyMem0" ] || err "CozyMem0 directory not found: $PROJECTS_DIR/CozyMem0"
+    local cozy_dir="$PROJECTS_DIR/CozyMem0"
+    [ -d "$cozy_dir" ] || err "CozyMem0 directory not found: $cozy_dir"
+
+    local stage_dir
+    stage_dir=$(mktemp -d)
+    trap "rm -rf '$stage_dir'" RETURN
+
+    cp -r "$cozy_dir/projects" "$stage_dir/"
+    cp -r "$cozy_dir/deployment" "$stage_dir/"
+
     docker build \
-        -f "$PROJECTS_DIR/CozyMem0/deployment/mem0/Dockerfile" \
+        -f "$cozy_dir/deployment/mem0/Dockerfile" \
         -t mem0-api:latest \
-        "$PROJECTS_DIR/CozyMem0"
+        "$stage_dir"
     log "mem0-api:latest built."
 }
 
@@ -48,7 +59,6 @@ build_memobase() {
     cp "$SRC_DIR/pyproject.toml" "$DEPLOY_DIR/"
     cp "$SRC_DIR/uv.lock"        "$DEPLOY_DIR/"
     cp "$SRC_DIR/api.py"         "$DEPLOY_DIR/"
-    # 先删除旧副本，保证重复构建时目录不嵌套
     rm -rf "$DEPLOY_DIR/memobase_server"
     cp -r "$SRC_DIR/memobase_server" "$DEPLOY_DIR/"
     log "Memobase source synced. Building memobase-server:latest ..."
@@ -58,6 +68,8 @@ build_memobase() {
 }
 
 # ---- cognee ----
+# Dockerfile 来自 CozyCognee/deployment/docker/cognee/Dockerfile，修复了：
+#   - alembic 路径：上游将其移入 cognee/ 子包（project/cognee/cognee/alembic.ini）
 build_cognee() {
     log "Building cognee:0.4.1 ..."
     local cozy_dir="$PROJECTS_DIR/CozyCognee"
@@ -66,7 +78,6 @@ build_cognee() {
     [ -d "$cozy_dir" ] || err "CozyCognee directory not found: $cozy_dir"
     [ -d "$src" ]      || err "cognee source not found: $src"
 
-    # BuildKit 不跟随含 ../ 的 symlink，需将源码拷贝为真实文件
     log "Syncing cognee source to project/cognee ..."
     rm -rf "$dst"
     cp -r "$src" "$dst"
@@ -78,6 +89,30 @@ build_cognee() {
 
     rm -rf "$dst"
     log "cognee:0.4.1 built."
+}
+
+# ---- cognee-frontend ----
+# Dockerfile 来自 CozyCognee/deployment/docker/cognee-frontend/Dockerfile，修复了：
+#   - npm ci → npm install：上游 package-lock.json 与 package.json 不同步
+build_cognee_frontend() {
+    log "Building cognee-frontend:local-0.4.1 ..."
+    local cozy_dir="$PROJECTS_DIR/CozyCognee"
+    local src="$cozy_dir/projects/cognee"
+    local dst="$cozy_dir/project/cognee"
+    [ -d "$cozy_dir" ] || err "CozyCognee directory not found: $cozy_dir"
+    [ -d "$src" ]      || err "cognee source not found: $src"
+
+    log "Syncing cognee source to project/cognee ..."
+    rm -rf "$dst"
+    cp -r "$src" "$dst"
+
+    docker build \
+        -f "$cozy_dir/deployment/docker/cognee-frontend/Dockerfile" \
+        -t cognee-frontend:local-0.4.1 \
+        "$cozy_dir"
+
+    rm -rf "$dst"
+    log "cognee-frontend:local-0.4.1 built."
 }
 
 # ---- cozymemory ----
@@ -101,28 +136,6 @@ build_cozymemory_ui() {
     log "cozymemory-ui:latest built."
 }
 
-# ---- cognee-frontend ----
-build_cognee_frontend() {
-    log "Building cognee-frontend:local-0.4.1 ..."
-    local cozy_dir="$PROJECTS_DIR/CozyCognee"
-    local src="$cozy_dir/projects/cognee"
-    local dst="$cozy_dir/project/cognee"
-    [ -d "$cozy_dir" ] || err "CozyCognee directory not found: $cozy_dir"
-    [ -d "$src" ]      || err "cognee source not found: $src"
-
-    log "Syncing cognee source to project/cognee ..."
-    rm -rf "$dst"
-    cp -r "$src" "$dst"
-
-    docker build \
-        -f "$cozy_dir/deployment/docker/cognee-frontend/Dockerfile" \
-        -t cognee-frontend:local-0.4.1 \
-        "$cozy_dir"
-
-    rm -rf "$dst"
-    log "cognee-frontend:local-0.4.1 built."
-}
-
 # ---- 入口 ----
 case "$TARGET" in
     all)
@@ -134,13 +147,13 @@ case "$TARGET" in
         build_cozymemory
         build_cozymemory_ui
         ;;
-    mem0-api)       build_mem0_api ;;
-    mem0-webui)     build_mem0_webui ;;
-    memobase)       build_memobase ;;
-    cognee)         build_cognee ;;
+    mem0-api)        build_mem0_api ;;
+    mem0-webui)      build_mem0_webui ;;
+    memobase)        build_memobase ;;
+    cognee)          build_cognee ;;
     cognee-frontend) build_cognee_frontend ;;
-    cozymemory)     build_cozymemory ;;
-    cozymemory-ui)  build_cozymemory_ui ;;
+    cozymemory)      build_cozymemory ;;
+    cozymemory-ui)   build_cozymemory_ui ;;
     *)
         echo "Usage: $0 [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend|cozymemory|cozymemory-ui]"
         exit 1
@@ -151,6 +164,3 @@ echo ""
 log "Done! Custom images:"
 docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" \
     | grep -E "mem0-api|mem0-webui|memobase-server|cognee|cozymemory"
-
-# Update build.sh usage comment
-# Usage: ./build.sh [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend|cozymemory|cozymemory-ui]

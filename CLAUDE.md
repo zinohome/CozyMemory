@@ -135,9 +135,11 @@ Request → FastAPI/gRPC → Service layer → Client (BaseClient subclass) → 
 
 ### Protobuf / gRPC
 
-Proto definitions live in `proto/`. Generated Python code (`*_pb2.py`, `*_pb2_grpc.py`) is checked into `src/cozymemory/grpc_server/` and excluded from ruff/mypy checks. Total: 18 gRPC methods mirroring the 19 REST endpoints (health is REST-only). To regenerate:
+Proto definitions live in `proto/`. Generated Python code (`*_pb2.py`, `*_pb2_grpc.py`) is checked into `src/cozymemory/grpc_server/` and excluded from ruff/mypy checks. Total: 18 gRPC methods mirroring the 19 REST endpoints (health is REST-only). To regenerate, prefer the wrapper script (it resolves paths regardless of CWD):
 
 ```bash
+./scripts/generate_grpc.sh
+# or the raw form:
 python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --grpc_python_out=src/cozymemory/grpc_server proto/common.proto proto/conversation.proto proto/profile.proto proto/knowledge.proto
 ```
 
@@ -146,6 +148,14 @@ python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --g
 `base_runtime/docker-compose.1panel.yml` runs 11 services on `1panel-network`. Caddy exposes four ports: 8000 (CozyMemory unified API), 8080 (Cognee), 8081 (Mem0), 8019 (Memobase). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `YOUR_SERVER_IP` in the compose file with the actual server IP. Tiktoken cache must be pre-copied to `/data/CozyMemory/tiktoken/`.
 
 The CozyMemory unified API (`cozymemory:latest`) is built from the root `Dockerfile` using `deploy/supervisord.conf` to run REST (port 8000) and gRPC (port 50051) in a single container.
+
+### Frontend (`ui/`)
+
+Next.js 16 / React 19 admin UI (App Router) using `@base-ui/react` + shadcn + Tailwind v4, with TanStack Query for server state and Zustand for client state. It consumes the REST API described above.
+
+- **Critical**: `ui/AGENTS.md` warns that this Next.js version has breaking changes vs. typical training-data knowledge — consult `ui/node_modules/next/dist/docs/` before writing Next-specific code (routing, `use server`, caching semantics).
+- **API base URL**: `ui/src/lib/api.ts` reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`). In the Docker image, `ui/entrypoint.sh` rewrites the baked-in URL at container start so the same image runs in any deployment.
+- Dev: `cd ui && npm run dev` (port 3000). Lint: `npm run lint`. Build: `npm run build`.
 
 ## Engine API Quirks
 
@@ -199,4 +209,7 @@ These are non-obvious behaviors discovered during integration testing. Check her
 - `tests/integration/` — integration tests (need running backends)
 - `proto/` — protobuf definitions
 - `base_runtime/` — **current active deployment** for the three backend engines (Mem0, Memobase, Cognee) and their infrastructure (PostgreSQL/pgvector, Redis, Qdrant, MinIO, Neo4j). This is what CozyMemory's service layer connects to. Ongoing development happens here.
-- `archive/` — inactive code and superseded configs (previous v1 impl, old deploy/, old unified_deployment/); do not modify
+- `ui/` — Next.js 16 admin frontend; see the "Frontend" section above.
+- `docs/` — reference docs checked into the repo: `api-reference.md`, `architecture.md`, `data-models.md`, `deployment.md`, `sdk-clients.md`. Consult these for deeper detail before exploring source.
+- `archive/` — inactive code and superseded configs (previous v1 impl, old deploy/, old unified_deployment/); do not modify.
+- The top-level `README.md` is stale (references an old `src.api.main:app` entry point and outdated test paths). Trust this file and `pyproject.toml` over `README.md`.

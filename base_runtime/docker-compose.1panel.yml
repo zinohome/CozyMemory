@@ -165,7 +165,7 @@ services:
     restart: unless-stopped
     # cognee-frontend 跑 Next.js dev 模式，NEXT_PUBLIC_* 可在运行时注入
     environment:
-      - NEXT_PUBLIC_BACKEND_API_URL=http://YOUR_SERVER_IP:8080
+      - NEXT_PUBLIC_BACKEND_API_URL=http://192.168.32.40:8080
       - NEXT_PUBLIC_IS_CLOUD_ENVIRONMENT=false
       - NEXT_DISABLE_DEV_INDICATORS=true
       - NEXT_TELEMETRY_DISABLED=1
@@ -225,7 +225,7 @@ services:
     restart: unless-stopped
     # entrypoint.sh 在启动时将 NEXT_PUBLIC_* 替换进 .next/ 编译产物
     environment:
-      NEXT_PUBLIC_API_URL: http://YOUR_SERVER_IP:8081
+      NEXT_PUBLIC_API_URL: http://192.168.32.40:8081
       NEXT_PUBLIC_USER_ID: user
     depends_on:
       - mem0-api
@@ -253,7 +253,7 @@ services:
       REDIS_URL: redis://:cozy_redis_pass@redis:6379/1
       ACCESS_TOKEN: secret
       PROJECT_ID: default
-      API_HOSTS: "http://YOUR_SERVER_IP:8019,http://memobase-server-api:8000"
+      API_HOSTS: "http://192.168.32.40:8019,http://memobase-server-api:8000"
       USE_CORS: "true"
       MEMOBASE_LANGUAGE: zh
       MEMOBASE_LLM_STYLE: openai
@@ -335,7 +335,7 @@ services:
     restart: unless-stopped
     environment:
       # entrypoint.sh 在启动时将 __COZY_API_URL__ 替换进 .next/static/ 编译产物
-      NEXT_PUBLIC_API_URL: http://YOUR_SERVER_IP:8000
+      NEXT_PUBLIC_API_URL: http://192.168.32.40:8000
     depends_on:
       - cozymemory-api
     networks:
