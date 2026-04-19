@@ -9,11 +9,14 @@ import {
   BookOpen,
   Sparkles,
   Brain,
+  KeyRound,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -21,12 +24,16 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const NAV_ITEMS = [
+const MEMORY_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/memory", label: "Memory Lab", icon: MessageSquare },
   { href: "/profiles", label: "User Profiles", icon: User },
   { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
   { href: "/context", label: "Context Studio", icon: Sparkles },
+];
+
+const MANAGE_ITEMS = [
+  { href: "/users", label: "Users", icon: KeyRound },
 ];
 
 export function AppSidebar() {
@@ -41,20 +48,40 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="pt-2">
-        <SidebarMenu>
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <SidebarMenuItem key={href}>
-                <SidebarMenuButton render={<Link href={href} />} isActive={active}>
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
+      <SidebarContent className="pt-1">
+        <SidebarGroup>
+          <SidebarGroupLabel>Memory</SidebarGroupLabel>
+          <SidebarMenu>
+            {MEMORY_ITEMS.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <SidebarMenuItem key={href}>
+                  <SidebarMenuButton render={<Link href={href} />} isActive={active}>
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarMenu>
+            {MANAGE_ITEMS.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <SidebarMenuItem key={href}>
+                  <SidebarMenuButton render={<Link href={href} />} isActive={active}>
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t px-3 py-2">
