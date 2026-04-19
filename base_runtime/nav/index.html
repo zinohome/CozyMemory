@@ -441,10 +441,32 @@
   </div><!-- .arch-engines -->
 </div><!-- .arch -->
 
-<!-- ═══ Other: gRPC ═══ -->
+<!-- ═══ Other: CozyMemory UI + gRPC ═══ -->
 <span class="section-label">其他接口</span>
 
 <div class="other-grid">
+  <div class="card" data-port="8088" style="--card-color:var(--accent); --card-color-dim:#2a256e;">
+    <div class="card-header">
+      <div class="card-icon">🖥️</div>
+      <div class="card-title">CozyMemory UI</div>
+      <span class="card-port">:8088</span>
+    </div>
+    <p class="card-desc">
+      统一管理界面。涵盖 Dashboard、Memory Lab、用户画像、知识库管理与 Context Studio，支持暗/亮双主题。
+    </p>
+    <div class="card-links">
+      <a class="chip" data-port="8088" data-path="/dashboard">
+        <span class="chip-dot"></span>Dashboard
+      </a>
+      <a class="chip" data-port="8088" data-path="/context">
+        <span class="chip-dot"></span>Context Studio
+      </a>
+    </div>
+    <div class="status-row">
+      <span class="dot checking" data-status-port="8088"></span>
+      <span data-status-text-port="8088">检测中…</span>
+    </div>
+  </div>
   <div class="card" style="--card-color:var(--pink); --card-color-dim:#4a1a3a; cursor:default;">
     <div class="card-header">
       <div class="card-icon">⚡</div>

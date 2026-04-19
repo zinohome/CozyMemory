@@ -46,3 +46,8 @@
 :8019 {
 	reverse_proxy memobase-server-api:8000
 }
+
+# CozyMemory UI (:8088)
+:8088 {
+	reverse_proxy cozymemory-ui:3000
+}

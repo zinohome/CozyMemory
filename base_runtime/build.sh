@@ -90,6 +90,17 @@ build_cozymemory() {
     log "cozymemory:latest built."
 }
 
+# ---- cozymemory-ui ----
+build_cozymemory_ui() {
+    log "Building cozymemory-ui:latest ..."
+    local root_dir
+    root_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+    local ui_dir="$root_dir/ui"
+    [ -d "$ui_dir" ] || err "CozyMemory UI directory not found: $ui_dir"
+    docker build -t cozymemory-ui:latest "$ui_dir"
+    log "cozymemory-ui:latest built."
+}
+
 # ---- cognee-frontend ----
 build_cognee_frontend() {
     log "Building cognee-frontend:local-0.4.1 ..."
@@ -121,6 +132,7 @@ case "$TARGET" in
         build_cognee
         build_cognee_frontend
         build_cozymemory
+        build_cozymemory_ui
         ;;
     mem0-api)       build_mem0_api ;;
     mem0-webui)     build_mem0_webui ;;
@@ -128,8 +140,9 @@ case "$TARGET" in
     cognee)         build_cognee ;;
     cognee-frontend) build_cognee_frontend ;;
     cozymemory)     build_cozymemory ;;
+    cozymemory-ui)  build_cozymemory_ui ;;
     *)
-        echo "Usage: $0 [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend|cozymemory]"
+        echo "Usage: $0 [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend|cozymemory|cozymemory-ui]"
         exit 1
         ;;
 esac
@@ -138,3 +151,6 @@ echo ""
 log "Done! Custom images:"
 docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" \
     | grep -E "mem0-api|mem0-webui|memobase-server|cognee|cozymemory"
+
+# Update build.sh usage comment
+# Usage: ./build.sh [all|mem0-api|mem0-webui|memobase|cognee|cognee-frontend|cozymemory|cozymemory-ui]

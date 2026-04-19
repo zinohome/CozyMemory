@@ -326,6 +326,30 @@ services:
           memory: 128m
 
   # ==========================================
+  # CozyMemory UI
+  # ==========================================
+
+  cozymemory-ui:
+    image: cozymemory-ui:latest
+    container_name: cozy_ui
+    restart: unless-stopped
+    environment:
+      # entrypoint.sh 在启动时将 __COZY_API_URL__ 替换进 .next/static/ 编译产物
+      NEXT_PUBLIC_API_URL: http://YOUR_SERVER_IP:8000
+    depends_on:
+      - cozymemory-api
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 128m
+
+  # ==========================================
   # Caddy 反向代理
   # ==========================================
 
@@ -339,6 +363,7 @@ services:
       - "8080:8080"
       - "8081:8081"
       - "8019:8019"
+      - "8088:8088"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./nav:/srv/nav:ro
@@ -351,6 +376,7 @@ services:
       - mem0-webui
       - memobase-server-api
       - cozymemory-api
+      - cozymemory-ui
     networks:
       - 1panel-network
     labels:
