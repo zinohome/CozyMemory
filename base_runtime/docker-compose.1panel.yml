@@ -334,12 +334,14 @@ services:
     container_name: cozy_caddy
     restart: unless-stopped
     ports:
+      - "80:80"
       - "8000:8000"
       - "8080:8080"
       - "8081:8081"
       - "8019:8019"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./nav:/srv/nav:ro
       - /data/CozyMemory/caddy/data:/data
       - /data/CozyMemory/caddy/config:/config
     depends_on:

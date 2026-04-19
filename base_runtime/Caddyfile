@@ -1,9 +1,16 @@
 # CozyMemory 统一反向代理配置
 # 端口说明：
+#   :80   → 导航页（服务总览，可点击跳转各端口）
 #   :8000 → CozyMemory 统一服务层（REST API + gRPC）
 #   :8080 → Cognee（前端 + API）
 #   :8081 → Mem0（前端 + API）
 #   :8019 → Memobase API
+
+# 导航页 (:80) — 点击跳转各服务端口
+:80 {
+	root * /srv/nav
+	file_server
+}
 
 # CozyMemory 统一服务层 (:8000)
 :8000 {
