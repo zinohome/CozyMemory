@@ -144,6 +144,10 @@ export function KnowledgeGraph({ data, width = 700, height = 480 }: Props) {
         linkDirectionalArrowRelPos={1}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+          // Coordinates are undefined early in the simulation — skip to avoid
+          // drawing at (0,0) or outside the canvas viewport.
+          if (node.x == null || node.y == null) return;
+
           const gn = node as GraphNode;
           const label = gn.label;
           const fontSize = Math.max(10 / globalScale, 2);

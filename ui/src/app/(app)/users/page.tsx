@@ -185,9 +185,10 @@ export default function UsersPage() {
     ? allIds.filter((u) => u.toLowerCase().includes(filter.toLowerCase()))
     : allIds;
 
-  // Fetch UUIDs for all visible users in parallel (read-only, create=false)
+  // Fetch UUIDs only for the visible (filtered) rows — avoids firing a request
+  // for every user in the system when the filter is active.
   const uuidQueries = useQueries({
-    queries: allIds.map((uid) => ({
+    queries: filtered.map((uid) => ({
       queryKey: ["uuid", uid],
       queryFn: () => usersApi.getUuid(uid, false),
       staleTime: 120_000,
@@ -197,7 +198,7 @@ export default function UsersPage() {
 
   // Build a lookup map: userId → query result
   const uuidMap = Object.fromEntries(
-    allIds.map((uid, i) => [uid, uuidQueries[i]])
+    filtered.map((uid, i) => [uid, uuidQueries[i]])
   );
 
   const deleteMutation = useMutation({

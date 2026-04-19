@@ -51,6 +51,8 @@ export default function ProfilesPage() {
     enabled: !!userId,
   });
 
+  // CozyMemory transparently maps any string userId → UUID v4 for all
+  // /profiles/* routes (including /context), so passing the raw userId is safe.
   const contextQuery = useQuery({
     queryKey: ["profile-context", userId],
     queryFn: () => profilesApi.getContext(userId),

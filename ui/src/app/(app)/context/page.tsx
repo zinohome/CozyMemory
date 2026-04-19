@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { contextApi, type ContextResponse, type ConversationMemory, type KnowledgeSearchResult } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
@@ -74,6 +74,12 @@ export default function ContextStudioPage() {
   const [params, setParams] = useState<ContextParams>({ ...DEFAULT_PARAMS, user_id: currentUserId });
   const [result, setResult] = useState<ContextResponse | null>(null);
   const [elapsed, setElapsed] = useState<number | null>(null);
+
+  // Sync params.user_id whenever the global store changes (e.g. user switches
+  // on another page and then navigates back here without re-selecting).
+  useEffect(() => {
+    setParams((p) => ({ ...p, user_id: currentUserId }));
+  }, [currentUserId]);
 
   const mutation = useMutation({
     mutationFn: async (p: ContextParams) => {

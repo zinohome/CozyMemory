@@ -90,6 +90,7 @@ export default function KnowledgePage() {
   const qc = useQueryClient();
   const [selectedDataset, setSelectedDataset] = useState<KnowledgeDataset | null>(null);
   const [addText, setAddText] = useState("");
+  const [newDatasetName, setNewDatasetName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState("GRAPH_COMPLETION");
   const [cognifyJobId, setCognifyJobId] = useState<string | null>(null);
@@ -112,6 +113,8 @@ export default function KnowledgePage() {
     queryFn: () => knowledgeApi.getCognifyStatus(cognifyJobId!),
     enabled: !!cognifyJobId,
     refetchInterval: (query) => {
+      // Stop polling on network/server error so we don't loop indefinitely
+      if (query.state.status === "error") return false;
       const status = query.state.data?.status;
       return status === "running" || status === "pending" ? 3000 : false;
     },
@@ -130,6 +133,19 @@ export default function KnowledgePage() {
     },
   });
 
+  const createDatasetMutation = useMutation({
+    mutationFn: (name: string) => knowledgeApi.createDataset(name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["datasets"] });
+      setNewDatasetName("");
+    },
+  });
+
+  function handleCreateDataset() {
+    const name = newDatasetName.trim();
+    if (name) createDatasetMutation.mutate(name);
+  }
+
   const addMutation = useMutation({
     mutationFn: () => knowledgeApi.add(addText, selectedDataset?.name ?? "default"),
     onSuccess: () => setAddText(""),
@@ -146,7 +162,7 @@ export default function KnowledgePage() {
     mutationFn: () =>
       knowledgeApi.search({
         query: searchQuery,
-        dataset: selectedDataset?.id,
+        dataset: selectedDataset?.name, // use name (not id/UUID) — consistent with add/cognify
         search_type: searchType,
         top_k: 10,
       }),
@@ -196,22 +212,28 @@ export default function KnowledgePage() {
               placeholder="New dataset name"
               id="new-ds"
               className="text-xs h-8"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const val = (e.target as HTMLInputElement).value.trim();
-                  if (val) {
-                    knowledgeApi.createDataset(val).then(() =>
-                      qc.invalidateQueries({ queryKey: ["datasets"] })
-                    );
-                    (e.target as HTMLInputElement).value = "";
-                  }
-                }
-              }}
+              value={newDatasetName}
+              onChange={(e) => setNewDatasetName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateDataset()}
+              disabled={createDatasetMutation.isPending}
             />
-            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
-              <Plus className="h-3.5 w-3.5" />
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handleCreateDataset}
+              disabled={!newDatasetName.trim() || createDatasetMutation.isPending}
+            >
+              {createDatasetMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Plus className="h-3.5 w-3.5" />
+              )}
             </Button>
           </div>
+          {createDatasetMutation.isError && (
+            <p className="text-xs text-destructive">{String(createDatasetMutation.error)}</p>
+          )}
         </div>
 
         {/* ── Main panel ── */}

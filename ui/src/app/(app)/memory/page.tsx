@@ -82,7 +82,7 @@ export default function MemoryLabPage() {
               placeholder="Semantic search…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && userId && searchMutation.mutate()}
+              onKeyDown={(e) => e.key === "Enter" && userId && searchQuery && searchMutation.mutate()}
               disabled={!userId}
             />
             <Button

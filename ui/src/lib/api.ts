@@ -155,16 +155,20 @@ async function apiFetch<T>(
   path: string,
   init?: RequestInit & { params?: Record<string, string | number | boolean | undefined> }
 ): Promise<T> {
+  // Destructure custom `params` out so it is never forwarded to fetch() — the
+  // fetch spec does not recognise it and some polyfills throw on unknown keys.
+  const { params, ...fetchInit } = init ?? {};
+
   const url = new URL(`${BASE_URL}${API_PREFIX}${path}`);
-  if (init?.params) {
-    for (const [k, v] of Object.entries(init.params)) {
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
       if (v !== undefined) url.searchParams.set(k, String(v));
     }
   }
 
   const res = await fetch(url.toString(), {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    ...init,
+    headers: { "Content-Type": "application/json", ...(fetchInit?.headers ?? {}) },
+    ...fetchInit,
   });
 
   const data = await res.json();
