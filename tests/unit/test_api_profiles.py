@@ -54,7 +54,7 @@ async def test_insert_profile_success(client, mock_service):
     response = await client.post(
         "/api/v1/profiles/insert",
         json={
-            "user_id": "uid-abc",
+            "user_id": "550e8400-e29b-41d4-a716-446655440000",
             "messages": [{"role": "user", "content": "我叫小明"}],
         },
     )
@@ -74,7 +74,7 @@ async def test_insert_profile_engine_error_returns_502(client, mock_service):
     response = await client.post(
         "/api/v1/profiles/insert",
         json={
-            "user_id": "uid-abc",
+            "user_id": "550e8400-e29b-41d4-a716-446655440000",
             "messages": [{"role": "user", "content": "测试"}],
         },
     )

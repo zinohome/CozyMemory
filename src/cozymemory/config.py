@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     COGNEE_API_KEY: str = ""
     COGNEE_TIMEOUT: float = 300.0
     COGNEE_ENABLED: bool = True
+    COGNEE_USER_EMAIL: str = "admin@cognee.com"
+    COGNEE_USER_PASSWORD: str = ""
 
     # Redis（用户 ID 映射）
     REDIS_URL: str = "redis://localhost:6379/0"

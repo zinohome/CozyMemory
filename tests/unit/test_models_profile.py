@@ -16,10 +16,18 @@ from cozymemory.models.profile import (
 
 def test_profile_insert_request():
     req = ProfileInsertRequest(
-        user_id="user_123",
+        user_id="550e8400-e29b-41d4-a716-446655440000",
         messages=[Message(role="user", content="我叫小明")],
     )
     assert req.sync is False
+
+
+def test_profile_insert_request_rejects_non_uuid():
+    with pytest.raises(Exception, match="UUID v4"):
+        ProfileInsertRequest(
+            user_id="user_123",
+            messages=[Message(role="user", content="test")],
+        )
 
 
 def test_profile_flush_request():

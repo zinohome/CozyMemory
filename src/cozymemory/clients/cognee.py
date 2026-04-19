@@ -3,6 +3,7 @@
 从现有 cognee_sdk 迁移简化，保留核心 API。
 """
 
+import asyncio
 from typing import Any
 
 import structlog
@@ -15,25 +16,76 @@ logger = structlog.get_logger()
 
 
 class CogneeClient(BaseClient):
-    """Cognee 引擎客户端"""
+    """Cognee 引擎客户端，支持 JWT 自动登录（POST /api/v1/auth/login）"""
 
     def __init__(
-        self, api_url: str = "http://localhost:8000", api_key: str | None = None, **kwargs: Any
+        self,
+        api_url: str = "http://localhost:8000",
+        api_key: str | None = None,
+        user_email: str = "",
+        user_password: str = "",
+        **kwargs: Any,
     ) -> None:
         kwargs.setdefault("timeout", 300.0)
         super().__init__(engine_name="Cognee", api_url=api_url, api_key=api_key, **kwargs)
+        self._user_email = user_email
+        self._user_password = user_password
+        self._authenticated = False
+        self._login_lock = asyncio.Lock()
+
+    def _get_headers(self, content_type: str = "application/json") -> dict[str, str]:
+        # Cognee uses CookieTransport — cookies are handled by httpx client automatically.
+        # Static api_key fallback for deployments that do use Bearer.
+        headers: dict[str, str] = {"Content-Type": content_type}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
+
+    async def _login(self) -> None:
+        """POST /api/v1/auth/login → Cognee 设置 auth_token cookie，httpx 自动存储。"""
+        try:
+            response = await self._client.post(
+                f"{self.api_url}/api/v1/auth/login",
+                data={"username": self._user_email, "password": self._user_password},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=30,
+            )
+            if response.status_code == 200:
+                self._authenticated = True
+                logger.info("cognee.login.success", email=self._user_email)
+            else:
+                logger.warning("cognee.login.failed", status=response.status_code, body=response.text)
+        except Exception as exc:
+            logger.warning("cognee.login.error", error=str(exc))
+
+    async def _request_with_auth(self, method: str, path: str, **kwargs: Any) -> Any:
+        """直接发请求；遇到 401 时登录后重试一次（支持可选认证和必须认证两种部署）。"""
+        try:
+            return await self._request(method, path, **kwargs)
+        except EngineError as e:
+            if e.status_code == 401 and self._user_email and self._user_password:
+                self._authenticated = False
+                async with self._login_lock:
+                    # double-checked: 只有第一个失败者执行登录，后续等待者复用 cookie
+                    if not self._authenticated:
+                        self._client.cookies.clear()
+                        await self._login()
+                return await self._request(method, path, **kwargs)
+            raise
 
     async def health_check(self) -> bool:
-        """健康检查 — Cognee 无专属 /health 端点，使用 /api/v1/datasets 探活"""
+        """健康检查：尝试自动登录后访问 /api/v1/datasets；无法登录时 401 也视为健康。"""
         try:
-            response = await self._request("GET", "/api/v1/datasets")
-            return response.status_code == 200
+            await self._request_with_auth("GET", "/api/v1/datasets")
+            return True
+        except EngineError as e:
+            return e.status_code == 401
         except Exception:
             return False
 
     async def add(self, data: str, dataset: str) -> dict[str, Any]:
         """添加数据到 Cognee"""
-        response = await self._request(
+        response = await self._request_with_auth(
             "POST",
             "/api/v1/add",
             data={"datasetName": dataset},
@@ -48,7 +100,7 @@ class CogneeClient(BaseClient):
         payload: dict[str, Any] = {"run_in_background": run_in_background}
         if datasets:
             payload["datasets"] = datasets
-        response = await self._request("POST", "/api/v1/cognify", json=payload)
+        response = await self._request_with_auth("POST", "/api/v1/cognify", json=payload)
         return dict(response.json())
 
     async def search(
@@ -62,7 +114,7 @@ class CogneeClient(BaseClient):
         payload: dict[str, Any] = {"query": query, "search_type": search_type, "top_k": top_k}
         if dataset:
             payload["datasets"] = [dataset]
-        response = await self._request("POST", "/api/v1/search", json=payload)
+        response = await self._request_with_auth("POST", "/api/v1/search", json=payload)
         data = response.json()
 
         results = []
@@ -77,7 +129,7 @@ class CogneeClient(BaseClient):
 
     async def list_datasets(self) -> list[KnowledgeDataset]:
         """列出所有数据集"""
-        response = await self._request("GET", "/api/v1/datasets")
+        response = await self._request_with_auth("GET", "/api/v1/datasets")
         data = response.json()
         return [
             KnowledgeDataset(
@@ -90,7 +142,7 @@ class CogneeClient(BaseClient):
 
     async def create_dataset(self, name: str) -> KnowledgeDataset:
         """创建数据集"""
-        response = await self._request("POST", "/api/v1/datasets", json={"name": name})
+        response = await self._request_with_auth("POST", "/api/v1/datasets", json={"name": name})
         data = response.json()
         return KnowledgeDataset(
             id=str(data.get("id", "")),
@@ -100,13 +152,13 @@ class CogneeClient(BaseClient):
 
     async def get_cognify_status(self, job_id: str) -> dict[str, Any]:
         """查询 Cognify 任务状态（代理到 Cognee /api/v1/cognify/{job_id}）"""
-        response = await self._request("GET", f"/api/v1/cognify/{job_id}")
+        response = await self._request_with_auth("GET", f"/api/v1/cognify/{job_id}")
         return dict(response.json())
 
     async def delete_dataset(self, dataset_id: str) -> bool:
         """删除数据集（代理到 Cognee DELETE /api/v1/datasets/{id}）"""
         try:
-            await self._request("DELETE", f"/api/v1/datasets/{dataset_id}")
+            await self._request_with_auth("DELETE", f"/api/v1/datasets/{dataset_id}")
             return True
         except EngineError as e:
             if e.status_code == 404:
@@ -115,13 +167,13 @@ class CogneeClient(BaseClient):
 
     async def get_dataset_graph(self, dataset_id: str) -> Any:
         """获取数据集知识图谱（代理到 Cognee /api/v1/datasets/{id}/graph）"""
-        response = await self._request("GET", f"/api/v1/datasets/{dataset_id}/graph")
+        response = await self._request_with_auth("GET", f"/api/v1/datasets/{dataset_id}/graph")
         return response.json()
 
     async def delete(self, data_id: str, dataset_id: str) -> bool:
         """删除数据"""
         try:
-            await self._request(
+            await self._request_with_auth(
                 "DELETE", "/api/v1/delete", params={"data_id": data_id, "dataset_id": dataset_id}
             )
             return True

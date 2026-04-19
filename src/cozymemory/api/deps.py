@@ -55,6 +55,8 @@ def get_cognee_client() -> CogneeClient:
             api_url=settings.COGNEE_API_URL,
             api_key=settings.COGNEE_API_KEY or None,
             timeout=settings.COGNEE_TIMEOUT,
+            user_email=settings.COGNEE_USER_EMAIL,
+            user_password=settings.COGNEE_USER_PASSWORD,
         )
     return _cognee_client
 

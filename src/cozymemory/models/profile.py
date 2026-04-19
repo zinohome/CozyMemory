@@ -4,9 +4,10 @@
 核心范式：插入对话 (insert) → 缓冲区 (buffer) → LLM 处理 (flush) → 生成画像 (profile)
 """
 
+import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .common import Message
 
@@ -30,6 +31,17 @@ class ProfileInsertRequest(BaseModel):
     user_id: str = Field(..., description="用户 ID（必须是 UUID v4 格式）", min_length=1)
     messages: list[Message] = Field(..., description="对话消息列表", min_length=1)
     sync: bool = Field(False, description="是否同步等待处理完成")
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_uuid_v4(cls, v: str) -> str:
+        try:
+            val = uuid.UUID(v, version=4)
+            if str(val) != v.lower():
+                raise ValueError
+        except (ValueError, AttributeError):
+            raise ValueError("user_id 必须为 UUID v4 格式（如 550e8400-e29b-41d4-a716-446655440000）")
+        return v
 
 
 class ProfileFlushRequest(BaseModel):
