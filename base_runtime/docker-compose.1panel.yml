@@ -288,7 +288,7 @@ services:
 
   cozymemory-api:
     image: cozymemory:latest
-    container_name: cozy_api
+    container_name: cozymemory
     restart: unless-stopped
     ports:
       - "50051:50051"
