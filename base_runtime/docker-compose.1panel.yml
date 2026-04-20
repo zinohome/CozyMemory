@@ -168,6 +168,7 @@ services:
     # cognee-frontend 跑 Next.js dev 模式，NEXT_PUBLIC_* 可在运行时注入
     environment:
       - NEXT_PUBLIC_BACKEND_API_URL=http://192.168.32.40:8080
+      - NEXT_PUBLIC_LOCAL_API_URL=http://192.168.32.40:8080
       - NEXT_PUBLIC_IS_CLOUD_ENVIRONMENT=false
       - NEXT_DISABLE_DEV_INDICATORS=true
       - NEXT_TELEMETRY_DISABLED=1
