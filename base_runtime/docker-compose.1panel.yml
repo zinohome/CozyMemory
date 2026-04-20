@@ -341,6 +341,10 @@ services:
     environment:
       # entrypoint.sh 在启动时将 __COZY_API_URL__ 替换进 .next/static/ 编译产物
       NEXT_PUBLIC_API_URL: http://192.168.32.40:8000
+      # Playground 用 — server-side /api/chat 路由读取，不注入浏览器包
+      LLM_ENDPOINT: http://caddy:9090/v1
+      LLM_API_KEY: sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      LLM_MODEL: gpt-4.1-nano-2025-04-14
     depends_on:
       - cozymemory-api
     networks:

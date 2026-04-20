@@ -10,6 +10,7 @@ import {
   Sparkles,
   Brain,
   KeyRound,
+  MessagesSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,6 +31,7 @@ const MEMORY_ITEMS = [
   { href: "/profiles", label: "User Profiles", icon: User },
   { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
   { href: "/context", label: "Context Studio", icon: Sparkles },
+  { href: "/playground", label: "Playground", icon: MessagesSquare },
 ];
 
 const MANAGE_ITEMS = [
