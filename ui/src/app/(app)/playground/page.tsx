@@ -13,6 +13,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { conversationsApi, contextApi, type ContextResponse } from "@/lib/api";
+import { useAppStore, DEFAULT_PLAYGROUND_SYSTEM_PROMPT } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,12 +38,7 @@ interface ChatMsg {
   createdAt: string;
 }
 
-const SYSTEM_PROMPT_HEAD =
-  "You are a helpful assistant with long-term memory of the user. " +
-  "Use the retrieved context below to personalize your answer. " +
-  "If context is empty, answer normally. Keep replies concise.";
-
-function formatContextAsSystemBlock(ctx: ContextResponse): string {
+function formatContextAsSystemBlock(head: string, ctx: ContextResponse): string {
   const lines: string[] = [];
   if (ctx.conversations && ctx.conversations.length > 0) {
     lines.push("## Past conversation memories");
@@ -59,7 +55,7 @@ function formatContextAsSystemBlock(ctx: ContextResponse): string {
       lines.push(`- ${text}`);
     }
   }
-  return lines.length ? `${SYSTEM_PROMPT_HEAD}\n\n${lines.join("\n")}` : SYSTEM_PROMPT_HEAD;
+  return lines.length ? `${head}\n\n${lines.join("\n")}` : head;
 }
 
 /**
@@ -115,6 +111,9 @@ export default function PlaygroundPage() {
   const [customModel, setCustomModel] = useState<string>("");
   const [temperature, setTemperature] = useState<number>(0.7);
   const [maxTokens, setMaxTokens] = useState<number>(512);
+  const { playgroundSystemPrompt, setPlaygroundSystemPrompt } = useAppStore();
+  // 空字符串表示"沿用默认"，方便新用户看到默认值但不自动写入 store
+  const effectiveSystemPrompt = playgroundSystemPrompt || DEFAULT_PLAYGROUND_SYSTEM_PROMPT;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -166,7 +165,7 @@ export default function PlaygroundPage() {
       setLastContext(ctx);
 
       // 2) 流式调 LLM
-      const systemPrompt = formatContextAsSystemBlock(ctx);
+      const systemPrompt = formatContextAsSystemBlock(effectiveSystemPrompt, ctx);
       const resp = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,9 +288,35 @@ export default function PlaygroundPage() {
               <Sliders className="h-3 w-3" />
               <span className="group-open:font-medium">
                 Model: {effectiveModel || "<empty>"} · temp {temperature} · max {maxTokens}
+                {playgroundSystemPrompt ? " · custom prompt" : ""}
               </span>
               <span className="ml-1 opacity-60 group-open:rotate-90 transition-transform">▶</span>
             </summary>
+
+            <div className="space-y-1.5 mt-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">System prompt</Label>
+                {playgroundSystemPrompt && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                    onClick={() => setPlaygroundSystemPrompt("")}
+                  >
+                    Reset to default
+                  </button>
+                )}
+              </div>
+              <Textarea
+                value={effectiveSystemPrompt}
+                onChange={(e) => setPlaygroundSystemPrompt(e.target.value)}
+                className="min-h-[72px] font-mono text-xs"
+                placeholder={DEFAULT_PLAYGROUND_SYSTEM_PROMPT}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Prepended to every turn; retrieved context is appended underneath. Persists in
+                this browser.
+              </p>
+            </div>
 
             <div className="grid grid-cols-[1fr_auto_auto] gap-2 mt-3 items-end">
               <div className="space-y-1">

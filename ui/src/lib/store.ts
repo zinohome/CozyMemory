@@ -18,7 +18,16 @@ interface AppState {
   // Optional API key; when set, sent as X-Cozy-API-Key on every request
   apiKey: string;
   setApiKey: (key: string) => void;
+
+  // Playground system prompt — 空字符串 = 用默认
+  playgroundSystemPrompt: string;
+  setPlaygroundSystemPrompt: (p: string) => void;
 }
+
+export const DEFAULT_PLAYGROUND_SYSTEM_PROMPT =
+  "You are a helpful assistant with long-term memory of the user. " +
+  "Use the retrieved context below to personalize your answer. " +
+  "If context is empty, answer normally. Keep replies concise.";
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -31,6 +40,9 @@ export const useAppStore = create<AppState>()(
 
       apiKey: "",
       setApiKey: (key) => set({ apiKey: key }),
+
+      playgroundSystemPrompt: "",
+      setPlaygroundSystemPrompt: (p) => set({ playgroundSystemPrompt: p }),
     }),
     { name: "cozymemory-app" }
   )
