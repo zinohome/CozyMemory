@@ -419,7 +419,7 @@ export default function KnowledgePage() {
             )}
 
             {graphQuery.data && (
-              <KnowledgeGraph data={graphQuery.data.data} width={680} height={480} />
+              <KnowledgeGraph data={graphQuery.data.data} height={520} />
             )}
           </TabsContent>
         </Tabs>
