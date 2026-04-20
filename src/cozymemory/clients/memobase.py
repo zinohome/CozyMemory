@@ -163,13 +163,24 @@ class MemobaseClient(BaseClient):
     async def add_profile(
         self, user_id: str, topic: str, sub_topic: str, content: str
     ) -> ProfileTopic:
-        """手动添加画像条目"""
+        """手动添加画像条目。若用户不存在则自动创建后重试。"""
         # Memobase API 要求 topic/sub_topic 嵌套在 attributes 字段中
         payload = {"attributes": {"topic": topic, "sub_topic": sub_topic}, "content": content}
-        response = await self._request("POST", f"/api/v1/users/profile/{user_id}", json=payload)
+        path = f"/api/v1/users/profile/{user_id}"
+
+        response = await self._request("POST", path, json=payload)
         result = response.json()
         if isinstance(result, dict) and result.get("errno", 0) != 0:
-            raise EngineError(self.engine_name, result.get("errmsg", "add_profile failed"), 500)
+            if "ForeignKeyViolation" in result.get("errmsg", ""):
+                await self.add_user(user_id=user_id)
+                response = await self._request("POST", path, json=payload)
+                result = response.json()
+                if isinstance(result, dict) and result.get("errno", 0) != 0:
+                    raise EngineError(
+                        self.engine_name, result.get("errmsg", "add_profile failed"), 500
+                    )
+            else:
+                raise EngineError(self.engine_name, result.get("errmsg", "add_profile failed"), 500)
         data = result.get("data", result) if isinstance(result, dict) else {}
         return ProfileTopic(
             id=data.get("id", ""),
