@@ -106,12 +106,12 @@ services:
       - LLM_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
       - LLM_PROVIDER=openai
       - LLM_MODEL=gpt-4o-mini
-      - LLM_ENDPOINT=https://oneapi.naivehero.top/v1
+      - LLM_ENDPOINT=http://caddy:9090/v1
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=openai
       - EMBEDDING_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
-      - EMBEDDING_ENDPOINT=https://oneapi.naivehero.top/v1
-      - EMBEDDING_MODEL=openai/text-embedding-3-large
+      - EMBEDDING_ENDPOINT=http://caddy:9090/v1
+      - EMBEDDING_MODEL=text-embedding-3-large
       - EMBEDDING_DIMENSIONS=3072
       - DATABASE_URL=postgresql://cognee_user:cognee_password@postgres:5432/cognee_db
       - DB_PROVIDER=postgres
@@ -137,6 +137,7 @@ services:
       - EXTRAS=api,postgres,neo4j
       - TELEMETRY_DISABLED=1
       - ENABLE_BACKEND_ACCESS_CONTROL=false
+      - REQUIRE_AUTHENTICATION=false
       - DEFAULT_USER_EMAIL=admin@cognee.com
       - DEFAULT_USER_PASSWORD=passw0rd
       - TIKTOKEN_CACHE_DIR=/root/.tiktoken

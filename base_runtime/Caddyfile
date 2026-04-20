@@ -51,3 +51,12 @@
 :8088 {
 	reverse_proxy cozymemory-ui:3000
 }
+
+# LLM API 代理 (:9090) — 内部专用，剥除 oneapi.naivehero.top 的重复 Server 响应头
+# aiohttp 3.13+ 对重复响应头严格校验，通过此代理解决
+:9090 {
+	reverse_proxy https://oneapi.naivehero.top {
+		header_up Host oneapi.naivehero.top
+		header_down -Server
+	}
+}

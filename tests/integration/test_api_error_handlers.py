@@ -115,7 +115,7 @@ async def test_profile_insert_502():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/api/v1/profiles/insert",
-            json={"user_id": "u1", "messages": [{"role": "user", "content": "hi"}]},
+            json={"user_id": "550e8400-e29b-41d4-a716-446655440000", "messages": [{"role": "user", "content": "hi"}]},
         )
         assert resp.status_code == 502
         assert resp.json()["engine"] == "Memobase"
@@ -169,7 +169,7 @@ async def test_profile_insert_400():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/api/v1/profiles/insert",
-            json={"user_id": "u1", "messages": [{"role": "user", "content": "hi"}]},
+            json={"user_id": "550e8400-e29b-41d4-a716-446655440000", "messages": [{"role": "user", "content": "hi"}]},
         )
         assert resp.status_code == 400
 
