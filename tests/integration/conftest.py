@@ -8,6 +8,7 @@
 """
 
 import os
+import re
 import uuid
 
 import httpx
@@ -62,3 +63,38 @@ async def http_slow():
 def unique_user_id() -> str:
     """每个测试生成唯一的 UUID v4 user_id（Memobase 要求）"""
     return str(uuid.uuid4())
+
+
+# 识别本仓库集成/gRPC 测试制造的 dataset。合并任何一次测试运行中实际用到的命名前缀。
+# 每次新增测试用例里引入新前缀时，需要同步补到这里。
+_TEST_DATASET_RE = re.compile(
+    r"^(grpc-(test|add|cognify|flow|crud|ctx)-|test-(ds|delete|add-timing|smoke|timing)|"
+    r"smoke(-.+)?$|timing-test\d*$|integration-test-dataset$)"
+)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _cleanup_test_datasets():
+    """测试会话结束后清理测试 dataset，避免污染 Cognee 列表。
+
+    只在服务可达时生效；失败静默。
+    只删名字匹配 _TEST_DATASET_RE 的 dataset，不会误删手工或生产数据。
+    """
+    yield
+    if not server_is_up():
+        return
+    try:
+        r = httpx.get(f"{COZY_TEST_URL}/api/v1/knowledge/datasets", timeout=10)
+        if r.status_code != 200:
+            return
+        datasets = r.json().get("data", [])
+    except Exception:
+        return
+    for ds in datasets:
+        name = ds.get("name", "")
+        if not _TEST_DATASET_RE.match(name):
+            continue
+        try:
+            httpx.delete(f"{COZY_TEST_URL}/api/v1/knowledge/datasets/{ds['id']}", timeout=15)
+        except Exception:
+            pass
