@@ -12,7 +12,6 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { conversationsApi, contextApi, type ContextResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,7 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Send, Brain, RotateCcw } from "lucide-react";
+import { Loader2, Send, Brain, RotateCcw, Square } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 
 interface ChatMsg {
@@ -54,22 +53,76 @@ function formatContextAsSystemBlock(ctx: ContextResponse): string {
   return lines.length ? `${SYSTEM_PROMPT_HEAD}\n\n${lines.join("\n")}` : SYSTEM_PROMPT_HEAD;
 }
 
+/**
+ * 从 OpenAI-compatible SSE data chunk 里抠出 delta.content。
+ * 上游格式：`data: {"choices":[{"delta":{"content":"hello"}}]}\n\n` 或 `data: [DONE]\n\n`
+ */
+function extractDeltas(buffer: string): { deltas: string[]; rest: string; done: boolean } {
+  const deltas: string[] = [];
+  let done = false;
+  const lines = buffer.split("\n");
+  // 最后一行可能不完整，保留为下一次循环的 rest
+  const rest = lines.pop() ?? "";
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line.startsWith("data:")) continue;
+    const payload = line.slice(5).trim();
+    if (payload === "[DONE]") {
+      done = true;
+      continue;
+    }
+    try {
+      const obj = JSON.parse(payload);
+      const d = obj?.choices?.[0]?.delta?.content;
+      if (typeof d === "string") deltas.push(d);
+    } catch {
+      // 忽略非 JSON chunk（例如 upstream 偶发的注释/keepalive）
+    }
+  }
+  return { deltas, rest, done };
+}
+
 export default function PlaygroundPage() {
   const [userId, setUserId] = useState("");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
+  const [streamingText, setStreamingText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastContext, setLastContext] = useState<ContextResponse | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [messages, streamingText]);
 
-  const sendMutation = useMutation({
-    mutationFn: async (userMsg: string) => {
-      if (!userId) throw new Error("Please select or enter a user ID first");
+  // 清理：离开页面时取消 in-flight 请求
+  useEffect(() => () => abortRef.current?.abort(), []);
 
+  async function handleSend() {
+    const userMsg = input.trim();
+    if (!userMsg || !userId || isStreaming) return;
+    if (!userId) {
+      setErrorMsg("Please select or enter a user ID first");
+      return;
+    }
+
+    setErrorMsg(null);
+    setInput("");
+    setIsStreaming(true);
+    setStreamingText("");
+    setSaveStatus("idle");
+
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    const now = new Date().toISOString();
+    const historySnapshot = messages;
+    setMessages([...historySnapshot, { role: "user", content: userMsg, createdAt: now }]);
+
+    try {
       // 1) 拉 context
       const ctx = await contextApi.fetch({
         user_id: userId,
@@ -85,66 +138,102 @@ export default function PlaygroundPage() {
       });
       setLastContext(ctx);
 
-      // 2) 组装消息后调 LLM
+      // 2) 流式调 LLM
       const systemPrompt = formatContextAsSystemBlock(ctx);
-      const llmPayload = {
-        messages: [
-          { role: "system" as const, content: systemPrompt },
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: "user" as const, content: userMsg },
-        ],
-      };
-      const llmResp = await fetch("/api/chat", {
+      const resp = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(llmPayload),
+        signal: ac.signal,
+        body: JSON.stringify({
+          stream: true,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...historySnapshot.map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: userMsg },
+          ],
+        }),
       });
-      if (!llmResp.ok) {
-        const err = await llmResp.json().catch(() => ({}));
-        throw new Error(err.detail ?? err.error ?? `LLM HTTP ${llmResp.status}`);
+
+      if (!resp.ok || !resp.body) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail ?? err.error ?? `LLM HTTP ${resp.status}`);
       }
-      const llmData = await llmResp.json();
-      const assistantContent = llmData?.choices?.[0]?.message?.content ?? "(empty response)";
 
-      return { assistantContent };
-    },
-    onSuccess: ({ assistantContent }, userMsg) => {
-      const now = new Date().toISOString();
-      const newMessages: ChatMsg[] = [
-        ...messages,
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let full = "";
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const { deltas, rest, done: sseDone } = extractDeltas(buffer);
+        buffer = rest;
+        if (deltas.length > 0) {
+          for (const d of deltas) full += d;
+          setStreamingText(full);
+        }
+        if (sseDone) break;
+      }
+
+      // 3) 完成，把 streaming 文本合并进永久 messages
+      const finalMsg: ChatMsg = {
+        role: "assistant",
+        content: full || "(empty response)",
+        createdAt: new Date().toISOString(),
+      };
+      setMessages([
+        ...historySnapshot,
         { role: "user", content: userMsg, createdAt: now },
-        { role: "assistant", content: assistantContent, createdAt: now },
-      ];
-      setMessages(newMessages);
-      setInput("");
+        finalMsg,
+      ]);
+      setStreamingText("");
 
-      // 3) 异步写回 Mem0（不阻塞 UI）
+      // 4) 异步写回 Mem0
       setSaveStatus("saving");
       conversationsApi
         .add({
           user_id: userId,
           messages: [
             { role: "user", content: userMsg },
-            { role: "assistant", content: assistantContent },
+            { role: "assistant", content: finalMsg.content },
           ],
           infer: true,
         })
         .then(() => setSaveStatus("saved"))
         .catch(() => setSaveStatus("error"));
-    },
-  });
+    } catch (e) {
+      if ((e as Error).name === "AbortError") {
+        // 用户主动取消，把已经流出来的文本归档
+        if (streamingText) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: streamingText + " …(cancelled)", createdAt: new Date().toISOString() },
+          ]);
+        }
+      } else {
+        setErrorMsg((e as Error).message);
+      }
+      setStreamingText("");
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
+  }
 
-  function handleSend() {
-    const text = input.trim();
-    if (!text || !userId || sendMutation.isPending) return;
-    sendMutation.mutate(text);
+  function handleCancel() {
+    abortRef.current?.abort();
   }
 
   function handleReset() {
+    abortRef.current?.abort();
     setMessages([]);
     setLastContext(null);
     setSaveStatus("idle");
-    sendMutation.reset();
+    setStreamingText("");
+    setErrorMsg(null);
   }
 
   return (
@@ -194,20 +283,25 @@ export default function PlaygroundPage() {
                     </div>
                   </div>
                 ))}
-                {sendMutation.isPending && (
+                {isStreaming && (
                   <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg px-3 py-2 text-sm flex items-center gap-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+                    <div className="bg-muted rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
+                      {streamingText || (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+                        </span>
+                      )}
+                      {streamingText && (
+                        <span className="inline-block h-3 w-[2px] bg-foreground/70 animate-pulse ml-0.5" />
+                      )}
                     </div>
                   </div>
                 )}
               </div>
             </ScrollArea>
 
-            {sendMutation.error && (
-              <p className="text-xs text-destructive mt-2">
-                {(sendMutation.error as Error).message}
-              </p>
+            {errorMsg && (
+              <p className="text-xs text-destructive mt-2">{errorMsg}</p>
             )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
@@ -235,16 +329,18 @@ export default function PlaygroundPage() {
                     handleSend();
                   }
                 }}
-                disabled={!userId || sendMutation.isPending}
+                disabled={!userId || isStreaming}
                 className="min-h-[60px] max-h-[120px] resize-none"
               />
-              <Button onClick={handleSend} disabled={!input.trim() || !userId || sendMutation.isPending}>
-                {sendMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
+              {isStreaming ? (
+                <Button onClick={handleCancel} variant="destructive" title="Stop generating">
+                  <Square className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button onClick={handleSend} disabled={!input.trim() || !userId}>
                   <Send className="h-4 w-4" />
-                )}
-              </Button>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

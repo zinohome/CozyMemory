@@ -24,6 +24,7 @@ interface ChatRequest {
   model?: string;
   temperature?: number;
   max_tokens?: number;
+  stream?: boolean;
 }
 
 export async function POST(req: Request) {
@@ -43,6 +44,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "messages[] required" }, { status: 400 });
   }
 
+  const stream = body.stream === true;
+
   const upstream = await fetch(`${endpoint.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
@@ -54,18 +57,35 @@ export async function POST(req: Request) {
       messages: body.messages,
       temperature: body.temperature ?? 0.7,
       max_tokens: body.max_tokens ?? 512,
+      stream,
     }),
+    // 关闭 Node 上游超时等异常路径，upstream 会自然结束
+    signal: req.signal,
   });
 
-  const text = await upstream.text();
   if (!upstream.ok) {
+    const text = await upstream.text();
     return NextResponse.json(
       { error: `LLM upstream ${upstream.status}`, detail: text.slice(0, 500) },
       { status: 502 }
     );
   }
 
-  // Passthrough the OpenAI-style response — caller picks choices[0].message.content
+  if (stream && upstream.body) {
+    // 直通 SSE 流。浏览器 fetch 可直接 reader.read() 逐块消费。
+    return new Response(upstream.body, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        // 禁用 Next/Caddy 的缓冲，流立即可见
+        "X-Accel-Buffering": "no",
+      },
+    });
+  }
+
+  const text = await upstream.text();
   return new NextResponse(text, {
     status: 200,
     headers: { "Content-Type": "application/json" },
