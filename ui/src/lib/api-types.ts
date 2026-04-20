@@ -488,7 +488,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 导出用户记忆为 JSON bundle */
+        /**
+         * 导出用户记忆为 JSON bundle
+         * @description datasets: 可选逗号分隔的 Cognee dataset ID 列表，附加到 bundle 里。
+         */
         get: operations["export_user_api_v1_backup_export__user_id__get"];
         put?: never;
         post?: never;
@@ -746,6 +749,21 @@ export interface components {
              * @default 0
              */
             profiles_skipped: number;
+            /**
+             * Datasets Imported
+             * @default 0
+             */
+            datasets_imported: number;
+            /**
+             * Documents Imported
+             * @default 0
+             */
+            documents_imported: number;
+            /**
+             * Datasets Skipped
+             * @default 0
+             */
+            datasets_skipped: number;
             /**
              * Errors
              * @description 每条失败记录的 kind + id + reason
@@ -1143,6 +1161,22 @@ export interface components {
             memory_scope: "short" | "long" | "both";
         };
         /**
+         * DatasetDump
+         * @description 单个 Cognee 数据集的文本快照
+         */
+        DatasetDump: {
+            /**
+             * Name
+             * @description 数据集名
+             */
+            name: string;
+            /**
+             * Documents
+             * @description 从 DocumentChunk 节点提取的原文片段；导入时会重新 add+cognify
+             */
+            documents?: string[];
+        };
+        /**
          * DatasetGraphResponse
          * @description 数据集知识图谱响应（透传 Cognee 原始图谱数据）
          */
@@ -1509,7 +1543,7 @@ export interface components {
         };
         /**
          * MemoryBundle
-         * @description 单用户记忆导出包。version 用于未来 schema 演化时做兼容判断。
+         * @description 单用户记忆导出包。可选附带 Cognee 数据集（数据集与用户无关）。
          */
         MemoryBundle: {
             /**
@@ -1539,6 +1573,11 @@ export interface components {
              * @description Memobase 用户画像主题
              */
             profile_topics?: components["schemas"]["ProfileTopic"][];
+            /**
+             * Datasets
+             * @description Cognee 数据集（用户独立）
+             */
+            datasets?: components["schemas"]["DatasetDump"][];
         };
         /**
          * Message
@@ -2939,7 +2978,9 @@ export interface operations {
     };
     export_user_api_v1_backup_export__user_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                datasets?: string | null;
+            };
             header?: never;
             path: {
                 user_id: string;

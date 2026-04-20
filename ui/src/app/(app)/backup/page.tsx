@@ -3,14 +3,14 @@
 /**
  * Backup / Restore
  *
- * 每用户粒度的 JSON 备份：Mem0 conversations + Memobase profile topics。
- * 下载 = GET /api/v1/backup/export/{userId} 直接写文件。
- * 上传 = 读 JSON → POST /api/v1/backup/import，显示导入计数。
+ * 每用户粒度的 JSON 备份：Mem0 conversations + Memobase profile topics
+ * + 可选 Cognee 数据集（原文快照）。
  *
- * 不含 Cognee 数据集（图谱结构复杂，先略）。
+ * 下载 = GET /backup/export/{userId}?datasets=<ids> 直接写文件。
+ * 上传 = 读 JSON → POST /backup/import，显示导入计数。
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { UserSelector } from "@/components/user-selector";
 import { getApiKey } from "@/lib/store";
-import { Download, Upload, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { knowledgeApi, type KnowledgeDataset } from "@/lib/api";
+import { Download, Upload, Loader2, CheckCircle2, XCircle, Database } from "lucide-react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -28,6 +29,7 @@ interface MemoryBundle {
   user_id: string;
   conversations: { id: string; content: string }[];
   profile_topics: { id: string; topic: string; sub_topic: string; content: string }[];
+  datasets?: { name: string; documents: string[] }[];
 }
 
 interface ImportResult {
@@ -37,6 +39,9 @@ interface ImportResult {
   conversations_skipped: number;
   profiles_imported: number;
   profiles_skipped: number;
+  datasets_imported?: number;
+  documents_imported?: number;
+  datasets_skipped?: number;
   errors: { kind: string; id: string; reason: string }[];
 }
 
@@ -54,14 +59,33 @@ export default function BackupPage() {
   const [importErr, setImportErr] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [previewBundle, setPreviewBundle] = useState<MemoryBundle | null>(null);
+  const [datasets, setDatasets] = useState<KnowledgeDataset[]>([]);
+  const [selectedDs, setSelectedDs] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    knowledgeApi
+      .listDatasets()
+      .then((r) => setDatasets(r.data ?? []))
+      .catch(() => setDatasets([]));
+  }, []);
+
+  function toggleDs(id: string) {
+    setSelectedDs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function handleDownload() {
     if (!exportUserId) return;
     setExporting(true);
     setExportErr(null);
     try {
+      const dsQuery = selectedDs.size > 0 ? `?datasets=${[...selectedDs].join(",")}` : "";
       const resp = await fetch(
-        `${BASE_URL}/api/v1/backup/export/${encodeURIComponent(exportUserId)}`,
+        `${BASE_URL}/api/v1/backup/export/${encodeURIComponent(exportUserId)}${dsQuery}`,
         { headers: authHeaders() }
       );
       if (!resp.ok) {
@@ -159,6 +183,34 @@ export default function BackupPage() {
               Selected: <code className="font-mono">{exportUserId}</code>
             </div>
           )}
+
+          {datasets.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Database className="h-3.5 w-3.5" /> Include Cognee datasets (optional)
+              </Label>
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-auto rounded-md border p-2">
+                {datasets.map((d) => (
+                  <label
+                    key={d.id}
+                    className="flex items-center gap-1.5 text-xs cursor-pointer rounded px-1.5 py-0.5 hover:bg-muted"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedDs.has(d.id)}
+                      onChange={() => toggleDs(d.id)}
+                    />
+                    <span>{d.name}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Selected: {selectedDs.size} / {datasets.length}. Datasets are global, not tied to
+                the user — checked ones will be embedded in this bundle.
+              </p>
+            </div>
+          )}
+
           <Button onClick={handleDownload} disabled={!exportUserId || exporting}>
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -204,6 +256,11 @@ export default function BackupPage() {
                 <Badge variant="secondary">
                   {previewBundle.profile_topics.length} profile topics
                 </Badge>
+                {previewBundle.datasets && previewBundle.datasets.length > 0 && (
+                  <Badge variant="secondary">
+                    {previewBundle.datasets.length} datasets · {previewBundle.datasets.reduce((n, d) => n + d.documents.length, 0)} docs
+                  </Badge>
+                )}
                 <Badge variant="outline">
                   {new Date(previewBundle.exported_at).toLocaleString()}
                 </Badge>
@@ -251,6 +308,12 @@ export default function BackupPage() {
                 Profiles: {importResult.profiles_imported} imported,{" "}
                 {importResult.profiles_skipped} skipped
               </p>
+              {(importResult.datasets_imported ?? 0) + (importResult.documents_imported ?? 0) > 0 && (
+                <p>
+                  Datasets: {importResult.datasets_imported ?? 0} imported ·{" "}
+                  {importResult.documents_imported ?? 0} docs · cognify queued
+                </p>
+              )}
               {importResult.errors.length > 0 && (
                 <details>
                   <summary className="cursor-pointer text-destructive">

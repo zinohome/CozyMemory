@@ -133,6 +133,7 @@ def get_backup_service() -> BackupService:
     return BackupService(
         conv_service=get_conversation_service(),
         profile_service=get_profile_service(),
+        knowledge_service=get_knowledge_service(),
     )
 
 

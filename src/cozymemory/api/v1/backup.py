@@ -20,10 +20,16 @@ router = APIRouter(prefix="/backup", tags=["backup"])
     summary="导出用户记忆为 JSON bundle",
 )
 async def export_user(
-    user_id: str, service: BackupService = Depends(get_backup_service)
+    user_id: str,
+    datasets: str | None = None,
+    service: BackupService = Depends(get_backup_service),
 ) -> MemoryBundle:
+    """
+    datasets: 可选逗号分隔的 Cognee dataset ID 列表，附加到 bundle 里。
+    """
+    dataset_ids = [d.strip() for d in datasets.split(",") if d.strip()] if datasets else None
     try:
-        return await service.export_user(user_id)
+        return await service.export_user(user_id, dataset_ids=dataset_ids)
     except EngineError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY if e.status_code >= 500 else status.HTTP_400_BAD_REQUEST,
