@@ -111,19 +111,19 @@ export default function ProfilesPage() {
       {profileQuery.data?.data && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{profileQuery.data.data.topics.length} profile items</span>
+            <span className="text-sm font-medium">{(profileQuery.data.data.topics ?? []).length} profile items</span>
             <span className="text-xs text-muted-foreground">for {userId}</span>
           </div>
           <ScrollArea className="h-64">
             <div className="space-y-2 pr-2">
-              {profileQuery.data.data.topics.map((item) => (
+              {(profileQuery.data.data.topics ?? []).map((item) => (
                 <ProfileItemRow
                   key={item.id}
                   item={item}
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />
               ))}
-              {profileQuery.data.data.topics.length === 0 && (
+              {(profileQuery.data.data.topics ?? []).length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">No profile items.</p>
               )}
             </div>

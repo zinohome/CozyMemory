@@ -156,6 +156,7 @@ Next.js 16 / React 19 admin UI (App Router) using `@base-ui/react` + shadcn + Ta
 - **Critical**: `ui/AGENTS.md` warns that this Next.js version has breaking changes vs. typical training-data knowledge — consult `ui/node_modules/next/dist/docs/` before writing Next-specific code (routing, `use server`, caching semantics).
 - **API base URL**: `ui/src/lib/api.ts` reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`). In the Docker image, `ui/entrypoint.sh` rewrites the baked-in URL at container start so the same image runs in any deployment.
 - Dev: `cd ui && npm run dev` (port 3000). Lint: `npm run lint`. Build: `npm run build`.
+- **API types are generated**: `ui/src/lib/api-types.ts` is produced by `npm run gen:api` (reads `http://localhost:8000/openapi.json`). Never edit it by hand. `ui/src/lib/api.ts` aliases all schema types from there; whenever backend Pydantic models change, re-run `npm run gen:api` (backend must be up) and fix the resulting TypeScript errors — they flag contract drift.
 
 ## Engine API Quirks
 

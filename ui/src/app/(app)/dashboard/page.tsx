@@ -279,7 +279,7 @@ export default function DashboardPage() {
         <StatTile
           icon={Database}
           label="Datasets"
-          value={datasetsQuery.data?.data.length}
+          value={datasetsQuery.data?.data?.length ?? 0}
           loading={datasetsQuery.isLoading}
           color="text-purple-500"
         />
@@ -318,7 +318,7 @@ export default function DashboardPage() {
         )}
         {healthQuery.data && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {Object.values(healthQuery.data.engines).map((engine) => (
+            {Object.values(healthQuery.data.engines ?? {}).map((engine) => (
               <EngineCard key={engine.name} engine={engine} />
             ))}
           </div>

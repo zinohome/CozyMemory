@@ -92,7 +92,8 @@ export default function KnowledgePage() {
   const [addText, setAddText] = useState("");
   const [newDatasetName, setNewDatasetName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState("GRAPH_COMPLETION");
+  type SearchType = "CHUNKS" | "SUMMARIES" | "RAG_COMPLETION" | "GRAPH_COMPLETION";
+  const [searchType, setSearchType] = useState<SearchType>("GRAPH_COMPLETION");
   const [cognifyJobId, setCognifyJobId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("add");
 
@@ -191,7 +192,7 @@ export default function KnowledgePage() {
           </div>
           <ScrollArea className="h-72">
             <div className="space-y-1 pr-2">
-              {datasetsQuery.data?.data.map((ds) => (
+              {datasetsQuery.data?.data?.map((ds) => (
                 <DatasetRow
                   key={ds.id}
                   ds={ds}
@@ -202,7 +203,7 @@ export default function KnowledgePage() {
                 />
               ))}
               {datasetsQuery.isLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto mt-4" />}
-              {datasetsQuery.data?.data.length === 0 && (
+              {datasetsQuery.data?.data?.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">No datasets yet.</p>
               )}
             </div>
@@ -286,7 +287,10 @@ export default function KnowledgePage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && searchMutation.mutate()}
               />
-              <Select value={searchType} onValueChange={(v) => setSearchType(v ?? "GRAPH_COMPLETION")}>
+              <Select
+                value={searchType}
+                onValueChange={(v) => setSearchType((v as SearchType) ?? "GRAPH_COMPLETION")}
+              >
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
@@ -311,7 +315,7 @@ export default function KnowledgePage() {
             </div>
             <ScrollArea className="h-72">
               <div className="space-y-2 pr-2">
-                {searchMutation.data?.data.map((item, i) => (
+                {searchMutation.data?.data?.map((item, i) => (
                   <div key={String(item.id ?? i)} className="rounded-md border p-3 text-sm space-y-1">
                     <p>{item.text ?? JSON.stringify(item)}</p>
                     {item.score != null && (
@@ -321,7 +325,7 @@ export default function KnowledgePage() {
                     )}
                   </div>
                 ))}
-                {searchMutation.isSuccess && searchMutation.data?.data.length === 0 && (
+                {searchMutation.isSuccess && searchMutation.data?.data?.length === 0 && (
                   <p className="text-sm text-muted-foreground">No results. Try a different query or run cognify first.</p>
                 )}
               </div>

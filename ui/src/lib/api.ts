@@ -1,166 +1,51 @@
 /**
  * CozyMemory API client — typed fetch wrapper for all CozyMemory REST endpoints.
  *
- * Base URL is injected at runtime via NEXT_PUBLIC_API_URL (defaults to /api proxy
- * for same-origin dev, overridden in Docker via entrypoint.sh env replacement).
+ * 类型统一从 `./api-types`（由 `npm run gen:api` 从后端 /openapi.json 生成）
+ * 导入。手动重新定义 schema 会与后端漂移，所以这个文件只保留：
+ *   1. 对生成 schema 的重命名别名（保持页面层的命名稳定）
+ *   2. 薄 fetch 包装 + 每个端点的方法
+ *
+ * Base URL 通过 NEXT_PUBLIC_API_URL 在容器启动时注入到编译产物中。
  */
+
+import type { components } from "./api-types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const API_PREFIX = "/api/v1";
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// ── Types (aliased from generated schema) ──────────────────────────────────
 
-export interface Message {
-  role: "user" | "assistant" | "system";
-  content: string;
-  created_at?: string | null;
-}
+type S = components["schemas"];
 
-export interface EngineStatus {
-  name: string;
-  status: "healthy" | "unhealthy" | "disabled";
-  latency_ms?: number;
-  error?: string | null;
-}
+export type Message = S["Message"];
+export type EngineStatus = S["EngineStatus"];
+export type HealthResponse = S["HealthResponse"];
 
-export interface HealthResponse {
-  status: "healthy" | "degraded" | "unhealthy";
-  engines: Record<string, EngineStatus>;
-  timestamp?: string;
-}
+export type ConversationMemory = S["ConversationMemory"];
+export type ConversationListResponse = S["ConversationMemoryListResponse"];
+export type ConversationAddRequest = S["ConversationMemoryCreate"];
+export type ConversationSearchRequest = S["ConversationMemorySearch"];
 
-export interface ConversationMemory {
-  id: string;
-  content: string;
-  user_id?: string;
-  agent_id?: string;
-  session_id?: string;
-  score?: number | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  metadata?: Record<string, unknown> | null;
-}
+export type UserListResponse = S["UserListResponse"];
+export type UserMappingResponse = S["UserMappingResponse"];
 
-export interface ConversationListResponse {
-  success: boolean;
-  data: ConversationMemory[];
-  total: number;
-  short_term_memories?: ConversationMemory[];
-  long_term_memories?: ConversationMemory[];
-}
+export type ProfileItem = S["ProfileTopic"];
+export type UserProfileData = S["UserProfile"];
+export type ProfileResponse = S["ProfileGetResponse"];
+export type ProfileContextData = S["ProfileContext"];
+export type ProfileContextResponse = S["ProfileContextResponse"];
 
-export interface ConversationAddRequest {
-  user_id: string;
-  messages: Message[];
-  agent_id?: string;
-  session_id?: string;
-  infer?: boolean;
-  memory_scope?: "short" | "long" | "both";
-}
+export type KnowledgeDataset = S["KnowledgeDataset"];
+export type KnowledgeSearchResult = S["KnowledgeSearchResult"];
+export type KnowledgeSearchResponse = S["KnowledgeSearchResponse"];
+export type CognifyStatusResponse = S["CognifyStatusResponse"];
+export type DatasetGraphResponse = S["DatasetGraphResponse"];
 
-export interface ConversationSearchRequest {
-  query: string;
-  user_id?: string;
-  agent_id?: string;
-  session_id?: string;
-  limit?: number;
-  memory_scope?: "short" | "long" | "both";
-}
+export type ContextRequest = S["ContextRequest"];
+export type ContextResponse = S["ContextResponse"];
 
-export interface UserListResponse {
-  success: boolean;
-  data: string[];
-  total: number;
-}
-
-export interface UserMappingResponse {
-  success: boolean;
-  user_id: string;
-  uuid: string;
-  created: boolean;
-}
-
-export interface ProfileItem {
-  id: string;
-  topic: string;
-  sub_topic: string;
-  content: string;
-  created_at?: string | null;
-  updated_at?: string | null;
-}
-
-export interface UserProfileData {
-  user_id: string;
-  topics: ProfileItem[];
-  updated_at?: string | null;
-}
-
-export interface ProfileResponse {
-  success: boolean;
-  data: UserProfileData | null;
-  message?: string;
-}
-
-export interface ProfileContextData {
-  user_id: string;
-  context: string;
-}
-
-export interface ProfileContextResponse {
-  success: boolean;
-  data: ProfileContextData | null;
-  message?: string;
-}
-
-export interface KnowledgeDataset {
-  id: string;
-  name: string;
-  created_at?: string;
-}
-
-export interface KnowledgeSearchResult {
-  id?: string;
-  text?: string;
-  score?: number;
-  metadata?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-export interface KnowledgeSearchResponse {
-  success: boolean;
-  data: KnowledgeSearchResult[];
-  total: number;
-}
-
-export interface CognifyStatusResponse {
-  success: boolean;
-  job_id: string;
-  status: string;
-  data?: Record<string, unknown> | null;
-}
-
-export interface DatasetGraphResponse {
-  success: boolean;
-  dataset_id: string;
-  data: unknown;
-}
-
-export interface ContextResponse {
-  success: boolean;
-  user_id: string;
-  conversations?: ConversationMemory[];
-  profile_context?: string;
-  knowledge?: KnowledgeSearchResult[];
-  errors?: Record<string, string>;
-  latency_ms?: number;
-}
-
-export interface ApiError {
-  success: false;
-  error: string;
-  detail?: string;
-  engine?: string;
-}
+export type ApiError = S["ErrorResponse"];
 
 // ── Core fetch helper ──────────────────────────────────────────────────────
 
@@ -206,7 +91,7 @@ export const conversationsApi = {
       params: { user_id: userId, ...params },
     }),
   add: (body: ConversationAddRequest) =>
-    apiFetch<{ success: boolean; data: ConversationMemory[]; message: string }>("/conversations", {
+    apiFetch<ConversationListResponse>("/conversations", {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -215,11 +100,12 @@ export const conversationsApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  get: (id: string) => apiFetch<{ success: boolean; data: ConversationMemory }>(`/conversations/${id}`),
+  get: (id: string) =>
+    apiFetch<{ success: boolean; data: ConversationMemory }>(`/conversations/${id}`),
   delete: (id: string) =>
     apiFetch<{ success: boolean; message: string }>(`/conversations/${id}`, { method: "DELETE" }),
   deleteAll: (userId: string) =>
-    apiFetch<{ success: boolean; message: string }>(`/conversations`, {
+    apiFetch<{ success: boolean; message: string }>("/conversations", {
       method: "DELETE",
       params: { user_id: userId },
     }),
@@ -246,23 +132,23 @@ export const profilesApi = {
       method: "POST",
       body: JSON.stringify({ max_token_size: maxTokenSize ?? 500 }),
     }),
-  insert: (body: { user_id: string; messages: Message[]; sync?: boolean }) =>
-    apiFetch<{ success: boolean; message: string }>("/profiles/insert", {
+  insert: (body: S["ProfileInsertRequest"]) =>
+    apiFetch<S["ProfileInsertResponse"]>("/profiles/insert", {
       method: "POST",
       body: JSON.stringify(body),
     }),
   flush: (userId?: string) =>
-    apiFetch<{ success: boolean; message: string }>("/profiles/flush", {
+    apiFetch<S["ProfileFlushResponse"]>("/profiles/flush", {
       method: "POST",
       body: JSON.stringify({ user_id: userId }),
     }),
-  addItem: (userId: string, body: { topic: string; sub_topic: string; content: string }) =>
-    apiFetch<{ success: boolean; message: string }>(`/profiles/${userId}/items`, {
+  addItem: (userId: string, body: S["ProfileAddItemRequest"]) =>
+    apiFetch<S["ProfileAddItemResponse"]>(`/profiles/${userId}/items`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
   deleteItem: (userId: string, profileId: string) =>
-    apiFetch<{ success: boolean; message: string }>(`/profiles/${userId}/items/${profileId}`, {
+    apiFetch<S["ProfileDeleteItemResponse"]>(`/profiles/${userId}/items/${profileId}`, {
       method: "DELETE",
     }),
 };
@@ -270,29 +156,29 @@ export const profilesApi = {
 // ── Knowledge (Cognee) ────────────────────────────────────────────────────
 
 export const knowledgeApi = {
-  listDatasets: () =>
-    apiFetch<{ success: boolean; data: KnowledgeDataset[] }>("/knowledge/datasets"),
+  listDatasets: () => apiFetch<S["KnowledgeDatasetListResponse"]>("/knowledge/datasets"),
   createDataset: (name: string) =>
-    apiFetch<{ success: boolean; data: KnowledgeDataset[] }>(`/knowledge/datasets?name=${encodeURIComponent(name)}`, {
-      method: "POST",
-    }),
+    apiFetch<S["KnowledgeDatasetListResponse"]>(
+      `/knowledge/datasets?name=${encodeURIComponent(name)}`,
+      { method: "POST" }
+    ),
   deleteDataset: (datasetId: string) =>
     apiFetch<{ success: boolean; message: string }>(`/knowledge/datasets/${datasetId}`, {
       method: "DELETE",
     }),
   add: (data: string, dataset: string) =>
-    apiFetch<{ success: boolean; data_id?: string; dataset_name?: string; message: string }>("/knowledge/add", {
+    apiFetch<S["KnowledgeAddResponse"]>("/knowledge/add", {
       method: "POST",
       body: JSON.stringify({ data, dataset }),
     }),
   cognify: (datasets?: string[], runInBackground = true) =>
-    apiFetch<{ success: boolean; pipeline_run_id?: string; status: string; message: string }>("/knowledge/cognify", {
+    apiFetch<S["KnowledgeCognifyResponse"]>("/knowledge/cognify", {
       method: "POST",
       body: JSON.stringify({ datasets, run_in_background: runInBackground }),
     }),
   getCognifyStatus: (jobId: string) =>
     apiFetch<CognifyStatusResponse>(`/knowledge/cognify/status/${jobId}`),
-  search: (body: { query: string; dataset?: string; search_type?: string; top_k?: number }) =>
+  search: (body: S["KnowledgeSearchRequest"]) =>
     apiFetch<KnowledgeSearchResponse>("/knowledge/search", {
       method: "POST",
       body: JSON.stringify(body),
@@ -309,16 +195,6 @@ export const knowledgeApi = {
 // ── Context (unified) ─────────────────────────────────────────────────────
 
 export const contextApi = {
-  fetch: (body: {
-    user_id: string;
-    query?: string;
-    enable_conversations?: boolean;
-    enable_profile?: boolean;
-    enable_knowledge?: boolean;
-    memory_scope?: string;
-    top_k?: number;
-    max_token_size?: number;
-    timeout_ms?: number;
-  }) =>
+  fetch: (body: ContextRequest) =>
     apiFetch<ContextResponse>("/context", { method: "POST", body: JSON.stringify(body) }),
 };

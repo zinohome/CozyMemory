@@ -23,7 +23,6 @@ function MemoryRow({
         <p>{mem.content}</p>
         <div className="flex gap-2 text-xs text-muted-foreground flex-wrap">
           <span className="font-mono">{mem.id}</span>
-          {mem.session_id && <span>session: {mem.session_id}</span>}
           {mem.created_at && <span>{new Date(mem.created_at).toLocaleString()}</span>}
         </div>
       </div>
@@ -46,7 +45,13 @@ export default function MemoryLabPage() {
   });
 
   const searchMutation = useMutation({
-    mutationFn: () => conversationsApi.search({ query: searchQuery, user_id: userId }),
+    mutationFn: () =>
+      conversationsApi.search({
+        query: searchQuery,
+        user_id: userId,
+        limit: 10,
+        memory_scope: "long",
+      }),
   });
 
   const deleteMutation = useMutation({

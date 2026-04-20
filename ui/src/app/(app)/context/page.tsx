@@ -22,13 +22,13 @@ interface ContextParams {
   query: string;
   agent_id: string;
   session_id: string;
-  enable_conversations: boolean;
-  enable_profile: boolean;
-  enable_knowledge: boolean;
-  memory_scope: string;
-  top_k: number;
+  include_conversations: boolean;
+  include_profile: boolean;
+  include_knowledge: boolean;
+  memory_scope: "short" | "long" | "both";
+  knowledge_top_k: number;
   max_token_size: number;
-  timeout_ms: number;
+  engine_timeout: number;
 }
 
 const DEFAULT_PARAMS: ContextParams = {
@@ -36,13 +36,13 @@ const DEFAULT_PARAMS: ContextParams = {
   query: "",
   agent_id: "",
   session_id: "",
-  enable_conversations: true,
-  enable_profile: true,
-  enable_knowledge: true,
+  include_conversations: true,
+  include_profile: true,
+  include_knowledge: true,
   memory_scope: "long",
-  top_k: 5,
+  knowledge_top_k: 5,
   max_token_size: 500,
-  timeout_ms: 10000,
+  engine_timeout: 10,
 };
 
 function MemoryCard({ mem }: { mem: ConversationMemory }) {
@@ -50,8 +50,6 @@ function MemoryCard({ mem }: { mem: ConversationMemory }) {
     <div className="rounded-md border p-3 text-sm space-y-1">
       <p>{mem.content}</p>
       <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-        {mem.session_id && <span>session: {mem.session_id}</span>}
-        {mem.agent_id && <span>agent: {mem.agent_id}</span>}
         {mem.created_at && <span>{new Date(mem.created_at).toLocaleDateString()}</span>}
       </div>
     </div>
@@ -87,13 +85,15 @@ export default function ContextStudioPage() {
       const res = await contextApi.fetch({
         user_id: p.user_id,
         query: p.query || undefined,
-        enable_conversations: p.enable_conversations,
-        enable_profile: p.enable_profile,
-        enable_knowledge: p.enable_knowledge,
+        include_conversations: p.include_conversations,
+        include_profile: p.include_profile,
+        include_knowledge: p.include_knowledge,
         memory_scope: p.memory_scope,
-        top_k: p.top_k,
+        knowledge_top_k: p.knowledge_top_k,
         max_token_size: p.max_token_size,
-        timeout_ms: p.timeout_ms,
+        engine_timeout: p.engine_timeout,
+        conversation_limit: 5,
+        knowledge_search_type: "GRAPH_COMPLETION",
       });
       setElapsed(Date.now() - start);
       return res;
@@ -170,7 +170,12 @@ export default function ContextStudioPage() {
               <Label>Memory scope</Label>
               <Select
                 value={params.memory_scope}
-                onValueChange={(v) => setParams((p) => ({ ...p, memory_scope: v ?? "long" }))}
+                onValueChange={(v) =>
+                  setParams((p) => ({
+                    ...p,
+                    memory_scope: (v as "short" | "long" | "both") ?? "long",
+                  }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -191,8 +196,10 @@ export default function ContextStudioPage() {
                   type="number"
                   min={1}
                   max={50}
-                  value={params.top_k}
-                  onChange={(e) => setParams((p) => ({ ...p, top_k: Number(e.target.value) }))}
+                  value={params.knowledge_top_k}
+                  onChange={(e) =>
+                    setParams((p) => ({ ...p, knowledge_top_k: Number(e.target.value) }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
@@ -213,9 +220,9 @@ export default function ContextStudioPage() {
               <p className="font-medium text-xs uppercase text-muted-foreground tracking-wide">Engines</p>
               {(
                 [
-                  ["enable_conversations", "Mem0 Conversations"],
-                  ["enable_profile", "Memobase Profile"],
-                  ["enable_knowledge", "Cognee Knowledge"],
+                  ["include_conversations", "Mem0 Conversations"],
+                  ["include_profile", "Memobase Profile"],
+                  ["include_knowledge", "Cognee Knowledge"],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2 cursor-pointer">
