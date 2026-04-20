@@ -11,6 +11,7 @@ import {
   Brain,
   KeyRound,
   MessagesSquare,
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const MEMORY_ITEMS = [
 
 const MANAGE_ITEMS = [
   { href: "/users", label: "Users", icon: KeyRound },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppSidebar() {

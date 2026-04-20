@@ -141,6 +141,40 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # API Key 鉴权中间件（在日志中间件之前注册 → 执行顺序在其之后，
+    # 401 也会被日志记录）。COZY_API_KEYS 为空时整个中间件透传。
+    _AUTH_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/api/v1/health")
+
+    @app.middleware("http")
+    async def require_api_key(request: Request, call_next: Any) -> Response:
+        if not settings.auth_enabled:
+            return await call_next(request)
+        path = request.url.path
+        if path == "/" or any(path.startswith(p) for p in _AUTH_EXEMPT_PREFIXES):
+            return await call_next(request)
+        if request.method == "OPTIONS":  # CORS 预检直接放行
+            return await call_next(request)
+        provided = request.headers.get("x-cozy-api-key", "")
+        if provided not in settings.api_keys_set:
+            # auth 中间件注册在 CORSMiddleware 之后，401 短路响应不会
+            # 穿过 CORS 层 → 浏览器会把 401 当作 CORS 错误吞掉。手工
+            # 补上 CORS header，与 CORSMiddleware 配置（allow_origins=["*"]）
+            # 保持一致。
+            origin = request.headers.get("origin")
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content=ErrorResponse(
+                    success=False,
+                    error="Unauthorized",
+                    detail="Missing or invalid X-Cozy-API-Key header",
+                ).model_dump(),
+                headers={
+                    "Access-Control-Allow-Origin": origin or "*",
+                    "Vary": "Origin",
+                },
+            )
+        return await call_next(request)
+
     # 请求日志中间件：绑定 request_id / method / path 到 structlog contextvars
     @app.middleware("http")
     async def log_requests(request: Request, call_next: Any) -> Response:

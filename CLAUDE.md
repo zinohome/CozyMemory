@@ -80,6 +80,7 @@ MEM0_ENABLED=true
 MEMOBASE_ENABLED=true
 COGNEE_ENABLED=true
 APP_ENV=development   # Set to "production" to hide error details in responses
+COZY_API_KEYS=         # Optional; comma-separated keys. Empty = auth disabled. When set, clients must send X-Cozy-API-Key matching one of them (except /health, /docs, /redoc, /openapi.json, /).
 ```
 
 ## Architecture

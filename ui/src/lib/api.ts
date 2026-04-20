@@ -10,6 +10,7 @@
  */
 
 import type { components } from "./api-types";
+import { getApiKey } from "./store";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const API_PREFIX = "/api/v1";
@@ -64,8 +65,17 @@ async function apiFetch<T>(
     }
   }
 
+  // 全局 API key 自动注入，用户可在 Settings 页配置；未配置时后端若也关闭
+  // 鉴权则正常放行
+  const apiKey = getApiKey();
+  const authHeaders: Record<string, string> = apiKey ? { "X-Cozy-API-Key": apiKey } : {};
+
   const res = await fetch(url.toString(), {
-    headers: { "Content-Type": "application/json", ...(fetchInit?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+      ...(fetchInit?.headers ?? {}),
+    },
     ...fetchInit,
   });
 

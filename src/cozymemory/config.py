@@ -55,5 +55,18 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
 
+    # API Key 鉴权
+    # 逗号分隔的多个 key，留空 = 鉴权关闭（开发模式）
+    # 客户端通过 X-Cozy-API-Key header 传递；health/docs/openapi 不鉴权。
+    COZY_API_KEYS: str = ""
+
+    @property
+    def api_keys_set(self) -> set[str]:
+        return {k.strip() for k in self.COZY_API_KEYS.split(",") if k.strip()}
+
+    @property
+    def auth_enabled(self) -> bool:
+        return bool(self.api_keys_set)
+
 
 settings = Settings()

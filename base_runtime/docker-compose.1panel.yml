@@ -314,6 +314,8 @@ services:
       # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
       REDIS_URL: redis://:cozy_redis_pass@redis:6379/2
       REDIS_USER_MAPPING_TTL: "0"
+      # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
+      COZY_API_KEYS: "cozy-dev-key-001,cozy-dev-key-002"
     depends_on:
       - mem0-api
       - memobase-server-api

@@ -14,6 +14,10 @@ interface AppState {
   // API base URL (can be overridden in settings)
   apiUrl: string;
   setApiUrl: (url: string) => void;
+
+  // Optional API key; when set, sent as X-Cozy-API-Key on every request
+  apiKey: string;
+  setApiKey: (key: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -24,7 +28,15 @@ export const useAppStore = create<AppState>()(
 
       apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
       setApiUrl: (url) => set({ apiUrl: url }),
+
+      apiKey: "",
+      setApiKey: (key) => set({ apiKey: key }),
     }),
     { name: "cozymemory-app" }
   )
 );
+
+// 非 Hook 访问（api.ts 里的 apiFetch 不能调 Hook）
+export function getApiKey(): string {
+  return useAppStore.getState().apiKey;
+}
