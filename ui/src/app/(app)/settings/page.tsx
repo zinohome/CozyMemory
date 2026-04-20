@@ -34,6 +34,7 @@ import {
   Copy,
   Ban,
   CheckCircle,
+  History,
 } from "lucide-react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -50,6 +51,13 @@ interface ApiKeyRecord {
 interface ApiKeyCreateResponse {
   record: ApiKeyRecord;
   key: string;
+}
+
+interface ApiKeyLogEntry {
+  ts: string;
+  method: string;
+  path: string;
+  status: number;
 }
 
 function authHeaders(): Record<string, string> {
@@ -139,6 +147,28 @@ export default function SettingsPage() {
   const [revealedKey, setRevealedKey] = useState<{ id: string; key: string; action: "created" | "rotated" } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [logsId, setLogsId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<ApiKeyLogEntry[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  async function toggleLogs(id: string) {
+    if (logsId === id) {
+      setLogsId(null);
+      setLogs([]);
+      return;
+    }
+    setLogsId(id);
+    setLogsLoading(true);
+    try {
+      const r = await adminFetch<{ data: ApiKeyLogEntry[] }>(`/api-keys/${id}/logs?limit=50`);
+      setLogs(r.data);
+    } catch (e) {
+      setLoadErr((e as Error).message);
+      setLogs([]);
+    } finally {
+      setLogsLoading(false);
+    }
+  }
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -377,8 +407,8 @@ export default function SettingsPage() {
               {keys && keys.length > 0 && (
                 <div className="space-y-1.5">
                   {keys.map((k) => (
+                    <div key={k.id} className="space-y-0">
                     <div
-                      key={k.id}
                       className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
                     >
                       <div className="flex-1 min-w-0 space-y-0.5">
@@ -431,6 +461,14 @@ export default function SettingsPage() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        title={logsId === k.id ? "Hide logs" : "View logs"}
+                        onClick={() => toggleLogs(k.id)}
+                      >
+                        <History className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         title="Rotate"
                         onClick={() => handleRotate(k.id)}
                       >
@@ -444,6 +482,42 @@ export default function SettingsPage() {
                       >
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
+                    </div>
+                    {logsId === k.id && (
+                      <div className="rounded-md border border-t-0 rounded-t-none bg-muted/30 px-3 py-2 text-xs">
+                        {logsLoading ? (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+                          </div>
+                        ) : logs.length === 0 ? (
+                          <p className="text-muted-foreground">No recent usage.</p>
+                        ) : (
+                          <div className="space-y-0.5 max-h-60 overflow-auto">
+                            {logs.map((e, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-3 font-mono text-[11px]"
+                              >
+                                <span className="text-muted-foreground shrink-0">
+                                  {fmtDate(e.ts)}
+                                </span>
+                                <span
+                                  className={
+                                    e.status >= 400
+                                      ? "text-destructive"
+                                      : "text-green-600 dark:text-green-400"
+                                  }
+                                >
+                                  {e.status}
+                                </span>
+                                <span className="text-muted-foreground shrink-0">{e.method}</span>
+                                <span className="truncate">{e.path}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     </div>
                   ))}
                 </div>

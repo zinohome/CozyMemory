@@ -36,3 +36,18 @@ class ApiKeyListResponse(BaseModel):
     success: bool = True
     data: list[ApiKeyRecord]
     total: int = 0
+
+
+class ApiKeyLogEntry(BaseModel):
+    """单次 API key 使用记录"""
+
+    ts: datetime
+    method: str
+    path: str
+    status: int
+
+
+class ApiKeyLogListResponse(BaseModel):
+    success: bool = True
+    data: list[ApiKeyLogEntry]
+    total: int = 0

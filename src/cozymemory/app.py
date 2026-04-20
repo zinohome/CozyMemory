@@ -1,5 +1,7 @@
 """CozyMemory FastAPI 应用入口"""
 
+import asyncio
+import hashlib
 import time
 import uuid
 from collections.abc import AsyncIterator
@@ -162,20 +164,25 @@ def create_app() -> FastAPI:
         provided = request.headers.get("x-cozy-api-key", "")
         is_bootstrap = provided and provided in settings.api_keys_set
         is_admin_path = path.startswith(_ADMIN_PREFIX)
+        auth_key_id: str | None = None  # 鉴权成功的 key id，供审计日志引用
 
         if is_admin_path:
             # admin 路由 only bootstrap key
             ok = is_bootstrap
+            if ok:
+                auth_key_id = "bootstrap:" + hashlib.sha256(provided.encode()).hexdigest()[:16]
         else:
             # 普通路由：bootstrap 或动态 key 都接受
             ok = is_bootstrap
-            if not ok and provided:
+            if ok:
+                auth_key_id = "bootstrap:" + hashlib.sha256(provided.encode()).hexdigest()[:16]
+            elif provided:
                 try:
                     # 懒加载，避免 startup 先依赖 Redis
                     from .api.deps import get_api_key_store
 
-                    key_id = await get_api_key_store().verify_and_touch(provided)
-                    ok = key_id is not None
+                    auth_key_id = await get_api_key_store().verify_and_touch(provided)
+                    ok = auth_key_id is not None
                 except Exception:
                     ok = False
 
@@ -197,7 +204,24 @@ def create_app() -> FastAPI:
                     "Vary": "Origin",
                 },
             )
-        return await call_next(request)
+
+        response = await call_next(request)
+        # 成功鉴权的 key 异步写入审计日志（不阻塞响应）
+        if auth_key_id:
+            try:
+                from .api.deps import get_api_key_store
+
+                asyncio.create_task(
+                    get_api_key_store().record_usage(
+                        key_id=auth_key_id,
+                        method=request.method,
+                        path=path,
+                        status=response.status_code,
+                    )
+                )
+            except Exception:
+                pass
+        return response
 
     # 请求日志中间件：绑定 request_id / method / path 到 structlog contextvars
     @app.middleware("http")

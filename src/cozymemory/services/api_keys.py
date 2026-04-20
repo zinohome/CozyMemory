@@ -10,17 +10,20 @@ Redis 为存储后端：
 """
 
 import hashlib
+import json
 import secrets
 import uuid
 from datetime import datetime, timezone
 
 import redis.asyncio as aioredis
 
-from ..models.admin import ApiKeyCreateResponse, ApiKeyRecord
+from ..models.admin import ApiKeyCreateResponse, ApiKeyLogEntry, ApiKeyRecord
 
 _IDS_KEY = "cozy:apikey:ids"
 _HASH_PREFIX = "cozy:apikey:hash:"
 _META_PREFIX = "cozy:apikey:"
+_LOG_PREFIX = "cozy:apikey:log:"
+_LOG_MAX_ENTRIES = 200
 
 
 def _hash_key(plaintext: str) -> str:
@@ -145,6 +148,48 @@ class ApiKeyStore:
         deleted = await self._r.delete(f"{_META_PREFIX}{key_id}")
         await self._r.srem(_IDS_KEY, key_id)
         return deleted > 0
+
+    # ===== 审计日志 =====
+
+    async def record_usage(self, key_id: str, method: str, path: str, status: int) -> None:
+        """异步写入一条使用记录。不抛异常。保留最近 _LOG_MAX_ENTRIES 条。"""
+        try:
+            entry = json.dumps(
+                {
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "method": method,
+                    "path": path,
+                    "status": status,
+                }
+            )
+            list_key = f"{_LOG_PREFIX}{key_id}"
+            # LPUSH 新最上 + LTRIM 保留前 N 条
+            pipe = self._r.pipeline()
+            pipe.lpush(list_key, entry)
+            pipe.ltrim(list_key, 0, _LOG_MAX_ENTRIES - 1)
+            await pipe.execute()
+        except Exception:
+            pass
+
+    async def get_logs(self, key_id: str, limit: int = 50) -> list[ApiKeyLogEntry]:
+        list_key = f"{_LOG_PREFIX}{key_id}"
+        items_raw = await self._r.lrange(list_key, 0, limit - 1)
+        result: list[ApiKeyLogEntry] = []
+        for raw in items_raw:
+            s = raw.decode() if isinstance(raw, bytes) else raw
+            try:
+                d = json.loads(s)
+                result.append(
+                    ApiKeyLogEntry(
+                        ts=datetime.fromisoformat(d["ts"]),
+                        method=d.get("method", ""),
+                        path=d.get("path", ""),
+                        status=int(d.get("status", 0)),
+                    )
+                )
+            except (ValueError, KeyError):
+                continue
+        return result
 
     async def verify_and_touch(self, plaintext: str) -> str | None:
         """鉴权入口：若 plaintext 命中未禁用的 key，更新 last_used_at 并返回 id；否则 None"""

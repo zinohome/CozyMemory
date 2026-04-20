@@ -17,6 +17,7 @@ from ...models.admin import (
     ApiKeyCreateRequest,
     ApiKeyCreateResponse,
     ApiKeyListResponse,
+    ApiKeyLogListResponse,
     ApiKeyRecord,
     ApiKeyUpdateRequest,
 )
@@ -61,6 +62,21 @@ async def rotate_key(
     if not rec:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="key not found")
     return rec
+
+
+@router.get(
+    "/{key_id}/logs",
+    response_model=ApiKeyLogListResponse,
+    summary="查看该 key 最近使用记录",
+)
+async def get_key_logs(
+    key_id: str,
+    limit: int = 50,
+    store: ApiKeyStore = Depends(get_api_key_store),
+) -> ApiKeyLogListResponse:
+    # 允许动态 key 的 UUID 以及 bootstrap:<hash> 两种 id
+    entries = await store.get_logs(key_id, limit=limit)
+    return ApiKeyLogListResponse(data=entries, total=len(entries))
 
 
 @router.delete("/{key_id}")

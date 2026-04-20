@@ -568,6 +568,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/api-keys/{key_id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查看该 key 最近使用记录 */
+        get: operations["get_key_logs_api_v1_admin_api_keys__key_id__logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -601,6 +618,38 @@ export interface components {
             success: boolean;
             /** Data */
             data: components["schemas"]["ApiKeyRecord"][];
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /**
+         * ApiKeyLogEntry
+         * @description 单次 API key 使用记录
+         */
+        ApiKeyLogEntry: {
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            /** Method */
+            method: string;
+            /** Path */
+            path: string;
+            /** Status */
+            status: number;
+        };
+        /** ApiKeyLogListResponse */
+        ApiKeyLogListResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            /** Data */
+            data: components["schemas"]["ApiKeyLogEntry"][];
             /**
              * Total
              * @default 0
@@ -3091,6 +3140,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiKeyCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_key_logs_api_v1_admin_api_keys__key_id__logs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyLogListResponse"];
                 };
             };
             /** @description Validation Error */
