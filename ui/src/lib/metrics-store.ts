@@ -13,8 +13,18 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export const MAX_POINTS = 60; // 60 × 10s = 10 分钟历史窗口
-const WINDOW_MS = MAX_POINTS * 10_000;
+// 固定 10s 采样间隔，统一存 6h 数据；UI 按用户选的窗口做显示过滤。
+// 2160 × 80B × 2 series ≈ 350KB，localStorage 配额（~5MB）绰绰有余。
+export const POLL_INTERVAL_MS = 10_000;
+export const MAX_POINTS = 2160; // 2160 × 10s = 6 小时
+const WINDOW_MS = MAX_POINTS * POLL_INTERVAL_MS;
+
+export const WINDOW_PRESETS = [
+  { label: "10m", minutes: 10 },
+  { label: "1h", minutes: 60 },
+  { label: "6h", minutes: 360 },
+] as const;
+export type WindowMinutes = (typeof WINDOW_PRESETS)[number]["minutes"];
 
 export interface LatencyPoint {
   ts: number;

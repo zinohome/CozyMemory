@@ -10,9 +10,7 @@
 
 import { useEffect } from "react";
 import { healthApi, usersApi, knowledgeApi } from "@/lib/api";
-import { useMetricsStore } from "@/lib/metrics-store";
-
-const POLL_INTERVAL_MS = 10_000;
+import { useMetricsStore, POLL_INTERVAL_MS } from "@/lib/metrics-store";
 
 export function MetricsPoller() {
   const pushLatency = useMetricsStore((s) => s.pushLatency);

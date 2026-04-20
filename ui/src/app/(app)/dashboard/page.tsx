@@ -11,7 +11,7 @@ import {
   Brain, MessageSquare, User, BookOpen,
   Wifi, WifiOff, Loader2, Users, Database, MemoryStick, RefreshCw, Activity, TrendingUp,
 } from "lucide-react";
-import { useMetricsStore, MAX_POINTS } from "@/lib/metrics-store";
+import { useMetricsStore, WINDOW_PRESETS, type WindowMinutes } from "@/lib/metrics-store";
 import { Sparkline } from "@/components/sparkline";
 
 // ── Engine health card ────────────────────────────────────────────────────
@@ -101,26 +101,50 @@ function LatencyRow({
 function ObservabilityPanel() {
   const latency = useMetricsStore((s) => s.latency);
   const counts = useMetricsStore((s) => s.counts);
+  const [windowMinutes, setWindowMinutes] = useState<WindowMinutes>(10);
 
-  const mem0Values = latency.map((p) => p.mem0);
-  const memobaseValues = latency.map((p) => p.memobase);
-  const cogneeValues = latency.map((p) => p.cognee);
-  const userValues = counts.map((p) => p.users as number | null);
-  const datasetValues = counts.map((p) => p.datasets as number | null);
+  // 按选中窗口裁剪出可视点。buffer 本身最多保留 6h；窗口只影响显示。
+  const cutoff = Date.now() - windowMinutes * 60_000;
+  const visibleLatency = latency.filter((p) => p.ts >= cutoff);
+  const visibleCounts = counts.filter((p) => p.ts >= cutoff);
 
-  const windowMin = Math.round((MAX_POINTS * 10) / 60);
+  const mem0Values = visibleLatency.map((p) => p.mem0);
+  const memobaseValues = visibleLatency.map((p) => p.memobase);
+  const cogneeValues = visibleLatency.map((p) => p.cognee);
+  const userValues = visibleCounts.map((p) => p.users as number | null);
+  const datasetValues = visibleCounts.map((p) => p.datasets as number | null);
+
   const firstTs = latency[0]?.ts ?? counts[0]?.ts;
-  const elapsedMin = firstTs ? Math.max(0, Math.round((Date.now() - firstTs) / 60000)) : 0;
+  const elapsedMin = firstTs ? Math.max(0, Math.round((Date.now() - firstTs) / 60_000)) : 0;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="text-sm font-semibold flex items-center gap-1.5">
           <Activity className="h-4 w-4" /> Observability
         </h3>
-        <span className="text-xs text-muted-foreground">
-          window: last {windowMin}min · {elapsedMin}min collected · refresh every 10s
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border text-xs overflow-hidden">
+            {WINDOW_PRESETS.map((p, i) => (
+              <button
+                key={p.minutes}
+                onClick={() => setWindowMinutes(p.minutes)}
+                className={
+                  (windowMinutes === p.minutes
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted") +
+                  " px-2 py-0.5" +
+                  (i > 0 ? " border-l" : "")
+                }
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {visibleLatency.length} pts · buffer {elapsedMin}min · 10s cadence
+          </span>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
