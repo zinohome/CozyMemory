@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Brain, MessageSquare, User, BookOpen,
-  Wifi, WifiOff, Loader2, Users, Database, MemoryStick, RefreshCw,
+  Wifi, WifiOff, Loader2, Users, Database, MemoryStick, RefreshCw, Activity, TrendingUp,
 } from "lucide-react";
+import { useMetricsStore, MAX_POINTS } from "@/lib/metrics-store";
+import { Sparkline } from "@/components/sparkline";
 
 // ── Engine health card ────────────────────────────────────────────────────
 
@@ -50,6 +52,104 @@ function EngineCard({ engine }: { engine: EngineStatus }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Observability panel ──────────────────────────────────────────────────
+// 读 metrics-store 里的时序数据（由 MetricsPoller 填充），绘 sparkline。
+// 页面只要在 AppLayout 下，跨导航切换 poller 都一直跑，历史窗口持续累积。
+
+function fmtMs(v: number | null): string {
+  if (v == null) return "—";
+  return v >= 1000 ? `${(v / 1000).toFixed(2)}s` : `${v.toFixed(0)}ms`;
+}
+
+function stats(values: (number | null)[]): { min: number; avg: number; max: number } | null {
+  const finite = values.filter((v): v is number => v != null);
+  if (finite.length === 0) return null;
+  const sum = finite.reduce((a, b) => a + b, 0);
+  return { min: Math.min(...finite), avg: sum / finite.length, max: Math.max(...finite) };
+}
+
+function LatencyRow({
+  label,
+  values,
+  color,
+}: {
+  label: string;
+  values: (number | null)[];
+  color: string;
+}) {
+  const s = stats(values);
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <div className="w-20 text-muted-foreground truncate">{label}</div>
+      <Sparkline values={values} stroke={color} className="shrink-0" />
+      {s ? (
+        <div className="flex-1 flex gap-3 text-muted-foreground font-mono">
+          <span>min {fmtMs(s.min)}</span>
+          <span>avg {fmtMs(s.avg)}</span>
+          <span>max {fmtMs(s.max)}</span>
+        </div>
+      ) : (
+        <div className="text-muted-foreground">no samples yet</div>
+      )}
+    </div>
+  );
+}
+
+function ObservabilityPanel() {
+  const latency = useMetricsStore((s) => s.latency);
+  const counts = useMetricsStore((s) => s.counts);
+
+  const mem0Values = latency.map((p) => p.mem0);
+  const memobaseValues = latency.map((p) => p.memobase);
+  const cogneeValues = latency.map((p) => p.cognee);
+  const userValues = counts.map((p) => p.users as number | null);
+  const datasetValues = counts.map((p) => p.datasets as number | null);
+
+  const windowMin = Math.round((MAX_POINTS * 10) / 60);
+  const firstTs = latency[0]?.ts ?? counts[0]?.ts;
+  const elapsedMin = firstTs ? Math.max(0, Math.round((Date.now() - firstTs) / 60000)) : 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5">
+          <Activity className="h-4 w-4" /> Observability
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          window: last {windowMin}min · {elapsedMin}min collected · refresh every 10s
+        </span>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <Activity className="h-3.5 w-3.5" /> Engine latency
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <LatencyRow label="Mem0" values={mem0Values} color="#3b82f6" />
+            <LatencyRow label="Memobase" values={memobaseValues} color="#10b981" />
+            <LatencyRow label="Cognee" values={cogneeValues} color="#a855f7" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5" /> Memory growth
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <LatencyRow label="Users" values={userValues} color="#2563eb" />
+            <LatencyRow label="Datasets" values={datasetValues} color="#7c3aed" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
@@ -324,6 +424,11 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      <Separator />
+
+      {/* ── Observability trends ── */}
+      <ObservabilityPanel />
 
       <Separator />
 

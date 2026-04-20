@@ -1,9 +1,11 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { MetricsPoller } from "@/components/metrics-poller";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
+      <MetricsPoller />
       <div className="flex h-full w-full">
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0 overflow-auto">
