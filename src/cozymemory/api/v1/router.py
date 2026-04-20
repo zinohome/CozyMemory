@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from .admin import router as admin_router
 from .backup import router as backup_router
 from .context import router as context_router
 from .conversation import router as conversation_router
@@ -18,3 +19,4 @@ router.include_router(knowledge_router)
 router.include_router(context_router)
 router.include_router(users_router)
 router.include_router(backup_router)
+router.include_router(admin_router)

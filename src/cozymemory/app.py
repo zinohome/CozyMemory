@@ -141,9 +141,13 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # API Key 鉴权中间件（在日志中间件之前注册 → 执行顺序在其之后，
-    # 401 也会被日志记录）。COZY_API_KEYS 为空时整个中间件透传。
+    # API Key 鉴权中间件。鉴权源（两者任一命中即通过）：
+    #   a. COZY_API_KEYS 环境变量里的 bootstrap key（不可删除，admin 权限）
+    #   b. Redis 里用户创建的动态 key（可 CRUD，普通权限）
+    # 鉴权关闭的条件：env 为空 AND 不想强制（通过 COZY_AUTH_REQUIRE_DYNAMIC
+    # 开关暂不支持）。当 env 空 = 关闭。
     _AUTH_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/api/v1/health")
+    _ADMIN_PREFIX = "/api/v1/admin"
 
     @app.middleware("http")
     async def require_api_key(request: Request, call_next: Any) -> Response:
@@ -154,19 +158,39 @@ def create_app() -> FastAPI:
             return await call_next(request)
         if request.method == "OPTIONS":  # CORS 预检直接放行
             return await call_next(request)
+
         provided = request.headers.get("x-cozy-api-key", "")
-        if provided not in settings.api_keys_set:
-            # auth 中间件注册在 CORSMiddleware 之后，401 短路响应不会
-            # 穿过 CORS 层 → 浏览器会把 401 当作 CORS 错误吞掉。手工
-            # 补上 CORS header，与 CORSMiddleware 配置（allow_origins=["*"]）
-            # 保持一致。
+        is_bootstrap = provided and provided in settings.api_keys_set
+        is_admin_path = path.startswith(_ADMIN_PREFIX)
+
+        if is_admin_path:
+            # admin 路由 only bootstrap key
+            ok = is_bootstrap
+        else:
+            # 普通路由：bootstrap 或动态 key 都接受
+            ok = is_bootstrap
+            if not ok and provided:
+                try:
+                    # 懒加载，避免 startup 先依赖 Redis
+                    from .api.deps import get_api_key_store
+
+                    key_id = await get_api_key_store().verify_and_touch(provided)
+                    ok = key_id is not None
+                except Exception:
+                    ok = False
+
+        if not ok:
             origin = request.headers.get("origin")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content=ErrorResponse(
                     success=False,
                     error="Unauthorized",
-                    detail="Missing or invalid X-Cozy-API-Key header",
+                    detail=(
+                        "Admin operation requires a bootstrap key"
+                        if is_admin_path
+                        else "Missing or invalid X-Cozy-API-Key header"
+                    ),
                 ).model_dump(),
                 headers={
                     "Access-Control-Allow-Origin": origin or "*",

@@ -515,10 +515,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Keys */
+        get: operations["list_keys_api_v1_admin_api_keys_get"];
+        put?: never;
+        /** Create Key */
+        post: operations["create_key_api_v1_admin_api_keys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/api-keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Key */
+        delete: operations["delete_key_api_v1_admin_api_keys__key_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Key */
+        patch: operations["update_key_api_v1_admin_api_keys__key_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/api-keys/{key_id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate Key */
+        post: operations["rotate_key_api_v1_admin_api_keys__key_id__rotate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApiKeyCreateRequest */
+        ApiKeyCreateRequest: {
+            /**
+             * Name
+             * @description 人可读命名
+             */
+            name: string;
+        };
+        /**
+         * ApiKeyCreateResponse
+         * @description 创建/轮换响应 — 仅此刻返回明文 key，用户必须立即保存
+         */
+        ApiKeyCreateResponse: {
+            record: components["schemas"]["ApiKeyRecord"];
+            /**
+             * Key
+             * @description 明文 key（仅此次返回，之后只存 hash）
+             */
+            key: string;
+        };
+        /** ApiKeyListResponse */
+        ApiKeyListResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            /** Data */
+            data: components["schemas"]["ApiKeyRecord"][];
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /**
+         * ApiKeyRecord
+         * @description 服务端存储的 API key 元数据（不含明文和 hash）
+         */
+        ApiKeyRecord: {
+            /**
+             * Id
+             * @description key ID（UUID）
+             */
+            id: string;
+            /**
+             * Name
+             * @description 人可读命名
+             */
+            name: string;
+            /**
+             * Prefix
+             * @description key 前缀，供识别，例如 cozy_prod_a1b2c3
+             */
+            prefix: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Last Used At
+             * @description 最近一次成功鉴权时间
+             */
+            last_used_at?: string | null;
+            /**
+             * Disabled
+             * @description 禁用后不再通过鉴权
+             * @default false
+             */
+            disabled: boolean;
+        };
+        /** ApiKeyUpdateRequest */
+        ApiKeyUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /** Disabled */
+            disabled?: boolean | null;
+        };
         /**
          * BackupImportRequest
          * @description 导入请求体
@@ -2806,6 +2939,158 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BackupImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keys_api_v1_admin_api_keys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyListResponse"];
+                };
+            };
+        };
+    };
+    create_key_api_v1_admin_api_keys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_key_api_v1_admin_api_keys__key_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_key_api_v1_admin_api_keys__key_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_key_api_v1_admin_api_keys__key_id__rotate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
                 };
             };
             /** @description Validation Error */
