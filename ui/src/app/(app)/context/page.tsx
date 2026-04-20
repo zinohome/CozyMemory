@@ -39,7 +39,7 @@ const DEFAULT_PARAMS: ContextParams = {
   enable_conversations: true,
   enable_profile: true,
   enable_knowledge: true,
-  memory_scope: "long_term",
+  memory_scope: "long",
   top_k: 5,
   max_token_size: 500,
   timeout_ms: 10000,
@@ -48,7 +48,7 @@ const DEFAULT_PARAMS: ContextParams = {
 function MemoryCard({ mem }: { mem: ConversationMemory }) {
   return (
     <div className="rounded-md border p-3 text-sm space-y-1">
-      <p>{mem.memory}</p>
+      <p>{mem.content}</p>
       <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
         {mem.session_id && <span>session: {mem.session_id}</span>}
         {mem.agent_id && <span>agent: {mem.agent_id}</span>}
@@ -170,14 +170,14 @@ export default function ContextStudioPage() {
               <Label>Memory scope</Label>
               <Select
                 value={params.memory_scope}
-                onValueChange={(v) => setParams((p) => ({ ...p, memory_scope: v ?? "long_term" }))}
+                onValueChange={(v) => setParams((p) => ({ ...p, memory_scope: v ?? "long" }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="long_term">Long-term</SelectItem>
-                  <SelectItem value="short_term">Short-term</SelectItem>
+                  <SelectItem value="long">Long-term</SelectItem>
+                  <SelectItem value="short">Short-term</SelectItem>
                   <SelectItem value="both">Both</SelectItem>
                 </SelectContent>
               </Select>

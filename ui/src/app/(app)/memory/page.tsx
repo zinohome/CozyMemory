@@ -20,7 +20,7 @@ function MemoryRow({
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border p-3 text-sm">
       <div className="flex-1 space-y-1">
-        <p>{mem.memory}</p>
+        <p>{mem.content}</p>
         <div className="flex gap-2 text-xs text-muted-foreground flex-wrap">
           <span className="font-mono">{mem.id}</span>
           {mem.session_id && <span>session: {mem.session_id}</span>}

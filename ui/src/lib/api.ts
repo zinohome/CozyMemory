@@ -17,27 +17,28 @@ export interface Message {
 }
 
 export interface EngineStatus {
-  engine: string;
+  name: string;
   status: "healthy" | "unhealthy" | "disabled";
   latency_ms?: number;
-  error?: string;
+  error?: string | null;
 }
 
 export interface HealthResponse {
-  success: boolean;
   status: "healthy" | "degraded" | "unhealthy";
-  engines: EngineStatus[];
+  engines: Record<string, EngineStatus>;
+  timestamp?: string;
 }
 
 export interface ConversationMemory {
   id: string;
-  memory: string;
+  content: string;
   user_id?: string;
   agent_id?: string;
   session_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  metadata?: Record<string, unknown>;
+  score?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface ConversationListResponse {
@@ -54,7 +55,7 @@ export interface ConversationAddRequest {
   agent_id?: string;
   session_id?: string;
   infer?: boolean;
-  memory_scope?: "short_term" | "long_term" | "both";
+  memory_scope?: "short" | "long" | "both";
 }
 
 export interface ConversationSearchRequest {
@@ -63,7 +64,7 @@ export interface ConversationSearchRequest {
   agent_id?: string;
   session_id?: string;
   limit?: number;
-  memory_scope?: "short_term" | "long_term" | "both";
+  memory_scope?: "short" | "long" | "both";
 }
 
 export interface UserListResponse {
@@ -81,22 +82,34 @@ export interface UserMappingResponse {
 
 export interface ProfileItem {
   id: string;
+  topic: string;
+  sub_topic: string;
   content: string;
-  topic?: string;
-  sub_topic?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface UserProfileData {
+  user_id: string;
+  topics: ProfileItem[];
+  updated_at?: string | null;
 }
 
 export interface ProfileResponse {
   success: boolean;
+  data: UserProfileData | null;
+  message?: string;
+}
+
+export interface ProfileContextData {
   user_id: string;
-  profiles: ProfileItem[];
-  total: number;
+  context: string;
 }
 
 export interface ProfileContextResponse {
   success: boolean;
-  context: string;
-  token_count?: number;
+  data: ProfileContextData | null;
+  message?: string;
 }
 
 export interface KnowledgeDataset {

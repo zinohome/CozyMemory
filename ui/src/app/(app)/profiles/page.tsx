@@ -93,7 +93,7 @@ export default function ProfilesPage() {
         </CardContent>
       </Card>
 
-      {contextQuery.data?.context && (
+      {contextQuery.data?.data?.context && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -102,28 +102,28 @@ export default function ProfilesPage() {
           </CardHeader>
           <CardContent>
             <pre className="text-xs whitespace-pre-wrap font-mono bg-muted rounded p-3">
-              {contextQuery.data.context}
+              {contextQuery.data.data.context}
             </pre>
           </CardContent>
         </Card>
       )}
 
-      {profileQuery.data && (
+      {profileQuery.data?.data && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{profileQuery.data.total} profile items</span>
+            <span className="text-sm font-medium">{profileQuery.data.data.topics.length} profile items</span>
             <span className="text-xs text-muted-foreground">for {userId}</span>
           </div>
           <ScrollArea className="h-64">
             <div className="space-y-2 pr-2">
-              {profileQuery.data.profiles.map((item) => (
+              {profileQuery.data.data.topics.map((item) => (
                 <ProfileItemRow
                   key={item.id}
                   item={item}
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />
               ))}
-              {profileQuery.data.total === 0 && (
+              {profileQuery.data.data.topics.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">No profile items.</p>
               )}
             </div>

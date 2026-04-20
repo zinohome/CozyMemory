@@ -21,7 +21,7 @@ const ENGINE_META: Record<string, { icon: React.ElementType; label: string; colo
 };
 
 function EngineCard({ engine }: { engine: EngineStatus }) {
-  const meta = ENGINE_META[engine.engine] ?? { icon: Brain, label: engine.engine, color: "text-gray-500" };
+  const meta = ENGINE_META[engine.name] ?? ENGINE_META[engine.name.toLowerCase()] ?? { icon: Brain, label: engine.name, color: "text-gray-500" };
   const Icon = meta.icon;
   const healthy = engine.status === "healthy";
   const disabled = engine.status === "disabled";
@@ -318,8 +318,8 @@ export default function DashboardPage() {
         )}
         {healthQuery.data && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {healthQuery.data.engines.map((engine) => (
-              <EngineCard key={engine.engine} engine={engine} />
+            {Object.values(healthQuery.data.engines).map((engine) => (
+              <EngineCard key={engine.name} engine={engine} />
             ))}
           </div>
         )}
