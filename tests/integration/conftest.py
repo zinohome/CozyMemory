@@ -59,10 +59,17 @@ async def http_slow():
         yield client
 
 
+# 本次 session 里 fixture 吐出的 UUID v4 用户 id，teardown 时按此集合清理
+# Redis 映射，避免留下数百条无主 UUID。
+_registered_test_user_ids: set[str] = set()
+
+
 @pytest.fixture
 def unique_user_id() -> str:
-    """每个测试生成唯一的 UUID v4 user_id（Memobase 要求）"""
-    return str(uuid.uuid4())
+    """每个测试生成唯一的 UUID v4 user_id（Memobase 要求），并登记以便清理"""
+    uid = str(uuid.uuid4())
+    _registered_test_user_ids.add(uid)
+    return uid
 
 
 # 识别本仓库集成/gRPC 测试制造的 dataset。合并任何一次测试运行中实际用到的命名前缀。
@@ -70,6 +77,11 @@ def unique_user_id() -> str:
 _TEST_DATASET_RE = re.compile(
     r"^(grpc-(test|add|cognify|flow|crud|ctx)-|test-(ds|delete|add-timing|smoke|timing)|"
     r"smoke(-.+)?$|timing-test\d*$|integration-test-dataset$)"
+)
+
+# 识别测试制造的字符串 user_id（UUID v4 由 fixture 登记，不走正则）。
+_TEST_USER_ID_RE = re.compile(
+    r"^(grpc-(test|crud|ctx)-|integration-test-user$|grpc-test-user$|fresh-\d+$)"
 )
 
 
@@ -96,5 +108,34 @@ def _cleanup_test_datasets():
             continue
         try:
             httpx.delete(f"{COZY_TEST_URL}/api/v1/knowledge/datasets/{ds['id']}", timeout=15)
+        except Exception:
+            pass
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _cleanup_test_user_mappings():
+    """测试会话结束后清理 user_id → UUID 映射，避免 Redis/Users 页堆积测试遗留。
+
+    来源：
+      - UUID v4：从 _registered_test_user_ids（unique_user_id fixture 登记）
+      - 字符串 id：从 /api/v1/users 扫出并按 _TEST_USER_ID_RE 匹配
+    """
+    yield
+    if not server_is_up():
+        return
+
+    to_delete: set[str] = set(_registered_test_user_ids)
+    try:
+        r = httpx.get(f"{COZY_TEST_URL}/api/v1/users", timeout=10)
+        if r.status_code == 200:
+            for uid in r.json().get("data", []):
+                if _TEST_USER_ID_RE.match(uid):
+                    to_delete.add(uid)
+    except Exception:
+        pass
+
+    for uid in to_delete:
+        try:
+            httpx.delete(f"{COZY_TEST_URL}/api/v1/users/{uid}/uuid", timeout=10)
         except Exception:
             pass
