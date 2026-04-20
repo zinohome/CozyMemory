@@ -24,8 +24,13 @@
 		reverse_proxy cognee:8000
 	}
 	# Cognee 前端（其余所有路径）
+	# header_up Host: 告诉 Next.js dev server 请求来自 localhost，
+	# 避免触发 Next.js 16 的 cross-origin allowedDevOrigins 安全检查，
+	# 否则浏览器端 HMR WebSocket 连接会被拒绝导致页面无法正常渲染
 	handle {
-		reverse_proxy cognee-frontend:3000
+		reverse_proxy cognee-frontend:3000 {
+			header_up Host localhost:3000
+		}
 	}
 }
 
