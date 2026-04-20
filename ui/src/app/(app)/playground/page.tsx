@@ -17,9 +17,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Send, Brain, RotateCcw, Square } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Send, Brain, RotateCcw, Square, Sliders } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 
 interface ChatMsg {
@@ -82,6 +91,17 @@ function extractDeltas(buffer: string): { deltas: string[]; rest: string; done: 
   return { deltas, rest, done };
 }
 
+// 与后端 /api/chat 的 LLM_MODEL 默认保持一致；其他为 oneapi 常见可用模型，
+// 用户可通过 "Custom" 选项填任意非列表值
+const MODEL_PRESETS = [
+  "gpt-4.1-nano-2025-04-14",
+  "gpt-4o-mini",
+  "gpt-4o",
+  "gpt-4.1-mini",
+  "claude-sonnet-4-6",
+];
+const CUSTOM_MODEL = "__custom__";
+
 export default function PlaygroundPage() {
   const [userId, setUserId] = useState("");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -91,8 +111,15 @@ export default function PlaygroundPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastContext, setLastContext] = useState<ContextResponse | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [model, setModel] = useState<string>(MODEL_PRESETS[0]);
+  const [customModel, setCustomModel] = useState<string>("");
+  const [temperature, setTemperature] = useState<number>(0.7);
+  const [maxTokens, setMaxTokens] = useState<number>(512);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // 实际发请求用的 model：custom 模式下取 customModel，否则取下拉选项
+  const effectiveModel = model === CUSTOM_MODEL ? customModel.trim() : model;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -146,6 +173,9 @@ export default function PlaygroundPage() {
         signal: ac.signal,
         body: JSON.stringify({
           stream: true,
+          model: effectiveModel || undefined,
+          temperature,
+          max_tokens: maxTokens,
           messages: [
             { role: "system", content: systemPrompt },
             ...historySnapshot.map((m) => ({ role: m.role, content: m.content })),
@@ -253,6 +283,69 @@ export default function PlaygroundPage() {
       <Card>
         <CardContent className="pt-4">
           <UserSelector onConfirm={setUserId} buttonLabel="Use" />
+
+          <details className="mt-3 group">
+            <summary className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <Sliders className="h-3 w-3" />
+              <span className="group-open:font-medium">
+                Model: {effectiveModel || "<empty>"} · temp {temperature} · max {maxTokens}
+              </span>
+              <span className="ml-1 opacity-60 group-open:rotate-90 transition-transform">▶</span>
+            </summary>
+
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2 mt-3 items-end">
+              <div className="space-y-1">
+                <Label className="text-xs">Model</Label>
+                <Select value={model} onValueChange={(v) => setModel(v ?? MODEL_PRESETS[0])}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MODEL_PRESETS.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM_MODEL}>Custom…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {model === CUSTOM_MODEL && (
+                  <Input
+                    placeholder="model-name"
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                    className="h-9 text-xs font-mono mt-1"
+                  />
+                )}
+              </div>
+
+              <div className="space-y-1 w-24">
+                <Label className="text-xs">Temperature</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={temperature}
+                  onChange={(e) => setTemperature(Number(e.target.value))}
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1 w-24">
+                <Label className="text-xs">Max tokens</Label>
+                <Input
+                  type="number"
+                  min={16}
+                  max={8192}
+                  step={16}
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(Number(e.target.value))}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+          </details>
         </CardContent>
       </Card>
 
