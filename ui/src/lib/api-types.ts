@@ -481,10 +481,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backup/export/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 导出用户记忆为 JSON bundle */
+        get: operations["export_user_api_v1_backup_export__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 从 bundle 恢复用户记忆 */
+        post: operations["import_bundle_api_v1_backup_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * BackupImportRequest
+         * @description 导入请求体
+         */
+        BackupImportRequest: {
+            /** @description 完整导出包 */
+            bundle: components["schemas"]["MemoryBundle"];
+            /**
+             * Target User Id
+             * @description 可选重映射目标；为空则用 bundle.user_id。允许把一个账号的记忆导入到另一个账号
+             */
+            target_user_id?: string | null;
+        };
+        /**
+         * BackupImportResponse
+         * @description 导入结果
+         */
+        BackupImportResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            /** User Id */
+            user_id: string;
+            /**
+             * Conversations Imported
+             * @default 0
+             */
+            conversations_imported: number;
+            /**
+             * Conversations Skipped
+             * @default 0
+             */
+            conversations_skipped: number;
+            /**
+             * Profiles Imported
+             * @default 0
+             */
+            profiles_imported: number;
+            /**
+             * Profiles Skipped
+             * @default 0
+             */
+            profiles_skipped: number;
+            /**
+             * Errors
+             * @description 每条失败记录的 kind + id + reason
+             */
+            errors?: {
+                [key: string]: unknown;
+            }[];
+        };
         /**
          * CognifyStatusResponse
          * @description Cognify 任务状态响应（透传 Cognee 原始响应）
@@ -1237,6 +1324,39 @@ export interface components {
             } | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * MemoryBundle
+         * @description 单用户记忆导出包。version 用于未来 schema 演化时做兼容判断。
+         */
+        MemoryBundle: {
+            /**
+             * Version
+             * @description Schema 版本
+             * @default 1.0
+             */
+            version: string;
+            /**
+             * Exported At
+             * Format: date-time
+             * @description 导出时间
+             */
+            exported_at: string;
+            /**
+             * User Id
+             * @description 记忆所属用户 ID
+             */
+            user_id: string;
+            /**
+             * Conversations
+             * @description Mem0 对话记忆快照
+             */
+            conversations?: components["schemas"]["ConversationMemory"][];
+            /**
+             * Profile Topics
+             * @description Memobase 用户画像主题
+             */
+            profile_topics?: components["schemas"]["ProfileTopic"][];
         };
         /**
          * Message
@@ -2622,6 +2742,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserMappingDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_user_api_v1_backup_export__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBundle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_bundle_api_v1_backup_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupImportResponse"];
                 };
             };
             /** @description Validation Error */

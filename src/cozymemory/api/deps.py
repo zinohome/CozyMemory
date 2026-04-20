@@ -9,6 +9,7 @@ from ..clients.cognee import CogneeClient
 from ..clients.mem0 import Mem0Client
 from ..clients.memobase import MemobaseClient
 from ..config import settings
+from ..services.backup import BackupService
 from ..services.context import ContextService
 from ..services.conversation import ConversationService
 from ..services.knowledge import KnowledgeService
@@ -122,4 +123,12 @@ def get_context_service() -> ContextService:
         conv_service=get_conversation_service(),
         profile_service=get_profile_service(),
         knowledge_service=get_knowledge_service(),
+    )
+
+
+def get_backup_service() -> BackupService:
+    """获取备份/恢复服务"""
+    return BackupService(
+        conv_service=get_conversation_service(),
+        profile_service=get_profile_service(),
     )
