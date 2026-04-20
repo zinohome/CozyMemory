@@ -17,6 +17,12 @@ import pytest_asyncio
 
 # 目标服务地址：优先读环境变量，缺省本地
 COZY_TEST_URL = os.getenv("COZY_TEST_URL", "http://localhost:8000").rstrip("/")
+# 可选 API key：后端启用 COZY_API_KEYS 鉴权时需要
+COZY_TEST_API_KEY = os.getenv("COZY_TEST_API_KEY", "cozy-dev-key-001")
+
+_COMMON_HEADERS: dict[str, str] = (
+    {"X-Cozy-API-Key": COZY_TEST_API_KEY} if COZY_TEST_API_KEY else {}
+)
 
 
 def _server_reachable() -> bool:
@@ -47,15 +53,19 @@ requires_server = pytest.mark.skipif(
 
 @pytest_asyncio.fixture
 async def http():
-    """异步 HTTP 客户端，30s 超时"""
-    async with httpx.AsyncClient(base_url=COZY_TEST_URL, timeout=30) as client:
+    """异步 HTTP 客户端，30s 超时，自动携带鉴权 header"""
+    async with httpx.AsyncClient(
+        base_url=COZY_TEST_URL, timeout=30, headers=_COMMON_HEADERS
+    ) as client:
         yield client
 
 
 @pytest_asyncio.fixture
 async def http_slow():
-    """异步 HTTP 客户端，300s 超时（用于 Cognee 全流程）"""
-    async with httpx.AsyncClient(base_url=COZY_TEST_URL, timeout=300) as client:
+    """异步 HTTP 客户端，300s 超时（用于 Cognee 全流程），自动携带鉴权 header"""
+    async with httpx.AsyncClient(
+        base_url=COZY_TEST_URL, timeout=300, headers=_COMMON_HEADERS
+    ) as client:
         yield client
 
 
@@ -96,7 +106,7 @@ def _cleanup_test_datasets():
     if not server_is_up():
         return
     try:
-        r = httpx.get(f"{COZY_TEST_URL}/api/v1/knowledge/datasets", timeout=10)
+        r = httpx.get(f"{COZY_TEST_URL}/api/v1/knowledge/datasets", timeout=10, headers=_COMMON_HEADERS)
         if r.status_code != 200:
             return
         datasets = r.json().get("data", [])
@@ -107,7 +117,7 @@ def _cleanup_test_datasets():
         if not _TEST_DATASET_RE.match(name):
             continue
         try:
-            httpx.delete(f"{COZY_TEST_URL}/api/v1/knowledge/datasets/{ds['id']}", timeout=15)
+            httpx.delete(f"{COZY_TEST_URL}/api/v1/knowledge/datasets/{ds['id']}", timeout=15, headers=_COMMON_HEADERS)
         except Exception:
             pass
 
@@ -126,7 +136,7 @@ def _cleanup_test_user_mappings():
 
     to_delete: set[str] = set(_registered_test_user_ids)
     try:
-        r = httpx.get(f"{COZY_TEST_URL}/api/v1/users", timeout=10)
+        r = httpx.get(f"{COZY_TEST_URL}/api/v1/users", timeout=10, headers=_COMMON_HEADERS)
         if r.status_code == 200:
             for uid in r.json().get("data", []):
                 if _TEST_USER_ID_RE.match(uid):
@@ -136,6 +146,6 @@ def _cleanup_test_user_mappings():
 
     for uid in to_delete:
         try:
-            httpx.delete(f"{COZY_TEST_URL}/api/v1/users/{uid}/uuid", timeout=10)
+            httpx.delete(f"{COZY_TEST_URL}/api/v1/users/{uid}/uuid", timeout=10, headers=_COMMON_HEADERS)
         except Exception:
             pass
