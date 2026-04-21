@@ -342,13 +342,13 @@ git commit -m "feat(base_runtime): add infrastructure services to compose"
       - HOST=0.0.0.0
       - HTTP_PORT=8000
       - PYTHONUNBUFFERED=1
-      - LLM_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      - LLM_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
       - LLM_PROVIDER=openai
       - LLM_MODEL=gpt-4o-mini
       - LLM_ENDPOINT=https://oneapi.naivehero.top/v1
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=openai
-      - EMBEDDING_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      - EMBEDDING_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
       - EMBEDDING_ENDPOINT=https://oneapi.naivehero.top/v1
       - EMBEDDING_MODEL=openai/text-embedding-3-large
       - EMBEDDING_DIMENSIONS=3072
@@ -424,7 +424,7 @@ git commit -m "feat(base_runtime): add infrastructure services to compose"
     container_name: cozy_mem0_api
     restart: unless-stopped
     environment:
-      OPENAI_API_KEY: sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      OPENAI_API_KEY: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
       OPENAI_BASE_URL: https://oneapi.naivehero.top/v1
       OPENAI_MODEL: gpt-4.1-nano-2025-04-14
       QDRANT_HOST: qdrant
@@ -481,9 +481,9 @@ git commit -m "feat(base_runtime): add infrastructure services to compose"
       USE_CORS: "true"
       MEMOBASE_LANGUAGE: zh
       MEMOBASE_LLM_STYLE: openai
-      MEMOBASE_LLM_API_KEY: "sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH"
+      MEMOBASE_LLM_API_KEY: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
       MEMOBASE_LLM_BASE_URL: "https://oneapi.naivehero.top/v1"
-      MEMOBASE_EMBEDDING_API_KEY: "sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH"
+      MEMOBASE_EMBEDDING_API_KEY: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
       MEMOBASE_EMBEDDING_BASE_URL: "https://oneapi.naivehero.top/v1"
       MEMOBASE_EMBEDDING_PROVIDER: openai
       TIKTOKEN_CACHE_DIR: /root/.tiktoken
