@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — UI enhancement batch 3
+- Playground 会话持久化（`lib/playground-sessions-store.ts`）：
+  Zustand persist 存最多 20 会话到 localStorage，页面顶部加会话下拉、
+  New chat、Delete session；title 从首条 user message 自动截取
+- Sparkline hover tooltip：`components/sparkline.tsx` 接受
+  `timestamps[]` + `formatValue` prop，鼠标悬停显示值和相对时间
+  （如 "22ms · 30s ago"）+ 虚线导引 + 点高亮。Dashboard 5 条 sparkline
+  启用
+- 键盘快捷键（`lib/use-hotkeys.ts`、`components/hotkeys-provider.tsx`）：
+  Gmail 风格 `g x` 序列导航 9 条路由，`?` 打开帮助 Dialog；聚焦
+  input/textarea 时自动禁用
+
 ### Added — UI enhancement batch 2
 - Next.js App Router 错误边界：`app/error.tsx`（路由段兜底）+
   `app/global-error.tsx`（根级兜底），开发环境显示错误细节
