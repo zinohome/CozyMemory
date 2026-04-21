@@ -72,3 +72,12 @@ docs/_build/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# 本地工具产物
+.claude/
+.playwright-mcp/
+
+# 调试/审计截图（本地临时）
+*.png
+!docs/**/*.png
+!ui/public/**/*.png
