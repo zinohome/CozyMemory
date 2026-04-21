@@ -30,9 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, RotateCcw, Square, Sliders, Plus, Trash2 } from "lucide-react";
+import { Loader2, Send, RotateCcw, Square, Sliders, Plus, Trash2, MessageCircle } from "lucide-react";
 import { ContextInspector } from "@/components/context-inspector";
 import { UserSelector } from "@/components/user-selector";
+import { EmptyState } from "@/components/empty-state";
 import { usePlaygroundSessions, type ChatMsg } from "@/lib/playground-sessions-store";
 
 function formatContextAsSystemBlock(head: string, ctx: ContextResponse): string {
@@ -445,9 +446,18 @@ export default function PlaygroundPage() {
             <ScrollArea className="flex-1 pr-2" ref={scrollRef}>
               <div className="space-y-3">
                 {messages.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-16">
-                    {userId ? "Type a message to start" : "Select a user to start chatting."}
-                  </p>
+                  userId ? (
+                    <p className="text-sm text-muted-foreground text-center py-16">
+                      Type a message to start
+                    </p>
+                  ) : (
+                    <EmptyState
+                      icon={MessageCircle}
+                      title="No user selected"
+                      description="Pick a user above to start a chat augmented with their memories, profile, and knowledge graph."
+                      className="my-8"
+                    />
+                  )
                 )}
                 {messages.map((m, i) => (
                   <div

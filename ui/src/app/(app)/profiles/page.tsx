@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Trash2, User } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
+import { EmptyState } from "@/components/empty-state";
 
 function ProfileItemRow({
   item,
@@ -188,9 +189,12 @@ export default function ProfilesPage() {
       )}
 
       {!userId && (
-        <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-lg">
-          Select a user to view their profile.
-        </p>
+        <EmptyState
+          icon={User}
+          title="No user selected"
+          description="Pick a user above to view their Memobase profile, LLM context prompt, and manage topics."
+          action={{ label: "Open Playground", href: "/playground" }}
+        />
       )}
     </div>
   );

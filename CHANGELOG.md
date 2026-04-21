@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — UX polish batch 5
+- 新增复用组件 `components/empty-state.tsx`（icon + title + description
+  + 可选 CTA link/onClick）替换 Memory Lab / User Profiles / Playground
+  三页的灰色单行空态提示，帮新用户发现下一步动作
+- Dark mode 审核：Dashboard / Knowledge / Playground 三页实测无 bug，
+  CSS 变量（`bg-background` / `text-foreground`）已完整覆盖 — 无需改动
+
 ### Fixed — Responsive breakpoint sweep (batch 4)
 - 375px 视口下 /knowledge 水平溢出 20px：长 dataset 名 `truncate` +
   多处 flex 容器加 `min-w-0`，消除溢出

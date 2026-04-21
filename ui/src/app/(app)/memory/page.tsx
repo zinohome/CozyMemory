@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search, Trash2, MessageSquare } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
+import { EmptyState } from "@/components/empty-state";
 
 function MemoryRow({
   mem,
@@ -156,7 +157,12 @@ export default function MemoryLabPage() {
             <p className="text-sm text-muted-foreground text-center py-8">No memories found.</p>
           )}
           {!userId && (
-            <p className="text-sm text-muted-foreground text-center py-8">Select a user to view memories.</p>
+            <EmptyState
+              icon={MessageSquare}
+              title="No user selected"
+              description="Pick a user above to browse their Mem0 conversation memories, or head to Playground to start a new chat."
+              action={{ label: "Open Playground", href: "/playground" }}
+            />
           )}
         </div>
       </ScrollArea>
