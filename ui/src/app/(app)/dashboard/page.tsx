@@ -30,12 +30,15 @@ function EngineCard({ engine }: { engine: EngineStatus }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${meta.color}`} />
-          {meta.label}
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 min-w-0">
+          <Icon className={`h-4 w-4 shrink-0 ${meta.color}`} />
+          <span className="truncate">{meta.label}</span>
         </CardTitle>
-        <Badge variant={healthy ? "default" : disabled ? "secondary" : "destructive"}>
+        <Badge
+          variant={healthy ? "default" : disabled ? "secondary" : "destructive"}
+          className="shrink-0"
+        >
           {engine.status}
         </Badge>
       </CardHeader>
@@ -404,7 +407,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stat tiles ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatTile
           icon={Users}
           label="Total Users"
@@ -419,21 +422,19 @@ export default function DashboardPage() {
           loading={datasetsQuery.isLoading}
           color="text-purple-500"
         />
-        <div className="col-span-2 sm:col-span-1">
-          <StatTile
-            icon={MemoryStick}
-            label="API Status"
-            value={healthQuery.data?.status}
-            loading={healthQuery.isLoading}
-            color={
-              healthQuery.data?.status === "healthy"
-                ? "text-green-500"
-                : healthQuery.data?.status === "degraded"
-                  ? "text-amber-500"
-                  : "text-muted-foreground"
-            }
-          />
-        </div>
+        <StatTile
+          icon={MemoryStick}
+          label="API Status"
+          value={healthQuery.data?.status}
+          loading={healthQuery.isLoading}
+          color={
+            healthQuery.data?.status === "healthy"
+              ? "text-green-500"
+              : healthQuery.data?.status === "degraded"
+                ? "text-amber-500"
+                : "text-muted-foreground"
+          }
+        />
       </div>
 
       {/* ── Engine health ── */}

@@ -36,7 +36,7 @@ function DatasetRow({
 
   return (
     <div
-      className={`group flex items-center gap-1 rounded-md border transition-colors ${
+      className={`group flex items-center gap-1 rounded-md border transition-colors min-w-0 ${
         selected ? "bg-primary/10 border-primary" : "hover:bg-muted"
       }`}
     >
@@ -211,9 +211,9 @@ export default function KnowledgePage() {
         <p className="text-muted-foreground text-sm mt-1">Manage Cognee datasets and knowledge graphs.</p>
       </div>
 
-      <div className="grid lg:grid-cols-[240px_1fr] gap-4">
+      <div className="grid lg:grid-cols-[240px_1fr] gap-4 min-w-0">
         {/* ── Dataset list ── */}
-        <div className="space-y-2">
+        <div className="space-y-2 min-w-0">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Datasets</p>
             <Button
@@ -255,11 +255,11 @@ export default function KnowledgePage() {
               )}
             </div>
           </ScrollArea>
-          <div className="flex gap-1">
+          <div className="flex gap-1 min-w-0">
             <Input
               placeholder="New dataset name"
               id="new-ds"
-              className="text-xs h-8"
+              className="text-xs h-8 min-w-0 flex-1"
               value={newDatasetName}
               onChange={(e) => setNewDatasetName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateDataset()}
@@ -441,8 +441,8 @@ export default function KnowledgePage() {
 
           {/* ─ Graph ─ */}
           <TabsContent value="graph" className="mt-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground min-w-0 truncate">
                 Dataset: <strong>{selectedDataset?.name}</strong>
               </p>
               <Button
@@ -450,6 +450,7 @@ export default function KnowledgePage() {
                 size="sm"
                 onClick={() => qc.invalidateQueries({ queryKey: ["graph", selectedDataset?.id] })}
                 disabled={graphQuery.isFetching}
+                className="shrink-0"
               >
                 {graphQuery.isFetching ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
