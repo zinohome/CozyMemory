@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { toast } from "sonner";
 import {
   KeyRound,
   Eye,
@@ -169,7 +170,7 @@ export default function SettingsPage() {
       const r = await adminFetch<{ data: ApiKeyLogEntry[] }>(`/api-keys/${id}/logs?limit=50`);
       setLogs(r.data);
     } catch (e) {
-      setLoadErr((e as Error).message);
+      toast.error((e as Error).message);
       setLogs([]);
     } finally {
       setLogsLoading(false);
@@ -212,8 +213,9 @@ export default function SettingsPage() {
       setRevealedKey({ id: r.record.id, key: r.key, action: "created" });
       setNewName("");
       await refresh();
+      toast.success(`Key "${r.record.name}" created`);
     } catch (e) {
-      setLoadErr((e as Error).message);
+      toast.error((e as Error).message);
     } finally {
       setCreating(false);
     }
@@ -228,8 +230,9 @@ export default function SettingsPage() {
       const r = await adminFetch<ApiKeyCreateResponse>(`/api-keys/${id}/rotate`, { method: "POST" });
       setRevealedKey({ id, key: r.key, action: "rotated" });
       await refresh();
+      toast.success("Key rotated");
     } catch (e) {
-      setLoadErr((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
@@ -240,8 +243,9 @@ export default function SettingsPage() {
         body: JSON.stringify({ disabled: !rec.disabled }),
       });
       await refresh();
+      toast.success(rec.disabled ? "Key enabled" : "Key disabled");
     } catch (e) {
-      setLoadErr((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
@@ -257,8 +261,9 @@ export default function SettingsPage() {
       });
       setEditingId(null);
       await refresh();
+      toast.success("Key renamed");
     } catch (e) {
-      setLoadErr((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
@@ -270,8 +275,9 @@ export default function SettingsPage() {
     try {
       await adminFetch(`/api-keys/${id}`, { method: "DELETE" });
       await refresh();
+      toast.success("Key deleted");
     } catch (e) {
-      setLoadErr((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 

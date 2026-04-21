@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { knowledgeApi, type KnowledgeDataset } from "@/lib/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,6 +99,7 @@ export default function KnowledgePage() {
   const [cognifyJobId, setCognifyJobId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("add");
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [datasetFilter, setDatasetFilter] = useState("");
 
   const datasetsQuery = useQuery({
     queryKey: ["datasets"],
@@ -123,25 +125,48 @@ export default function KnowledgePage() {
     },
   });
 
+  const filteredDatasets = useMemo(() => {
+    const all = datasetsQuery.data?.data ?? [];
+    const q = datasetFilter.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter((d) => d.name.toLowerCase().includes(q));
+  }, [datasetsQuery.data, datasetFilter]);
+
   const deleteDatasetMutation = useMutation({
     mutationFn: (datasetId: string) => knowledgeApi.deleteDataset(datasetId),
-    onSuccess: (_, datasetId) => {
-      qc.invalidateQueries({ queryKey: ["datasets"] });
-      qc.removeQueries({ queryKey: ["graph", datasetId] });
-      // Clear selection if the deleted dataset was selected
+    // Optimistic delete: 立即从列表移除 + 清除依赖查询 + 失败回滚
+    onMutate: async (datasetId) => {
+      await qc.cancelQueries({ queryKey: ["datasets"] });
+      const previous = qc.getQueryData<typeof datasetsQuery.data>(["datasets"]);
+      qc.setQueryData<typeof datasetsQuery.data>(["datasets"], (old) => {
+        if (!old) return old;
+        return { ...old, data: (old.data ?? []).filter((d) => d.id !== datasetId) };
+      });
       if (selectedDataset?.id === datasetId) {
         setSelectedDataset(null);
         setActiveTab("add");
       }
+      return { previous };
     },
+    onError: (e, _id, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["datasets"], ctx.previous);
+      toast.error((e as Error).message);
+    },
+    onSuccess: (_, datasetId) => {
+      qc.removeQueries({ queryKey: ["graph", datasetId] });
+      toast.success("Dataset deleted");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["datasets"] }),
   });
 
   const createDatasetMutation = useMutation({
     mutationFn: (name: string) => knowledgeApi.createDataset(name),
-    onSuccess: () => {
+    onSuccess: (_, name) => {
       qc.invalidateQueries({ queryKey: ["datasets"] });
       setNewDatasetName("");
+      toast.success(`Dataset "${name}" created`);
     },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   function handleCreateDataset() {
@@ -151,14 +176,20 @@ export default function KnowledgePage() {
 
   const addMutation = useMutation({
     mutationFn: () => knowledgeApi.add(addText, selectedDataset?.name ?? "default"),
-    onSuccess: () => setAddText(""),
+    onSuccess: () => {
+      setAddText("");
+      toast.success("Document added — run cognify to build graph");
+    },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const cognifyMutation = useMutation({
     mutationFn: () => knowledgeApi.cognify(selectedDataset ? [selectedDataset.name] : undefined),
     onSuccess: (data) => {
       if (data.pipeline_run_id) setCognifyJobId(data.pipeline_run_id);
+      toast.info("Cognify started — search may be empty until it finishes");
     },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const searchMutation = useMutation({
@@ -169,6 +200,7 @@ export default function KnowledgePage() {
         search_type: searchType,
         top_k: 10,
       }),
+    onError: (e) => toast.error((e as Error).message),
   });
 
   return (
@@ -192,9 +224,15 @@ export default function KnowledgePage() {
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
           </div>
+          <Input
+            placeholder="Filter datasets…"
+            value={datasetFilter}
+            onChange={(e) => setDatasetFilter(e.target.value)}
+            className="h-8 text-xs"
+          />
           <ScrollArea className="h-72">
             <div className="space-y-1 pr-2">
-              {datasetsQuery.data?.data?.map((ds) => (
+              {filteredDatasets.map((ds) => (
                 <DatasetRow
                   key={ds.id}
                   ds={ds}
@@ -205,8 +243,12 @@ export default function KnowledgePage() {
                 />
               ))}
               {datasetsQuery.isLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto mt-4" />}
-              {datasetsQuery.data?.data?.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No datasets yet.</p>
+              {!datasetsQuery.isLoading && filteredDatasets.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  {datasetFilter
+                    ? `No match for "${datasetFilter}"`
+                    : "No datasets yet."}
+                </p>
               )}
             </div>
           </ScrollArea>

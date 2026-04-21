@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { profilesApi, type ProfileItem } from "@/lib/api";
+import { profilesApi, type ProfileItem, type ProfileResponse } from "@/lib/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +62,27 @@ export default function ProfilesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (profileId: string) => profilesApi.deleteItem(userId, profileId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile", userId] }),
+    onMutate: async (profileId) => {
+      await qc.cancelQueries({ queryKey: ["profile", userId] });
+      const previous = qc.getQueryData<ProfileResponse>(["profile", userId]);
+      qc.setQueryData<ProfileResponse>(["profile", userId], (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            topics: (old.data.topics ?? []).filter((t) => t.id !== profileId),
+          },
+        };
+      });
+      return { previous };
+    },
+    onError: (e, _id, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["profile", userId], ctx.previous);
+      toast.error((e as Error).message);
+    },
+    onSuccess: () => toast.success("Topic deleted"),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["profile", userId] }),
   });
 
   const addMutation = useMutation({
@@ -69,7 +90,9 @@ export default function ProfilesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["profile", userId] });
       setNewItem({ topic: "", sub_topic: "", content: "" });
+      toast.success("Topic added");
     },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   function handleLoad(id: string) {

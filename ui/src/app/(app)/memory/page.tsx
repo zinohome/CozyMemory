@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { conversationsApi, type ConversationMemory } from "@/lib/api";
+import { conversationsApi, type ConversationListResponse, type ConversationMemory } from "@/lib/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,11 +53,27 @@ export default function MemoryLabPage() {
         limit: 10,
         memory_scope: "long",
       }),
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => conversationsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["memories", userId] }),
+    // Optimistic delete: 立即从 cache 移除，失败则回滚
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["memories", userId] });
+      const previous = qc.getQueryData<ConversationListResponse>(["memories", userId]);
+      qc.setQueryData<ConversationListResponse>(["memories", userId], (old) => {
+        if (!old) return old;
+        return { ...old, data: (old.data ?? []).filter((m) => m.id !== id) };
+      });
+      return { previous };
+    },
+    onError: (e, _id, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["memories", userId], ctx.previous);
+      toast.error((e as Error).message);
+    },
+    onSuccess: () => toast.success("Memory deleted"),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["memories", userId] }),
   });
 
   function handleLoad(id: string) {

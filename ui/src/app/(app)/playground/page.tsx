@@ -14,6 +14,7 @@
 import { useState, useRef, useEffect } from "react";
 import { conversationsApi, contextApi, type ContextResponse } from "@/lib/api";
 import { useAppStore, DEFAULT_PLAYGROUND_SYSTEM_PROMPT } from "@/lib/store";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,7 +105,6 @@ export default function PlaygroundPage() {
   const [input, setInput] = useState("");
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastContext, setLastContext] = useState<ContextResponse | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [model, setModel] = useState<string>(MODEL_PRESETS[0]);
@@ -131,11 +131,10 @@ export default function PlaygroundPage() {
     const userMsg = input.trim();
     if (!userMsg || !userId || isStreaming) return;
     if (!userId) {
-      setErrorMsg("Please select or enter a user ID first");
+      toast.error("Please select or enter a user ID first");
       return;
     }
 
-    setErrorMsg(null);
     setInput("");
     setIsStreaming(true);
     setStreamingText("");
@@ -243,7 +242,7 @@ export default function PlaygroundPage() {
           ]);
         }
       } else {
-        setErrorMsg((e as Error).message);
+        toast.error((e as Error).message);
       }
       setStreamingText("");
     } finally {
@@ -262,7 +261,6 @@ export default function PlaygroundPage() {
     setLastContext(null);
     setSaveStatus("idle");
     setStreamingText("");
-    setErrorMsg(null);
   }
 
   return (
@@ -418,9 +416,6 @@ export default function PlaygroundPage() {
               </div>
             </ScrollArea>
 
-            {errorMsg && (
-              <p className="text-xs text-destructive mt-2">{errorMsg}</p>
-            )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
               <span>

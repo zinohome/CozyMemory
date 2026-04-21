@@ -19,7 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { UserSelector } from "@/components/user-selector";
 import { getApiKey } from "@/lib/store";
 import { knowledgeApi, type KnowledgeDataset } from "@/lib/api";
-import { Download, Upload, Loader2, CheckCircle2, XCircle, Database } from "lucide-react";
+import { toast } from "sonner";
+import { Download, Upload, Loader2, CheckCircle2, Database } from "lucide-react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -54,9 +55,7 @@ export default function BackupPage() {
   const [exportUserId, setExportUserId] = useState("");
   const [targetUserId, setTargetUserId] = useState("");
   const [exporting, setExporting] = useState(false);
-  const [exportErr, setExportErr] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [importErr, setImportErr] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [previewBundle, setPreviewBundle] = useState<MemoryBundle | null>(null);
   const [datasets, setDatasets] = useState<KnowledgeDataset[]>([]);
@@ -81,7 +80,6 @@ export default function BackupPage() {
   async function handleDownload() {
     if (!exportUserId) return;
     setExporting(true);
-    setExportErr(null);
     try {
       const dsQuery = selectedDs.size > 0 ? `?datasets=${[...selectedDs].join(",")}` : "";
       const resp = await fetch(
@@ -103,8 +101,9 @@ export default function BackupPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+      toast.success(`Exported ${bundle.conversations.length + (bundle.profile_topics?.length ?? 0)} items`);
     } catch (e) {
-      setExportErr((e as Error).message);
+      toast.error((e as Error).message);
     } finally {
       setExporting(false);
     }
@@ -114,7 +113,6 @@ export default function BackupPage() {
     const file = e.target.files?.[0];
     e.target.value = ""; // 允许同名文件重选触发 onChange
     if (!file) return;
-    setImportErr(null);
     setImportResult(null);
     try {
       const text = await file.text();
@@ -124,14 +122,13 @@ export default function BackupPage() {
       }
       setPreviewBundle(parsed);
     } catch (e) {
-      setImportErr((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
   async function handleImport() {
     if (!previewBundle) return;
     setImporting(true);
-    setImportErr(null);
     try {
       const resp = await fetch(`${BASE_URL}/api/v1/backup/import`, {
         method: "POST",
@@ -148,8 +145,9 @@ export default function BackupPage() {
       const result = (await resp.json()) as ImportResult;
       setImportResult(result);
       setPreviewBundle(null); // 导入完清预览，防止重复提交
+      toast.success("Bundle imported");
     } catch (e) {
-      setImportErr((e as Error).message);
+      toast.error((e as Error).message);
     } finally {
       setImporting(false);
     }
@@ -219,7 +217,6 @@ export default function BackupPage() {
             )}
             Download bundle
           </Button>
-          {exportErr && <p className="text-xs text-destructive">{exportErr}</p>}
         </CardContent>
       </Card>
 
@@ -289,11 +286,6 @@ export default function BackupPage() {
             </div>
           )}
 
-          {importErr && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <XCircle className="h-3.5 w-3.5" /> {importErr}
-            </p>
-          )}
           {importResult && (
             <div className="rounded-md border border-green-500/30 bg-green-500/5 p-3 space-y-1 text-xs">
               <p className="flex items-center gap-1 text-green-700 dark:text-green-400">
