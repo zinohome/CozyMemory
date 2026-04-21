@@ -74,17 +74,27 @@ function stats(values: (number | null)[]): { min: number; avg: number; max: numb
 function LatencyRow({
   label,
   values,
+  timestamps,
   color,
+  formatValue,
 }: {
   label: string;
   values: (number | null)[];
+  timestamps?: number[];
   color: string;
+  formatValue?: (v: number) => string;
 }) {
   const s = stats(values);
   return (
     <div className="flex items-center gap-3 text-xs">
       <div className="w-20 text-muted-foreground truncate">{label}</div>
-      <Sparkline values={values} stroke={color} className="shrink-0" />
+      <Sparkline
+        values={values}
+        timestamps={timestamps}
+        stroke={color}
+        className="shrink-0"
+        formatValue={formatValue ?? ((v) => `${v}`)}
+      />
       {s ? (
         <div className="flex-1 flex gap-3 text-muted-foreground font-mono">
           <span>min {fmtMs(s.min)}</span>
@@ -108,6 +118,8 @@ function ObservabilityPanel() {
   const visibleLatency = latency.filter((p) => p.ts >= cutoff);
   const visibleCounts = counts.filter((p) => p.ts >= cutoff);
 
+  const latencyTs = visibleLatency.map((p) => p.ts);
+  const countsTs = visibleCounts.map((p) => p.ts);
   const mem0Values = visibleLatency.map((p) => p.mem0);
   const memobaseValues = visibleLatency.map((p) => p.memobase);
   const cogneeValues = visibleLatency.map((p) => p.cognee);
@@ -155,9 +167,9 @@ function ObservabilityPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <LatencyRow label="Mem0" values={mem0Values} color="#3b82f6" />
-            <LatencyRow label="Memobase" values={memobaseValues} color="#10b981" />
-            <LatencyRow label="Cognee" values={cogneeValues} color="#a855f7" />
+            <LatencyRow label="Mem0" values={mem0Values} timestamps={latencyTs} color="#3b82f6" formatValue={(v) => fmtMs(v)} />
+            <LatencyRow label="Memobase" values={memobaseValues} timestamps={latencyTs} color="#10b981" formatValue={(v) => fmtMs(v)} />
+            <LatencyRow label="Cognee" values={cogneeValues} timestamps={latencyTs} color="#a855f7" formatValue={(v) => fmtMs(v)} />
           </CardContent>
         </Card>
 
@@ -168,8 +180,8 @@ function ObservabilityPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <LatencyRow label="Users" values={userValues} color="#2563eb" />
-            <LatencyRow label="Datasets" values={datasetValues} color="#7c3aed" />
+            <LatencyRow label="Users" values={userValues} timestamps={countsTs} color="#2563eb" formatValue={(v) => `${v}`} />
+            <LatencyRow label="Datasets" values={datasetValues} timestamps={countsTs} color="#7c3aed" formatValue={(v) => `${v}`} />
           </CardContent>
         </Card>
       </div>

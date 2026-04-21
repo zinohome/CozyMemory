@@ -30,15 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, RotateCcw, Square, Sliders } from "lucide-react";
+import { Loader2, Send, RotateCcw, Square, Sliders, Plus, Trash2 } from "lucide-react";
 import { ContextInspector } from "@/components/context-inspector";
 import { UserSelector } from "@/components/user-selector";
-
-interface ChatMsg {
-  role: "user" | "assistant";
-  content: string;
-  createdAt: string;
-}
+import { usePlaygroundSessions, type ChatMsg } from "@/lib/playground-sessions-store";
 
 function formatContextAsSystemBlock(head: string, ctx: ContextResponse): string {
   const lines: string[] = [];
@@ -101,9 +96,25 @@ const MODEL_PRESETS = [
 const CUSTOM_MODEL = "__custom__";
 
 export default function PlaygroundPage() {
-  const [userId, setUserId] = useState("");
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const { sessions, activeId, newSession, setActive, upsertMessages, deleteSession } =
+    usePlaygroundSessions();
+  const activeSession = sessions.find((s) => s.id === activeId) ?? null;
+
+  const [userId, setUserId] = useState(activeSession?.userId ?? "");
+  const [messages, setMessages] = useState<ChatMsg[]>(activeSession?.messages ?? []);
   const [input, setInput] = useState("");
+
+  // 切换会话时同步本地 state
+  useEffect(() => {
+    if (activeSession) {
+      setMessages(activeSession.messages);
+      setUserId(activeSession.userId);
+    } else {
+      setMessages([]);
+    }
+    // 只在 activeId 真正变化时跑（不要跟 activeSession 引用变化触发）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastContext, setLastContext] = useState<ContextResponse | null>(null);
@@ -207,18 +218,22 @@ export default function PlaygroundPage() {
         if (sseDone) break;
       }
 
-      // 3) 完成，把 streaming 文本合并进永久 messages
+      // 3) 完成，把 streaming 文本合并进永久 messages + 持久化
       const finalMsg: ChatMsg = {
         role: "assistant",
         content: full || "(empty response)",
         createdAt: new Date().toISOString(),
       };
-      setMessages([
+      const nextMessages = [
         ...historySnapshot,
-        { role: "user", content: userMsg, createdAt: now },
+        { role: "user" as const, content: userMsg, createdAt: now },
         finalMsg,
-      ]);
+      ];
+      setMessages(nextMessages);
       setStreamingText("");
+      // 如果还没有 active session，就即时建一个；否则更新现有会话
+      const sessionId = activeId ?? newSession(userId);
+      upsertMessages(sessionId, nextMessages, userId);
 
       // 4) 异步写回 Mem0
       setSaveStatus("saving");
@@ -256,6 +271,15 @@ export default function PlaygroundPage() {
     abortRef.current?.abort();
   }
 
+  function handleNewChat() {
+    abortRef.current?.abort();
+    newSession(userId);
+    setMessages([]);
+    setLastContext(null);
+    setSaveStatus("idle");
+    setStreamingText("");
+  }
+
   function handleReset() {
     abortRef.current?.abort();
     setMessages([]);
@@ -273,9 +297,50 @@ export default function PlaygroundPage() {
             Chat augmented by Mem0 memories, Memobase profile, and Cognee knowledge.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleReset} disabled={messages.length === 0}>
-          <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
-        </Button>
+        <div className="flex items-center gap-2">
+          {sessions.length > 0 && (
+            <Select
+              value={activeId ?? undefined}
+              onValueChange={(v) => v && setActive(v)}
+            >
+              <SelectTrigger className="w-52 text-xs">
+                <SelectValue placeholder="Load session…" />
+              </SelectTrigger>
+              <SelectContent>
+                {sessions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <span className="truncate max-w-[180px] inline-block align-middle">
+                      {s.title}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button variant="outline" size="sm" onClick={handleNewChat} aria-label="New chat">
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> New
+          </Button>
+          {activeId && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => deleteSession(activeId)}
+              title="Delete this session"
+              aria-label="Delete current session"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            disabled={messages.length === 0}
+            aria-label="Reset current session"
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
+          </Button>
+        </div>
       </div>
 
       <Card>
