@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Responsive breakpoint sweep (batch 4)
+- 375px 视口下 /knowledge 水平溢出 20px：长 dataset 名 `truncate` +
+  多处 flex 容器加 `min-w-0`，消除溢出
+- Dashboard stats cards 特殊的 `col-span-2` 布局改为标准三段响应式
+  （mobile 堆叠 / tablet 2 列 / desktop 3 列）
+- Engine Health card title 加 `truncate` + badge 加 `shrink-0` 防挤压
+- AppLayout `flex-1 p-6` → `flex-1 p-4 sm:p-6 min-w-0`，mobile 减少
+  padding + 允许 grid 正确收缩
+
 ### Added — UI enhancement batch 3
 - Playground 会话持久化（`lib/playground-sessions-store.ts`）：
   Zustand persist 存最多 20 会话到 localStorage，页面顶部加会话下拉、
