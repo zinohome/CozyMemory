@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — UI enhancement batch 2
+- Next.js App Router 错误边界：`app/error.tsx`（路由段兜底）+
+  `app/global-error.tsx`（根级兜底），开发环境显示错误细节
+- Server API Keys 面板抽出为独立组件 `components/server-api-keys-panel.tsx`，
+  Settings 页从 577 行瘦到 136 行
+- Context inspector 抽出为独立组件 `components/context-inspector.tsx`，
+  Playground 页从 547 行瘦到 467 行
+- Backup 的 export/import 迁移到 TanStack Query `useMutation`，
+  自动 isPending/onError 钩子
+- icon-only 按钮补齐 aria-label（Knowledge 的 delete/refresh/create、
+  Memory/Profile/Users 的 trash、user-selector pick），满足屏幕阅读器
+  和 a11y 审计
+
 ### Added — UI enhancement batch 1
 - `ConfirmDialog` component（Radix Dialog）替换浏览器原生 `confirm()`；
   Settings 里的 rotate/delete key 以及 Knowledge Base 的删除 dataset
