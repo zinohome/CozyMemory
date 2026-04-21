@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — UI enhancement batch 1
+- `ConfirmDialog` component（Radix Dialog）替换浏览器原生 `confirm()`；
+  Settings 里的 rotate/delete key 以及 Knowledge Base 的删除 dataset
+  现在弹自定义对话框
+- 全站 toast 通知（sonner）：Settings、Backup、Memory Lab、User Profiles、
+  Knowledge Base、Playground 约 20 处错误/成功路径替换为顶部右侧 toast
+- 乐观删除：Memory Lab 记忆、User Profiles topic、Knowledge Base
+  dataset 的删除在 UI 上立即生效，失败回滚 + toast 提示
+- Knowledge Base 数据集名称过滤框，按输入实时缩减列表
+
 ## [0.1.0] - 2026-04-21
 
 首个公开预发布。统一 AI 记忆服务平台的最小可用版本。
