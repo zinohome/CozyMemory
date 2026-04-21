@@ -177,7 +177,7 @@ export default function ContextStudioPage() {
                   }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Memory scope">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

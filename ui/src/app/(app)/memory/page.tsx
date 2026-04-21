@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { conversationsApi, type ConversationListResponse, type ConversationMemory } from "@/lib/api";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { Loader2, Search, Trash2, MessageSquare } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
 
-function MemoryRow({
+const MemoryRow = memo(function MemoryRow({
   mem,
   onDelete,
 }: {
@@ -40,7 +40,7 @@ function MemoryRow({
       </Button>
     </div>
   );
-}
+});
 
 export default function MemoryLabPage() {
   const [userId, setUserId] = useState("");
@@ -92,6 +92,11 @@ export default function MemoryLabPage() {
   const displayList: ConversationMemory[] =
     searchMutation.data?.data ?? listQuery.data?.data ?? [];
 
+  const handleDelete = useCallback(
+    (id: string) => deleteMutation.mutate(id),
+    [deleteMutation],
+  );
+
   return (
     <div className="space-y-4 max-w-3xl">
       <div>
@@ -119,6 +124,7 @@ export default function MemoryLabPage() {
               variant="outline"
               onClick={() => searchMutation.mutate()}
               disabled={!searchQuery || !userId || searchMutation.isPending}
+              aria-label="Search memories"
             >
               {searchMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -151,7 +157,7 @@ export default function MemoryLabPage() {
       <ScrollArea className="h-[500px]">
         <div className="space-y-2 pr-2">
           {displayList.map((mem) => (
-            <MemoryRow key={mem.id} mem={mem} onDelete={(id) => deleteMutation.mutate(id)} />
+            <MemoryRow key={mem.id} mem={mem} onDelete={handleDelete} />
           ))}
           {listQuery.data && displayList.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">No memories found.</p>

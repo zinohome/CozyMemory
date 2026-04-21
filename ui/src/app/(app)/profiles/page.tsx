@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profilesApi, type ProfileItem, type ProfileResponse } from "@/lib/api";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { Loader2, Trash2, User } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
 
-function ProfileItemRow({
+const ProfileItemRow = memo(function ProfileItemRow({
   item,
   onDelete,
 }: {
@@ -42,7 +42,7 @@ function ProfileItemRow({
       </Button>
     </div>
   );
-}
+});
 
 export default function ProfilesPage() {
   const [userId, setUserId] = useState("");
@@ -102,6 +102,11 @@ export default function ProfilesPage() {
     setUserId(id);
   }
 
+  const handleDelete = useCallback(
+    (id: string) => deleteMutation.mutate(id),
+    [deleteMutation],
+  );
+
   return (
     <div className="space-y-4 max-w-3xl">
       <div>
@@ -146,7 +151,7 @@ export default function ProfilesPage() {
                 <ProfileItemRow
                   key={item.id}
                   item={item}
-                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onDelete={handleDelete}
                 />
               ))}
               {(profileQuery.data.data.topics ?? []).length === 0 && (

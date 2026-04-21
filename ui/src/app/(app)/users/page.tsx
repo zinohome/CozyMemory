@@ -257,13 +257,15 @@ export default function UsersPage() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm z-10">
                 <tr>
-                  <th className="text-left px-3 py-2.5 font-medium text-xs text-muted-foreground">
+                  <th className="text-left px-3 py-2.5 font-medium text-xs text-foreground">
                     User ID
                   </th>
-                  <th className="text-left px-3 py-2.5 font-medium text-xs text-muted-foreground">
+                  <th className="text-left px-3 py-2.5 font-medium text-xs text-foreground">
                     UUID v4
                   </th>
-                  <th className="px-3 py-2.5 w-10" />
+                  <th className="px-3 py-2.5 w-10">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -311,7 +313,7 @@ export default function UsersPage() {
           </ScrollArea>
 
           {deleteMutation.isSuccess && deleteMutation.data?.warning && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1.5">
+            <p className="text-xs text-amber-700 dark:text-amber-300 flex items-start gap-1.5">
               <span className="shrink-0">⚠</span>
               {deleteMutation.data.warning}
             </p>
@@ -336,7 +338,7 @@ export default function UsersPage() {
               <li><code className="text-xs">cm:uid:&#123;user_id&#125;</code> → UUID (forward)</li>
               <li><code className="text-xs">cm:uuid:&#123;uuid&#125;</code> → user_id (reverse)</li>
             </ul>
-            <p className="pt-1 text-amber-600 dark:text-amber-400">
+            <p className="pt-1 text-amber-700 dark:text-amber-300">
               Deleting a mapping orphans the Memobase profile data — the UUID still exists
               in Memobase but becomes unreachable via CozyMemory.
             </p>

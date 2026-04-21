@@ -76,7 +76,7 @@ export function UserSelector({
         {mode === "select" ? (
           <div className="flex-1 flex gap-2">
             <Select value={localId || undefined} onValueChange={(v) => handleChange(v ?? "")}>
-              <SelectTrigger className="flex-1">
+              <SelectTrigger className="flex-1" aria-label={label}>
                 {isFetching ? (
                   <span className="flex items-center gap-1.5 text-muted-foreground text-sm">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading users…

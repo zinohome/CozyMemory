@@ -135,9 +135,9 @@ function ObservabilityPanel() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="text-sm font-semibold flex items-center gap-1.5">
+        <h2 className="text-sm font-semibold flex items-center gap-1.5">
           <Activity className="h-4 w-4" /> Observability
-        </h3>
+        </h2>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border text-xs overflow-hidden">
             {WINDOW_PRESETS.map((p, i) => (
@@ -245,10 +245,10 @@ function UsersTable({ userIds }: { userIds: string[] }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           Users
-        </h3>
+        </h2>
         {userIds.length > MAX_USERS_SHOWN && (
           <span className="text-xs text-muted-foreground">
             showing {MAX_USERS_SHOWN} of {userIds.length}
@@ -301,10 +301,10 @@ function UsersTable({ userIds }: { userIds: string[] }) {
 function DatasetsTable({ datasets }: { datasets: KnowledgeDataset[] }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold flex items-center gap-2">
+      <h2 className="text-sm font-semibold flex items-center gap-2">
         <Database className="h-4 w-4 text-muted-foreground" />
         Knowledge Datasets
-      </h3>
+      </h2>
 
       <div className="rounded-md border overflow-hidden">
         <table className="w-full text-sm">
@@ -439,7 +439,7 @@ export default function DashboardPage() {
 
       {/* ── Engine health ── */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Engine Health</h3>
+        <h2 className="text-sm font-semibold">Engine Health</h2>
 
         {healthQuery.isLoading && (
           <div className="flex items-center gap-2 text-muted-foreground text-sm">

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — A11y + Perf audit (batch 6)
+- axe-core 扫 9 页，修全部 **critical / serious** 问题，post-rebuild 0
+  violations：
+  - Sidebar 加 `role="navigation" aria-label="Main"`（region landmark）
+  - Dashboard h3 章节标题 → h2（heading-order）
+  - 所有 `SelectTrigger` 补 `aria-label`（user-selector / context /
+    knowledge / playground，button-name critical）
+  - Memory search、Playground Send/Stop icon-only 按钮补 aria-label
+  - Users 表 `<th>` `text-muted-foreground` → `text-foreground`；amber
+    警告文本 600/400 → 700/300（color-contrast serious）
+- 性能：`MemoryRow` / `ProfileItemRow` 包 `React.memo` + 稳定
+  `handleDelete` via `useCallback`，长列表下无关状态变化不再触发行 re-render
+- 审计报告落盘：`docs/superpowers/audits/2026-04-21-batch-6-a11y-perf.md`
+
 ### Added — UX polish batch 5
 - 新增复用组件 `components/empty-state.tsx`（icon + title + description
   + 可选 CTA link/onClick）替换 Memory Lab / User Profiles / Playground

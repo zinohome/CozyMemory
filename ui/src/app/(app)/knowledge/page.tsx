@@ -340,7 +340,7 @@ export default function KnowledgePage() {
                 value={searchType}
                 onValueChange={(v) => setSearchType((v as SearchType) ?? "GRAPH_COMPLETION")}
               >
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-44" aria-label="Search type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

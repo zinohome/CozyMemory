@@ -46,7 +46,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
+    <Sidebar role="navigation" aria-label="Main">
       <SidebarHeader className="px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />

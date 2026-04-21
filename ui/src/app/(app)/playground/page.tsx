@@ -304,7 +304,7 @@ export default function PlaygroundPage() {
               value={activeId ?? undefined}
               onValueChange={(v) => v && setActive(v)}
             >
-              <SelectTrigger className="w-52 text-xs">
+              <SelectTrigger className="w-52 text-xs" aria-label="Load session">
                 <SelectValue placeholder="Load session…" />
               </SelectTrigger>
               <SelectContent>
@@ -387,7 +387,7 @@ export default function PlaygroundPage() {
               <div className="space-y-1">
                 <Label className="text-xs">Model</Label>
                 <Select value={model} onValueChange={(v) => setModel(v ?? MODEL_PRESETS[0])}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-9 text-xs" aria-label="Model">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -522,11 +522,11 @@ export default function PlaygroundPage() {
                 className="min-h-[60px] max-h-[120px] resize-none"
               />
               {isStreaming ? (
-                <Button onClick={handleCancel} variant="destructive" title="Stop generating">
+                <Button onClick={handleCancel} variant="destructive" title="Stop generating" aria-label="Stop generating">
                   <Square className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSend} disabled={!input.trim() || !userId}>
+                <Button onClick={handleSend} disabled={!input.trim() || !userId} aria-label="Send message">
                   <Send className="h-4 w-4" />
                 </Button>
               )}
