@@ -33,6 +33,8 @@ function ProfileItemRow({
         variant="ghost"
         size="icon"
         className="shrink-0 h-7 w-7"
+        aria-label="Delete topic"
+        title="Delete"
         onClick={() => onDelete(item.id)}
       >
         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />

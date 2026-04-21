@@ -113,7 +113,7 @@ export function UserSelector({
               onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
             />
             {knownUsers.length > 0 && (
-              <Button variant="ghost" size="icon" onClick={() => setMode("select")} title="Pick from list">
+              <Button variant="ghost" size="icon" onClick={() => setMode("select")} title="Pick from list" aria-label="Pick from list">
                 <ChevronDown className="h-4 w-4" />
               </Button>
             )}

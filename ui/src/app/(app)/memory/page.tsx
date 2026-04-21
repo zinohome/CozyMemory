@@ -27,7 +27,14 @@ function MemoryRow({
           {mem.created_at && <span>{new Date(mem.created_at).toLocaleString()}</span>}
         </div>
       </div>
-      <Button variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => onDelete(mem.id)}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 h-7 w-7"
+        aria-label="Delete memory"
+        title="Delete"
+        onClick={() => onDelete(mem.id)}
+      >
         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
       </Button>
     </div>

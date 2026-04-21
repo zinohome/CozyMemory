@@ -71,6 +71,7 @@ function DeleteCell({
       size="icon"
       className="h-7 w-7 opacity-40 hover:opacity-100"
       title="Delete mapping"
+      aria-label={`Delete user mapping ${userId}`}
       onClick={() => setConfirming(true)}
     >
       <Trash2 className="h-3.5 w-3.5 text-destructive" />

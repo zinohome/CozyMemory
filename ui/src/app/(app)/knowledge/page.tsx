@@ -78,6 +78,7 @@ function DatasetRow({
             size="icon"
             className="h-7 w-7 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
             title="Delete dataset"
+            aria-label={`Delete dataset ${ds.name}`}
             onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
           >
             <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -219,6 +220,8 @@ export default function KnowledgePage() {
               variant="ghost"
               size="icon"
               className="h-7 w-7"
+              aria-label="Refresh datasets"
+              title="Refresh"
               onClick={() => qc.invalidateQueries({ queryKey: ["datasets"] })}
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -266,6 +269,8 @@ export default function KnowledgePage() {
               variant="outline"
               size="icon"
               className="h-8 w-8 shrink-0"
+              aria-label="Create dataset"
+              title="Create"
               onClick={handleCreateDataset}
               disabled={!newDatasetName.trim() || createDatasetMutation.isPending}
             >

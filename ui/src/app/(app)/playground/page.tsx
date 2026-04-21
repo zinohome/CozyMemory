@@ -30,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, Brain, RotateCcw, Square, Sliders } from "lucide-react";
+import { Loader2, Send, RotateCcw, Square, Sliders } from "lucide-react";
+import { ContextInspector } from "@/components/context-inspector";
 import { UserSelector } from "@/components/user-selector";
 
 interface ChatMsg {
@@ -459,88 +460,7 @@ export default function PlaygroundPage() {
         </Card>
 
         {/* ── Context inspector ── */}
-        <Card>
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              <p className="font-medium text-sm">Last context injected</p>
-            </div>
-            {!lastContext ? (
-              <p className="text-xs text-muted-foreground">
-                Send a message to see what memories/profile/knowledge were injected into the system prompt.
-              </p>
-            ) : (
-              <div className="space-y-2 text-xs">
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="secondary">
-                    conv {lastContext.conversations?.length ?? 0}
-                  </Badge>
-                  <Badge variant="secondary">
-                    profile {lastContext.profile_context ? "✓" : "—"}
-                  </Badge>
-                  <Badge variant="secondary">
-                    knowledge {lastContext.knowledge?.length ?? 0}
-                  </Badge>
-                  {lastContext.latency_ms != null && (
-                    <Badge variant="outline">{Math.round(lastContext.latency_ms)}ms</Badge>
-                  )}
-                </div>
-                {lastContext.conversations && lastContext.conversations.length > 0 && (
-                  <div>
-                    <p className="font-medium text-[11px] text-muted-foreground uppercase tracking-wide mt-2">
-                      Conversations
-                    </p>
-                    <ul className="space-y-1 mt-1">
-                      {lastContext.conversations.map((m) => (
-                        <li key={m.id} className="rounded-md border p-2">
-                          {m.content}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {lastContext.profile_context && (
-                  <div>
-                    <p className="font-medium text-[11px] text-muted-foreground uppercase tracking-wide mt-2">
-                      Profile
-                    </p>
-                    <pre className="whitespace-pre-wrap font-mono bg-muted rounded p-2 text-[10px] mt-1">
-                      {lastContext.profile_context}
-                    </pre>
-                  </div>
-                )}
-                {lastContext.knowledge && lastContext.knowledge.length > 0 && (
-                  <div>
-                    <p className="font-medium text-[11px] text-muted-foreground uppercase tracking-wide mt-2">
-                      Knowledge
-                    </p>
-                    <ul className="space-y-1 mt-1">
-                      {lastContext.knowledge.map((k, i) => (
-                        <li key={i} className="rounded-md border p-2">
-                          {(k.text as string) ?? JSON.stringify(k).slice(0, 200)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {lastContext.errors && Object.keys(lastContext.errors).length > 0 && (
-                  <div>
-                    <p className="font-medium text-[11px] text-destructive uppercase tracking-wide mt-2">
-                      Engine errors
-                    </p>
-                    <ul className="space-y-0.5 mt-1">
-                      {Object.entries(lastContext.errors).map(([engine, err]) => (
-                        <li key={engine} className="text-destructive">
-                          {engine}: {err}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ContextInspector data={lastContext} />
       </div>
     </div>
   );

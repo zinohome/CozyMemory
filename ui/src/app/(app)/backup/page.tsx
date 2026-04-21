@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,8 +55,6 @@ function authHeaders(): Record<string, string> {
 export default function BackupPage() {
   const [exportUserId, setExportUserId] = useState("");
   const [targetUserId, setTargetUserId] = useState("");
-  const [exporting, setExporting] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [previewBundle, setPreviewBundle] = useState<MemoryBundle | null>(null);
   const [datasets, setDatasets] = useState<KnowledgeDataset[]>([]);
@@ -77,10 +76,9 @@ export default function BackupPage() {
     });
   }
 
-  async function handleDownload() {
-    if (!exportUserId) return;
-    setExporting(true);
-    try {
+  const exportMutation = useMutation({
+    mutationFn: async () => {
+      if (!exportUserId) throw new Error("Pick a user first");
       const dsQuery = selectedDs.size > 0 ? `?datasets=${[...selectedDs].join(",")}` : "";
       const resp = await fetch(
         `${BASE_URL}/api/v1/backup/export/${encodeURIComponent(exportUserId)}${dsQuery}`,
@@ -90,8 +88,10 @@ export default function BackupPage() {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body.detail?.detail ?? body.detail ?? body.error ?? `HTTP ${resp.status}`);
       }
-      const bundle = (await resp.json()) as MemoryBundle;
-      // 写文件
+      return (await resp.json()) as MemoryBundle;
+    },
+    onSuccess: (bundle) => {
+      // 浏览器端写文件
       const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -102,12 +102,33 @@ export default function BackupPage() {
       a.remove();
       URL.revokeObjectURL(url);
       toast.success(`Exported ${bundle.conversations.length + (bundle.profile_topics?.length ?? 0)} items`);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setExporting(false);
-    }
-  }
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (bundle: MemoryBundle) => {
+      const resp = await fetch(`${BASE_URL}/api/v1/backup/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          bundle,
+          target_user_id: targetUserId || null,
+        }),
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.detail ?? body.error ?? `HTTP ${resp.status}`);
+      }
+      return (await resp.json()) as ImportResult;
+    },
+    onSuccess: (result) => {
+      setImportResult(result);
+      setPreviewBundle(null); // 导入完清预览，防止重复提交
+      toast.success("Bundle imported");
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
 
   async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -126,32 +147,12 @@ export default function BackupPage() {
     }
   }
 
-  async function handleImport() {
-    if (!previewBundle) return;
-    setImporting(true);
-    try {
-      const resp = await fetch(`${BASE_URL}/api/v1/backup/import`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
-          bundle: previewBundle,
-          target_user_id: targetUserId || null,
-        }),
-      });
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.detail ?? body.error ?? `HTTP ${resp.status}`);
-      }
-      const result = (await resp.json()) as ImportResult;
-      setImportResult(result);
-      setPreviewBundle(null); // 导入完清预览，防止重复提交
-      toast.success("Bundle imported");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setImporting(false);
-    }
-  }
+  const exporting = exportMutation.isPending;
+  const importing = importMutation.isPending;
+  const handleDownload = () => exportMutation.mutate();
+  const handleImport = () => {
+    if (previewBundle) importMutation.mutate(previewBundle);
+  };
 
   return (
     <div className="space-y-4 max-w-3xl">
