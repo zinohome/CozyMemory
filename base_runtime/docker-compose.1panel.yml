@@ -15,7 +15,7 @@ services:
     container_name: cozy_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: cozy_pg_root_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required (see .env.example)}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - /data/CozyMemory/postgres:/var/lib/postgresql/data
@@ -29,7 +29,7 @@ services:
     image: redis:7-alpine
     container_name: cozy_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass cozy_redis_pass
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required}
     volumes:
       - /data/CozyMemory/redis:/data
     networks:
@@ -54,9 +54,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      # 部署前建议修改为更强密码（当前使用开发默认值）
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD required}
     volumes:
       - /data/CozyMemory/minio:/data
     networks:
@@ -69,7 +68,7 @@ services:
     container_name: cozy_neo4j
     restart: unless-stopped
     environment:
-      NEO4J_AUTH: neo4j/pleaseletmein
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?NEO4J_PASSWORD required}
       NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
       NEO4J_dbms_memory_heap_initial__size: 512m
       NEO4J_dbms_memory_heap_max__size: 1G
@@ -103,13 +102,13 @@ services:
       - HOST=0.0.0.0
       - HTTP_PORT=8000
       - PYTHONUNBUFFERED=1
-      - LLM_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
       - LLM_PROVIDER=openai
       - LLM_MODEL=gpt-4o-mini
       - LLM_ENDPOINT=http://caddy:9090/v1
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=openai
-      - EMBEDDING_API_KEY=sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      - EMBEDDING_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
       - EMBEDDING_ENDPOINT=http://caddy:9090/v1
       - EMBEDDING_MODEL=text-embedding-3-large
       - EMBEDDING_DIMENSIONS=3072
@@ -126,11 +125,11 @@ services:
       - GRAPH_DATABASE_NAME=neo4j
       - GRAPH_DATABASE_URL=bolt://neo4j:7687
       - GRAPH_DATABASE_USERNAME=neo4j
-      - GRAPH_DATABASE_PASSWORD=pleaseletmein
-      - REDIS_URL=redis://:cozy_redis_pass@redis:6379/0
+      - GRAPH_DATABASE_PASSWORD=${NEO4J_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - S3_ENDPOINT=http://minio:9000
-      - S3_ACCESS_KEY=minioadmin
-      - S3_SECRET_KEY=minioadmin
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - S3_BUCKET_NAME=cognee-storage
       - S3_USE_SSL=false
       - CORS_ALLOWED_ORIGINS=*
@@ -194,7 +193,7 @@ services:
     container_name: cozy_mem0_api
     restart: unless-stopped
     environment:
-      OPENAI_API_KEY: sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      OPENAI_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
       OPENAI_BASE_URL: https://oneapi.naivehero.top/v1
       OPENAI_MODEL: gpt-4.1-nano-2025-04-14
       QDRANT_HOST: qdrant
@@ -204,7 +203,7 @@ services:
       HISTORY_DB_PATH: /app/history/history.db
       CORS_ORIGINS: "*"
       # patch未生效时回退：使用 cozy_postgres 做向量存储（pgvector）
-      POSTGRES_PASSWORD: cozy_pg_root_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       - qdrant
       - postgres
@@ -253,16 +252,16 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://memobase:memobase123@postgres:5432/memobase
-      REDIS_URL: redis://:cozy_redis_pass@redis:6379/1
-      ACCESS_TOKEN: secret
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      ACCESS_TOKEN: ${MEMOBASE_ACCESS_TOKEN:?MEMOBASE_ACCESS_TOKEN required}
       PROJECT_ID: default
       API_HOSTS: "http://192.168.32.40:8019,http://memobase-server-api:8000"
       USE_CORS: "true"
       MEMOBASE_LANGUAGE: zh
       MEMOBASE_LLM_STYLE: openai
-      MEMOBASE_LLM_API_KEY: "sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH"
+      MEMOBASE_LLM_API_KEY: "${LLM_API_KEY:?LLM_API_KEY required}"
       MEMOBASE_LLM_BASE_URL: "https://oneapi.naivehero.top/v1"
-      MEMOBASE_EMBEDDING_API_KEY: "sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH"
+      MEMOBASE_EMBEDDING_API_KEY: "${LLM_API_KEY:?LLM_API_KEY required}"
       MEMOBASE_EMBEDDING_BASE_URL: "https://oneapi.naivehero.top/v1"
       MEMOBASE_EMBEDDING_PROVIDER: openai
       TIKTOKEN_CACHE_DIR: /root/.tiktoken
@@ -304,7 +303,7 @@ services:
       MEM0_API_KEY: ""
       MEM0_ENABLED: "true"
       MEMOBASE_API_URL: http://memobase-server-api:8000
-      MEMOBASE_API_KEY: secret
+      MEMOBASE_API_KEY: ${MEMOBASE_ACCESS_TOKEN}
       MEMOBASE_ENABLED: "true"
       COGNEE_API_URL: http://cognee:8000
       COGNEE_API_KEY: ""
@@ -312,10 +311,10 @@ services:
       COGNEE_USER_EMAIL: admin@cognee.com
       COGNEE_USER_PASSWORD: passw0rd
       # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
-      REDIS_URL: redis://:cozy_redis_pass@redis:6379/2
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
       REDIS_USER_MAPPING_TTL: "0"
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
-      COZY_API_KEYS: "cozy-dev-key-001,cozy-dev-key-002"
+      COZY_API_KEYS: ${COZY_API_KEYS:-}
     depends_on:
       - mem0-api
       - memobase-server-api
@@ -345,7 +344,7 @@ services:
       NEXT_PUBLIC_API_URL: http://192.168.32.40:8000
       # Playground 用 — server-side /api/chat 路由读取，不注入浏览器包
       LLM_ENDPOINT: http://caddy:9090/v1
-      LLM_API_KEY: sk-1s98FFGBvUwEs0uH5yKQDxsxLuv9qNa4P1WadrANek8hh8TH
+      LLM_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
       LLM_MODEL: gpt-4.1-nano-2025-04-14
     depends_on:
       - cozymemory-api

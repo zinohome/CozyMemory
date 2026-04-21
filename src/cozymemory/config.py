@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # 应用配置
     APP_NAME: str = "CozyMemory"
-    APP_VERSION: str = "2.0.0"
+    APP_VERSION: str = "0.1.0"
     APP_ENV: str = "development"
     DEBUG: bool = False
 

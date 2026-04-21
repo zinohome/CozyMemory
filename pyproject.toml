@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cozymemory"
-version = "2.0.0"
+version = "0.1.0"
 description = "统一 AI 记忆服务平台 - 整合 Mem0, Memobase, Cognee 三大引擎"
 readme = "README.md"
 license = {text = "MIT"}
