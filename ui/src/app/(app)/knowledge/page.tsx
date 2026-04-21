@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, RefreshCw, Search, Plus, GitBranch, Network, Trash2 } from "lucide-react";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 // ── Dataset row with inline delete confirm ────────────────────────────────
 
@@ -96,6 +97,7 @@ export default function KnowledgePage() {
   const [searchType, setSearchType] = useState<SearchType>("GRAPH_COMPLETION");
   const [cognifyJobId, setCognifyJobId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("add");
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const datasetsQuery = useQuery({
     queryKey: ["datasets"],
@@ -198,7 +200,7 @@ export default function KnowledgePage() {
                   ds={ds}
                   selected={selectedDataset?.id === ds.id}
                   onClick={() => setSelectedDataset(ds)}
-                  onDelete={() => deleteDatasetMutation.mutate(ds.id)}
+                  onDelete={() => setDeleteConfirm({ id: ds.id, name: ds.name })}
                   isDeleting={deleteDatasetMutation.isPending && deleteDatasetMutation.variables === ds.id}
                 />
               ))}
@@ -424,6 +426,18 @@ export default function KnowledgePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(o) => !o && setDeleteConfirm(null)}
+        title={`Delete dataset "${deleteConfirm?.name ?? ""}"?`}
+        description="Also removes all graph data. Irreversible."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deleteConfirm) deleteDatasetMutation.mutate(deleteConfirm.id);
+        }}
+      />
     </div>
   );
 }

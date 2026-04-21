@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   KeyRound,
   Eye,
@@ -150,6 +151,11 @@ export default function SettingsPage() {
   const [logsId, setLogsId] = useState<string | null>(null);
   const [logs, setLogs] = useState<ApiKeyLogEntry[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [confirmState, setConfirmState] = useState<
+    | { kind: "rotate"; id: string }
+    | { kind: "delete"; id: string; name: string }
+    | null
+  >(null);
 
   async function toggleLogs(id: string) {
     if (logsId === id) {
@@ -213,8 +219,11 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleRotate(id: string) {
-    if (!confirm("Rotate this key? The old key will stop working immediately.")) return;
+  function handleRotate(id: string) {
+    setConfirmState({ kind: "rotate", id });
+  }
+
+  async function doRotate(id: string) {
     try {
       const r = await adminFetch<ApiKeyCreateResponse>(`/api-keys/${id}/rotate`, { method: "POST" });
       setRevealedKey({ id, key: r.key, action: "rotated" });
@@ -253,8 +262,11 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete key "${name}"? This is immediate and irreversible.`)) return;
+  function handleDelete(id: string, name: string) {
+    setConfirmState({ kind: "delete", id, name });
+  }
+
+  async function doDelete(id: string) {
     try {
       await adminFetch(`/api-keys/${id}`, { method: "DELETE" });
       await refresh();
@@ -530,6 +542,30 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={(o) => !o && setConfirmState(null)}
+        title={
+          confirmState?.kind === "rotate"
+            ? "Rotate this key?"
+            : confirmState?.kind === "delete"
+              ? `Delete key "${confirmState.name}"?`
+              : ""
+        }
+        description={
+          confirmState?.kind === "rotate"
+            ? "The old key will stop working immediately."
+            : "This is immediate and irreversible."
+        }
+        confirmLabel={confirmState?.kind === "rotate" ? "Rotate" : "Delete"}
+        destructive={confirmState?.kind === "delete"}
+        onConfirm={() => {
+          if (!confirmState) return;
+          if (confirmState.kind === "rotate") doRotate(confirmState.id);
+          else doDelete(confirmState.id);
+        }}
+      />
     </div>
   );
 }
