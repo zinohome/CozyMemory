@@ -148,7 +148,14 @@ def create_app() -> FastAPI:
     #   b. Redis 里用户创建的动态 key（可 CRUD，普通权限）
     # 鉴权关闭的条件：env 为空 AND 不想强制（通过 COZY_AUTH_REQUIRE_DYNAMIC
     # 开关暂不支持）。当 env 空 = 关闭。
-    _AUTH_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/api/v1/health", "/metrics")
+    _AUTH_EXEMPT_PREFIXES = (
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/api/v1/health",
+        "/metrics",
+        "/api/v1/auth",  # 开发者注册/登录走 JWT，不走 X-Cozy-API-Key
+    )
     _ADMIN_PREFIX = "/api/v1/admin"
 
     @app.middleware("http")
