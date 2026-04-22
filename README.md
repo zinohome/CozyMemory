@@ -1,6 +1,13 @@
 # CozyMemory
 
+[![CI](https://github.com/zinohome/CozyMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/zinohome/CozyMemory/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **统一 AI 记忆服务平台** — 单一 API 整合三大记忆引擎，开箱即用的管理 UI 和 Playground。
+
+**中文使用说明**：[docs/usage-cn.md](docs/usage-cn.md)
 
 | 引擎 | 域 | 能力 |
 |------|----|------|

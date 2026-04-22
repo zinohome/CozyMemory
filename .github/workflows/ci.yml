@@ -37,7 +37,7 @@ jobs:
             --cov=cozymemory \
             --cov-report=term \
             --cov-report=xml \
-            --ignore=tests/unit/test_config.py \
+             \
             --tb=short
 
       - name: Upload coverage artifact
