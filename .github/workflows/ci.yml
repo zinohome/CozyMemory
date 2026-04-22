@@ -37,7 +37,6 @@ jobs:
             --cov=cozymemory \
             --cov-report=term \
             --cov-report=xml \
-             \
             --tb=short
 
       - name: Upload coverage artifact
@@ -72,3 +71,110 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+  # ────────────────────────────────────────────────────────────────
+  # 部署到生产 (self-hosted runner on dev server)
+  # 触发条件：main 分支 push + backend/ui 都绿
+  # PR 不触发（self-hosted runner 在公开仓有安全风险）
+  # ────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to prod
+    needs: [backend, ui]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, cozymemory-prod]
+    timeout-minutes: 20
+    env:
+      COMPOSE_FILE: base_runtime/docker-compose.1panel.yml
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # build.sh 依赖 projects/Cozy{Mem0,Cognee,Memobase}/，这些是 gitignored
+      # 在 runner 工作目录软链接到本机真实路径
+      - name: Link local projects/ and .env (gitignored)
+        run: |
+          if [ ! -L projects ]; then
+            ln -sfn /home/ubuntu/CozyProjects/CozyMemory/projects projects
+          fi
+          if [ ! -L base_runtime/.env ]; then
+            ln -sfn /home/ubuntu/CozyProjects/CozyMemory/base_runtime/.env base_runtime/.env
+          fi
+
+      - name: Snapshot current image IDs (for rollback)
+        id: snapshot
+        run: |
+          backend_id=$(docker images cozymemory:latest --format '{{.ID}}' | head -1)
+          ui_id=$(docker images cozymemory-ui:latest --format '{{.ID}}' | head -1)
+          echo "backend_id=$backend_id" >> $GITHUB_OUTPUT
+          echo "ui_id=$ui_id" >> $GITHUB_OUTPUT
+          echo "📸 Snapshot before deploy:"
+          echo "   backend:latest -> $backend_id"
+          echo "   ui:latest      -> $ui_id"
+
+      - name: Build images
+        run: |
+          cd base_runtime
+          ./build.sh cozymemory
+          ./build.sh cozymemory-ui
+
+      - name: Tag images with git SHA
+        run: |
+          SHA=${GITHUB_SHA::7}
+          docker tag cozymemory:latest "cozymemory:$SHA"
+          docker tag cozymemory-ui:latest "cozymemory-ui:$SHA"
+          echo "🏷️  Tagged both images with :$SHA"
+
+      - name: Deploy (force-recreate)
+        run: |
+          docker compose -f "$COMPOSE_FILE" up -d --force-recreate cozymemory-api cozymemory-ui
+
+      - name: Wait for health (up to 120s)
+        id: health
+        run: |
+          for i in $(seq 1 24); do
+            resp=$(curl -sf http://localhost:8000/api/v1/health 2>/dev/null || echo '')
+            if echo "$resp" | grep -q '"status":"healthy"'; then
+              echo "✅ healthy after $((i * 5))s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ /health did not return healthy within 120s"
+          curl -s http://localhost:8000/api/v1/health 2>&1 | head -20 || true
+          exit 1
+
+      - name: Rollback on health failure
+        if: failure() && steps.health.outcome == 'failure'
+        run: |
+          echo "🔄 Rolling back to previous image IDs..."
+          BACKEND_OLD="${{ steps.snapshot.outputs.backend_id }}"
+          UI_OLD="${{ steps.snapshot.outputs.ui_id }}"
+          if [ -n "$BACKEND_OLD" ]; then
+            docker tag "$BACKEND_OLD" cozymemory:latest
+            echo "   cozymemory:latest -> $BACKEND_OLD"
+          else
+            echo "   ⚠️  no previous backend image, skip"
+          fi
+          if [ -n "$UI_OLD" ]; then
+            docker tag "$UI_OLD" cozymemory-ui:latest
+            echo "   cozymemory-ui:latest -> $UI_OLD"
+          else
+            echo "   ⚠️  no previous ui image, skip"
+          fi
+          docker compose -f "$COMPOSE_FILE" up -d --force-recreate cozymemory-api cozymemory-ui
+          sleep 10
+          echo "Rollback applied. Deployment marked failed."
+
+      - name: Cleanup old SHA-tagged images (keep last 5)
+        if: success()
+        run: |
+          for repo in cozymemory cozymemory-ui; do
+            docker images "$repo" --format '{{.Tag}} {{.CreatedAt}}' \
+              | grep -v '^latest ' \
+              | sort -k2,3 -r \
+              | awk 'NR>5 {print $1}' \
+              | while read tag; do
+                  [ -n "$tag" ] && docker rmi "$repo:$tag" 2>/dev/null || true
+                done
+          done
+          echo "🧹 Cleaned up old tags (kept last 5)"
