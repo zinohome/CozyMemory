@@ -155,6 +155,7 @@ def create_app() -> FastAPI:
         "/api/v1/health",
         "/metrics",
         "/api/v1/auth",  # 开发者注册/登录走 JWT，不走 X-Cozy-API-Key
+        "/api/v1/dashboard",  # Dashboard 管理接口走 JWT，不走 X-Cozy-API-Key
     )
     _ADMIN_PREFIX = "/api/v1/admin"
 
