@@ -224,6 +224,43 @@ export const zh: Record<TKey, string> = {
     "文档已添加 — 运行构建图谱来建图",
   "knowledge.toast.cognifyStarted":
     "构建已启动 — 完成前搜索可能为空",
+  "knowledge.add.methodText": "粘贴文本",
+  "knowledge.add.methodFile": "上传文件",
+  "knowledge.add.filePicker": "选择文件…",
+  "knowledge.add.filePickerHint":
+    "支持 PDF、txt、md、docx 等，可多选。",
+  "knowledge.add.filesSelected": "已选择 {n} 个文件",
+  "knowledge.add.uploadBtn": "上传",
+  "knowledge.add.uploadSuccess": "已上传 {n} 个文件",
+  "knowledge.add.pickDatasetFirst":
+    "请先在左侧选一个数据集或新建一个。",
+  "knowledge.docs.tab": "文档",
+  "knowledge.docs.pickDataset":
+    "左侧选一个数据集来查看其文档。",
+  "knowledge.docs.empty":
+    "还没有文档。到添加标签页上传或粘贴文本。",
+  "knowledge.docs.loading": "加载文档中…",
+  "knowledge.docs.refresh": "刷新",
+  "knowledge.docs.count": "{n} 篇文档",
+  "knowledge.docs.col.name": "名称",
+  "knowledge.docs.col.type": "类型",
+  "knowledge.docs.col.created": "上传时间",
+  "knowledge.docs.col.actions": "操作",
+  "knowledge.docs.view": "查看",
+  "knowledge.docs.viewAria": "查看 {name}",
+  "knowledge.docs.download": "下载",
+  "knowledge.docs.downloadAria": "下载 {name}",
+  "knowledge.docs.delete": "删除",
+  "knowledge.docs.deleteAria": "删除 {name}",
+  "knowledge.docs.deleteConfirmTitle": "删除 \"{name}\"？",
+  "knowledge.docs.deleteConfirmDesc":
+    "从数据集移除原始文件。已基于它生成的图谱节点不受影响。不可恢复。",
+  "knowledge.docs.deletedToast": "文档已删除",
+  "knowledge.docs.previewTitle": "{name}",
+  "knowledge.docs.previewLoading": "加载内容中…",
+  "knowledge.docs.previewBinary":
+    "此文件不是纯文本，请点\"下载\"保存到本地查看。",
+  "knowledge.docs.previewError": "加载内容失败：{msg}",
 
   // ── Context Studio ──────────────────────────────────────────────────
   "context.title": "上下文调试",

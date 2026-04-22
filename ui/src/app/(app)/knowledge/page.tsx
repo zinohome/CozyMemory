@@ -13,10 +13,17 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, Search, Plus, GitBranch, Network, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, Search, Plus, GitBranch, Network, Trash2, Upload, FileText, Eye, Download } from "lucide-react";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useT } from "@/lib/i18n";
+import type { DatasetDataItem } from "@/lib/api";
 
 // ── Dataset row with inline delete confirm ────────────────────────────────
 
@@ -91,6 +98,81 @@ function DatasetRow({
   );
 }
 
+/**
+ * DocumentPreviewDialog — 点"查看"弹出的预览框。
+ *   - 文本类文件（content-type 以 text/ 开头）：直接 fetch 内容展示
+ *   - 非文本（PDF/图片/doc 等）：提示用户改用下载
+ */
+function DocumentPreviewDialog({
+  doc,
+  datasetId,
+  onClose,
+}: {
+  doc: DatasetDataItem | null;
+  datasetId: string | undefined;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const isText = (doc?.mime_type ?? "").startsWith("text/") ||
+    ["txt", "md", "markdown", "log", "csv", "json", "yaml", "yml"].includes(
+      (doc?.extension ?? "").toLowerCase()
+    );
+
+  const preview = useQuery({
+    queryKey: ["doc-raw", datasetId, doc?.id],
+    queryFn: () => knowledgeApi.fetchRawText(datasetId!, doc!.id),
+    enabled: !!doc && !!datasetId && isText,
+    staleTime: Infinity,
+  });
+
+  return (
+    <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {t("knowledge.docs.previewTitle", { name: doc?.name ?? "" })}
+          </DialogTitle>
+        </DialogHeader>
+        {!isText && doc && (
+          <div className="py-6 text-sm text-muted-foreground text-center space-y-3">
+            <p>{t("knowledge.docs.previewBinary")}</p>
+            {datasetId && (
+              <a
+                href={knowledgeApi.rawDataUrl(datasetId, doc.id)}
+                download={doc.name || doc.id}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-primary hover:underline"
+              >
+                <Download className="h-4 w-4" />
+                {t("knowledge.docs.download")}
+              </a>
+            )}
+          </div>
+        )}
+        {isText && preview.isLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t("knowledge.docs.previewLoading")}
+          </div>
+        )}
+        {isText && preview.isError && (
+          <p className="text-sm text-destructive py-4">
+            {t("knowledge.docs.previewError", {
+              msg: (preview.error as Error)?.message ?? "",
+            })}
+          </p>
+        )}
+        {isText && preview.data !== undefined && (
+          <pre className="whitespace-pre-wrap font-mono text-xs bg-muted rounded p-3 overflow-auto">
+            {preview.data}
+          </pre>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function KnowledgePage() {
   const t = useT();
   const qc = useQueryClient();
@@ -104,6 +186,10 @@ export default function KnowledgePage() {
   const [activeTab, setActiveTab] = useState("add");
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [datasetFilter, setDatasetFilter] = useState("");
+  const [addMode, setAddMode] = useState<"text" | "file">("text");
+  const [pickedFiles, setPickedFiles] = useState<File[]>([]);
+  const [previewDoc, setPreviewDoc] = useState<DatasetDataItem | null>(null);
+  const [docDeleteConfirm, setDocDeleteConfirm] = useState<DatasetDataItem | null>(null);
 
   const datasetsQuery = useQuery({
     queryKey: ["datasets"],
@@ -185,6 +271,59 @@ export default function KnowledgePage() {
       toast.success(t("knowledge.toast.added"));
     },
     onError: (e) => toast.error((e as Error).message),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: () =>
+      knowledgeApi.addFiles(selectedDataset?.name ?? "default", pickedFiles),
+    onSuccess: (_, __) => {
+      toast.success(
+        t("knowledge.add.uploadSuccess", { n: pickedFiles.length })
+      );
+      setPickedFiles([]);
+      qc.invalidateQueries({ queryKey: ["dataset-data", selectedDataset?.id] });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const dataListQuery = useQuery({
+    queryKey: ["dataset-data", selectedDataset?.id],
+    queryFn: () => knowledgeApi.listData(selectedDataset!.id),
+    enabled: !!selectedDataset && activeTab === "docs",
+    staleTime: 30_000,
+  });
+
+  const deleteDocMutation = useMutation({
+    mutationFn: (doc: DatasetDataItem) =>
+      knowledgeApi.deleteData(selectedDataset!.id, doc.id),
+    onMutate: async (doc) => {
+      await qc.cancelQueries({ queryKey: ["dataset-data", selectedDataset?.id] });
+      const previous = qc.getQueryData<typeof dataListQuery.data>([
+        "dataset-data",
+        selectedDataset?.id,
+      ]);
+      qc.setQueryData<typeof dataListQuery.data>(
+        ["dataset-data", selectedDataset?.id],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: (old.data ?? []).filter((d) => d.id !== doc.id),
+            total: Math.max(0, (old.total ?? 0) - 1),
+          };
+        }
+      );
+      return { previous };
+    },
+    onError: (e, _doc, ctx) => {
+      if (ctx?.previous) {
+        qc.setQueryData(["dataset-data", selectedDataset?.id], ctx.previous);
+      }
+      toast.error((e as Error).message);
+    },
+    onSuccess: () => toast.success(t("knowledge.docs.deletedToast")),
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: ["dataset-data", selectedDataset?.id] }),
   });
 
   const cognifyMutation = useMutation({
@@ -293,6 +432,10 @@ export default function KnowledgePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="add">{t("knowledge.add.tab")}</TabsTrigger>
+            <TabsTrigger value="docs" disabled={!selectedDataset} className="gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              {t("knowledge.docs.tab")}
+            </TabsTrigger>
             <TabsTrigger value="search">{t("knowledge.tab.search")}</TabsTrigger>
             <TabsTrigger value="cognify">{t("knowledge.cognify.tab")}</TabsTrigger>
             <TabsTrigger value="graph" disabled={!selectedDataset} className="gap-1.5">
@@ -309,24 +452,234 @@ export default function KnowledgePage() {
                 {selectedDataset ? selectedDataset.name : <span className="italic">{t("knowledge.add.noDatasetLabel")}</span>}
               </p>
             </div>
-            <Textarea
-              rows={5}
-              placeholder={t("knowledge.add.placeholderNew")}
-              value={addText}
-              onChange={(e) => setAddText(e.target.value)}
-            />
-            <Button onClick={() => addMutation.mutate()} disabled={!addText || addMutation.isPending}>
-              {addMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-              )}
-              {t("knowledge.add.button")}
-            </Button>
-            {addMutation.isSuccess && (
-              <p className="text-xs text-green-600 dark:text-green-400">
-                {t("knowledge.add.success", { id: addMutation.data?.data_id ?? "" })}
+
+            <div className="inline-flex rounded-md border text-xs overflow-hidden">
+              <button
+                onClick={() => setAddMode("text")}
+                className={
+                  (addMode === "text"
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted") + " px-3 py-1.5"
+                }
+              >
+                {t("knowledge.add.methodText")}
+              </button>
+              <button
+                onClick={() => setAddMode("file")}
+                className={
+                  (addMode === "file"
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted") + " px-3 py-1.5 border-l"
+                }
+              >
+                {t("knowledge.add.methodFile")}
+              </button>
+            </div>
+
+            {addMode === "text" ? (
+              <>
+                <Textarea
+                  rows={5}
+                  placeholder={t("knowledge.add.placeholderNew")}
+                  value={addText}
+                  onChange={(e) => setAddText(e.target.value)}
+                />
+                <Button onClick={() => addMutation.mutate()} disabled={!addText || addMutation.isPending}>
+                  {addMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4 mr-2" />
+                  )}
+                  {t("knowledge.add.button")}
+                </Button>
+                {addMutation.isSuccess && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {t("knowledge.add.success", { id: addMutation.data?.data_id ?? "" })}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Input
+                    type="file"
+                    multiple
+                    onChange={(e) => setPickedFiles(Array.from(e.target.files ?? []))}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("knowledge.add.filePickerHint")}
+                  </p>
+                  {pickedFiles.length > 0 && (
+                    <p className="text-xs">
+                      {t("knowledge.add.filesSelected", { n: pickedFiles.length })}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={() => uploadMutation.mutate()}
+                  disabled={
+                    pickedFiles.length === 0 ||
+                    uploadMutation.isPending ||
+                    !selectedDataset
+                  }
+                >
+                  {uploadMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  {t("knowledge.add.uploadBtn")}
+                </Button>
+                {!selectedDataset && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    {t("knowledge.add.pickDatasetFirst")}
+                  </p>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* ─ Documents ─ */}
+          <TabsContent value="docs" className="space-y-3 mt-3">
+            {!selectedDataset ? (
+              <p className="text-sm text-muted-foreground">
+                {t("knowledge.docs.pickDataset")}
               </p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    {t("knowledge.docs.count", {
+                      n: dataListQuery.data?.total ?? 0,
+                    })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      qc.invalidateQueries({
+                        queryKey: ["dataset-data", selectedDataset.id],
+                      })
+                    }
+                    disabled={dataListQuery.isFetching}
+                  >
+                    {dataListQuery.isFetching ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    )}
+                    <span className="ml-1.5">{t("knowledge.docs.refresh")}</span>
+                  </Button>
+                </div>
+
+                {dataListQuery.isLoading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("knowledge.docs.loading")}
+                  </div>
+                )}
+
+                {dataListQuery.data && (dataListQuery.data.data ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    {t("knowledge.docs.empty")}
+                  </p>
+                )}
+
+                {dataListQuery.data && (dataListQuery.data.data ?? []).length > 0 && (
+                  <div className="rounded-md border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium text-xs text-foreground">
+                            {t("knowledge.docs.col.name")}
+                          </th>
+                          <th className="text-left px-3 py-2 font-medium text-xs text-foreground hidden sm:table-cell">
+                            {t("knowledge.docs.col.type")}
+                          </th>
+                          <th className="text-right px-3 py-2 font-medium text-xs text-foreground hidden md:table-cell">
+                            {t("knowledge.docs.col.created")}
+                          </th>
+                          <th className="px-3 py-2 w-28">
+                            <span className="sr-only">
+                              {t("knowledge.docs.col.actions")}
+                            </span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(dataListQuery.data.data ?? []).map((d) => (
+                          <tr
+                            key={d.id}
+                            className="border-t hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                <span className="truncate" title={d.name || d.id}>
+                                  {d.name || d.id.slice(0, 8)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
+                              {d.extension ?? d.mime_type ?? "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right text-xs text-muted-foreground hidden md:table-cell">
+                              {d.created_at
+                                ? new Date(d.created_at).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <div className="flex items-center justify-end gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  title={t("knowledge.docs.view")}
+                                  aria-label={t("knowledge.docs.viewAria", {
+                                    name: d.name || d.id,
+                                  })}
+                                  onClick={() => setPreviewDoc(d)}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <a
+                                  href={knowledgeApi.rawDataUrl(
+                                    selectedDataset.id,
+                                    d.id
+                                  )}
+                                  download={d.name || d.id}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                                  title={t("knowledge.docs.download")}
+                                  aria-label={t("knowledge.docs.downloadAria", {
+                                    name: d.name || d.id,
+                                  })}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </a>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  title={t("knowledge.docs.delete")}
+                                  aria-label={t("knowledge.docs.deleteAria", {
+                                    name: d.name || d.id,
+                                  })}
+                                  onClick={() => setDocDeleteConfirm(d)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 
@@ -488,6 +841,26 @@ export default function KnowledgePage() {
         onConfirm={() => {
           if (deleteConfirm) deleteDatasetMutation.mutate(deleteConfirm.id);
         }}
+      />
+
+      <ConfirmDialog
+        open={!!docDeleteConfirm}
+        onOpenChange={(o) => !o && setDocDeleteConfirm(null)}
+        title={t("knowledge.docs.deleteConfirmTitle", {
+          name: docDeleteConfirm?.name ?? "",
+        })}
+        description={t("knowledge.docs.deleteConfirmDesc")}
+        confirmLabel={t("common.delete")}
+        destructive
+        onConfirm={() => {
+          if (docDeleteConfirm) deleteDocMutation.mutate(docDeleteConfirm);
+        }}
+      />
+
+      <DocumentPreviewDialog
+        doc={previewDoc}
+        datasetId={selectedDataset?.id}
+        onClose={() => setPreviewDoc(null)}
       />
     </div>
   );

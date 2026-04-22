@@ -225,6 +225,43 @@ export const en = {
     "Document added — run cognify to build graph",
   "knowledge.toast.cognifyStarted":
     "Cognify started — search may be empty until it finishes",
+  "knowledge.add.methodText": "Paste text",
+  "knowledge.add.methodFile": "Upload files",
+  "knowledge.add.filePicker": "Select files…",
+  "knowledge.add.filePickerHint":
+    "Supports PDF, txt, md, docx, and more. You can pick multiple.",
+  "knowledge.add.filesSelected": "{n} file(s) selected",
+  "knowledge.add.uploadBtn": "Upload",
+  "knowledge.add.uploadSuccess": "Uploaded {n} file(s)",
+  "knowledge.add.pickDatasetFirst":
+    "Pick or create a dataset on the left first.",
+  "knowledge.docs.tab": "Documents",
+  "knowledge.docs.pickDataset":
+    "Pick a dataset on the left to see its documents.",
+  "knowledge.docs.empty":
+    "No documents yet. Upload or add text from the Add tab.",
+  "knowledge.docs.loading": "Loading documents…",
+  "knowledge.docs.refresh": "Refresh",
+  "knowledge.docs.count": "{n} document(s)",
+  "knowledge.docs.col.name": "Name",
+  "knowledge.docs.col.type": "Type",
+  "knowledge.docs.col.created": "Created",
+  "knowledge.docs.col.actions": "Actions",
+  "knowledge.docs.view": "View",
+  "knowledge.docs.viewAria": "View {name}",
+  "knowledge.docs.download": "Download",
+  "knowledge.docs.downloadAria": "Download {name}",
+  "knowledge.docs.delete": "Delete",
+  "knowledge.docs.deleteAria": "Delete {name}",
+  "knowledge.docs.deleteConfirmTitle": "Delete \"{name}\"?",
+  "knowledge.docs.deleteConfirmDesc":
+    "This removes the raw file from the dataset. Graph nodes already generated from it remain. Irreversible.",
+  "knowledge.docs.deletedToast": "Document deleted",
+  "knowledge.docs.previewTitle": "{name}",
+  "knowledge.docs.previewLoading": "Loading content…",
+  "knowledge.docs.previewBinary":
+    "This file isn't plain text. Click Download to save it locally.",
+  "knowledge.docs.previewError": "Failed to load content: {msg}",
 
   // ── Context Studio ──────────────────────────────────────────────────
   "context.title": "Context Studio",

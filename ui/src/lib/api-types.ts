@@ -278,11 +278,93 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 添加文档到知识库
-         * @description 添加文档到知识库
+         * 添加文本到知识库
+         * @description 添加纯文本到知识库（JSON body）
          */
         post: operations["add_knowledge_api_v1_knowledge_add_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/add-files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上传文件到知识库
+         * @description 通过 multipart/form-data 上传一个或多个文件到指定数据集。
+         */
+        post: operations["add_files_api_v1_knowledge_add_files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/datasets/{dataset_id}/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 列出数据集文档
+         * @description 列出指定数据集下所有已上传的原始文档（未分片，Cognee Data 表）
+         */
+        get: operations["list_dataset_data_api_v1_knowledge_datasets__dataset_id__data_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/datasets/{dataset_id}/data/{data_id}/raw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 下载/查看原始文件
+         * @description 代理 Cognee 的原文下载，返回原始字节 + content-type。
+         *
+         *     浏览器可直接打开（PDF / 图片），或 fetch 拿文本。
+         */
+        get: operations["get_raw_data_api_v1_knowledge_datasets__dataset_id__data__data_id__raw_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/datasets/{dataset_id}/data/{data_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 从数据集删除单个文档
+         * @description 从数据集删除一条原始文档（不影响已生成的图谱节点）
+         */
+        delete: operations["delete_dataset_data_api_v1_knowledge_datasets__dataset_id__data__data_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -772,6 +854,19 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** Body_add_files_api_v1_knowledge_add_files_post */
+        Body_add_files_api_v1_knowledge_add_files_post: {
+            /**
+             * Dataset
+             * @description 数据集名称
+             */
+            dataset: string;
+            /**
+             * Files
+             * @description 一个或多个文件
+             */
+            files: string[];
+        };
         /**
          * CognifyStatusResponse
          * @description Cognify 任务状态响应（透传 Cognee 原始响应）
@@ -1159,6 +1254,69 @@ export interface components {
              * @enum {string}
              */
             memory_scope: "short" | "long" | "both";
+        };
+        /**
+         * DatasetDataItem
+         * @description 数据集内一条原始文档条目（Cognee Data 表）
+         */
+        DatasetDataItem: {
+            /**
+             * Id
+             * @description data_id (UUID)
+             */
+            id: string;
+            /**
+             * Name
+             * @description 文档名称/原文件名
+             * @default
+             */
+            name: string;
+            /**
+             * Mime Type
+             * @description MIME 类型，如 text/plain / application/pdf
+             */
+            mime_type?: string | null;
+            /**
+             * Extension
+             * @description 文件后缀，如 txt / pdf
+             */
+            extension?: string | null;
+            /**
+             * Raw Data Location
+             * @description 后端原文存储路径（调试用，前端不展示）
+             */
+            raw_data_location?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DatasetDataListResponse
+         * @description 数据集文档列表响应
+         */
+        DatasetDataListResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Data */
+            data?: components["schemas"]["DatasetDataItem"][];
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
         };
         /**
          * DatasetDump
@@ -2603,6 +2761,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KnowledgeAddResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    add_files_api_v1_knowledge_add_files_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_files_api_v1_knowledge_add_files_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeAddResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_dataset_data_api_v1_knowledge_datasets__dataset_id__data_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetDataListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_raw_data_api_v1_knowledge_datasets__dataset_id__data__data_id__raw_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+                data_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 原始文件字节流 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_dataset_data_api_v1_knowledge_datasets__dataset_id__data__data_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+                data_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDeleteResponse"];
                 };
             };
             /** @description Validation Error */

@@ -42,6 +42,8 @@ export type KnowledgeSearchResult = S["KnowledgeSearchResult"];
 export type KnowledgeSearchResponse = S["KnowledgeSearchResponse"];
 export type CognifyStatusResponse = S["CognifyStatusResponse"];
 export type DatasetGraphResponse = S["DatasetGraphResponse"];
+export type DatasetDataItem = S["DatasetDataItem"];
+export type DatasetDataListResponse = S["DatasetDataListResponse"];
 
 export type ContextRequest = S["ContextRequest"];
 export type ContextResponse = S["ContextResponse"];
@@ -181,6 +183,42 @@ export const knowledgeApi = {
       method: "POST",
       body: JSON.stringify({ data, dataset }),
     }),
+  addFiles: async (dataset: string, files: File[]) => {
+    // multipart/form-data；不能走 apiFetch（它强制 JSON）
+    const form = new FormData();
+    form.append("dataset", dataset);
+    for (const f of files) form.append("files", f, f.name);
+    const apiKey = getApiKey();
+    const res = await fetch(`${BASE_URL}${API_PREFIX}/knowledge/add-files`, {
+      method: "POST",
+      headers: apiKey ? { "X-Cozy-API-Key": apiKey } : {},
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = data as ApiError;
+      throw new Error(err.detail ?? err.error ?? `HTTP ${res.status}`);
+    }
+    return data as S["KnowledgeAddResponse"];
+  },
+  listData: (datasetId: string) =>
+    apiFetch<DatasetDataListResponse>(`/knowledge/datasets/${datasetId}/data`),
+  rawDataUrl: (datasetId: string, dataId: string) =>
+    `${BASE_URL}${API_PREFIX}/knowledge/datasets/${datasetId}/data/${dataId}/raw`,
+  fetchRawText: async (datasetId: string, dataId: string): Promise<string> => {
+    const apiKey = getApiKey();
+    const res = await fetch(
+      `${BASE_URL}${API_PREFIX}/knowledge/datasets/${datasetId}/data/${dataId}/raw`,
+      { headers: apiKey ? { "X-Cozy-API-Key": apiKey } : {} }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  },
+  deleteData: (datasetId: string, dataId: string) =>
+    apiFetch<{ success: boolean; message: string }>(
+      `/knowledge/datasets/${datasetId}/data/${dataId}`,
+      { method: "DELETE" }
+    ),
   cognify: (datasets?: string[], runInBackground = true) =>
     apiFetch<S["KnowledgeCognifyResponse"]>("/knowledge/cognify", {
       method: "POST",
