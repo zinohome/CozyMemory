@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, KeyRound, Trash2, Plus, Search, Copy, Check } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 // ── Copy-to-clipboard mini hook ───────────────────────────────────────────
 
@@ -36,6 +37,7 @@ function DeleteCell({
   onConfirm: () => void;
   isDeleting: boolean;
 }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
 
   if (isDeleting) {
@@ -51,7 +53,7 @@ function DeleteCell({
           className="h-6 px-2 text-xs"
           onClick={() => { setConfirming(false); onConfirm(); }}
         >
-          Yes
+          {t("common.yes")}
         </Button>
         <Button
           size="sm"
@@ -59,7 +61,7 @@ function DeleteCell({
           className="h-6 px-2 text-xs"
           onClick={() => setConfirming(false)}
         >
-          No
+          {t("common.no")}
         </Button>
       </span>
     );
@@ -70,8 +72,8 @@ function DeleteCell({
       variant="ghost"
       size="icon"
       className="h-7 w-7 opacity-40 hover:opacity-100"
-      title="Delete mapping"
-      aria-label={`Delete user mapping ${userId}`}
+      title={t("common.delete")}
+      aria-label={t("users.delete.aria", { id: userId })}
       onClick={() => setConfirming(true)}
     >
       <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -81,17 +83,18 @@ function DeleteCell({
 
 // ── UUID cell (fetched lazily per row) ────────────────────────────────────
 
-function UuidCell({ userId, uuid, loading, error }: {
+function UuidCell({ uuid, loading, error }: {
   userId: string;
   uuid?: string | null;
   loading: boolean;
   error: boolean;
 }) {
+  const t = useT();
   const { copy, copied } = useCopy();
 
   if (loading) return <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />;
   if (error) return <span className="text-xs text-muted-foreground">—</span>;
-  if (!uuid) return <span className="text-xs text-muted-foreground italic">no mapping</span>;
+  if (!uuid) return <span className="text-xs text-muted-foreground italic">{t("users.table.noMapping")}</span>;
 
   return (
     <span className="flex items-center gap-1.5 font-mono text-xs">
@@ -100,7 +103,8 @@ function UuidCell({ userId, uuid, loading, error }: {
       <button
         onClick={() => copy(uuid)}
         className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-        title="Copy UUID"
+        title={t("users.copy.tooltip")}
+        aria-label={t("users.copy.tooltip")}
       >
         {copied === uuid ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
       </button>
@@ -111,6 +115,7 @@ function UuidCell({ userId, uuid, loading, error }: {
 // ── Create mapping panel ──────────────────────────────────────────────────
 
 function CreateMappingPanel({ onCreated }: { onCreated: () => void }) {
+  const t = useT();
   const [newId, setNewId] = useState("");
 
   const mutation = useMutation({
@@ -126,20 +131,19 @@ function CreateMappingPanel({ onCreated }: { onCreated: () => void }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Create UUID Mapping
+          {t("users.create.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
-          Manually assign a UUID v4 to a new user_id.
-          Profile endpoints auto-create mappings on first call — use this for pre-warming or testing.
+          {t("users.create.desc")}
         </p>
         <div className="flex gap-2">
           <div className="flex-1 space-y-1">
-            <Label htmlFor="new-uid">User ID</Label>
+            <Label htmlFor="new-uid">{t("common.userId")}</Label>
             <Input
               id="new-uid"
-              placeholder="e.g. alice"
+              placeholder={t("users.create.placeholder")}
               value={newId}
               onChange={(e) => setNewId(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && newId && mutation.mutate()}
@@ -147,7 +151,7 @@ function CreateMappingPanel({ onCreated }: { onCreated: () => void }) {
           </div>
           <div className="flex items-end">
             <Button onClick={() => mutation.mutate()} disabled={!newId || mutation.isPending}>
-              {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
+              {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("users.create.btn")}
             </Button>
           </div>
         </div>
@@ -156,7 +160,7 @@ function CreateMappingPanel({ onCreated }: { onCreated: () => void }) {
             <p className="font-medium">{mutation.data.user_id}</p>
             <p className="font-mono text-muted-foreground">{mutation.data.uuid}</p>
             <Badge variant="secondary" className="mt-1">
-              {mutation.data.created ? "new" : "existing"}
+              {mutation.data.created ? t("users.create.result.new") : t("users.create.result.existing")}
             </Badge>
           </div>
         )}
@@ -171,6 +175,7 @@ function CreateMappingPanel({ onCreated }: { onCreated: () => void }) {
 // ── Main page ─────────────────────────────────────────────────────────────
 
 export default function UsersPage() {
+  const t = useT();
   const qc = useQueryClient();
   const [filter, setFilter] = useState("");
 
@@ -214,9 +219,9 @@ export default function UsersPage() {
   return (
     <div className="space-y-5 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold">Users</h1>
+        <h1 className="text-2xl font-bold">{t("users.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Manage Redis user_id ↔ UUID v4 mappings used by the Memobase profile engine.
+          {t("users.subtitle")}
         </p>
       </div>
 
@@ -228,7 +233,7 @@ export default function UsersPage() {
         ) : (
           <>
             <span className="font-semibold">{usersQuery.data?.total ?? 0}</span>
-            <span className="text-muted-foreground">users with active UUID mappings</span>
+            <span className="text-muted-foreground">{t("users.stats.total")}</span>
           </>
         )}
       </div>
@@ -240,7 +245,7 @@ export default function UsersPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Filter by user ID…"
+              placeholder={t("users.filter.placeholder")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="pl-8"
@@ -249,7 +254,7 @@ export default function UsersPage() {
 
           {filter && (
             <p className="text-xs text-muted-foreground">
-              {filtered.length} of {allIds.length} users match &ldquo;{filter}&rdquo;
+              {t("users.filter.match", { n: filtered.length, total: allIds.length, q: filter })}
             </p>
           )}
 
@@ -258,13 +263,13 @@ export default function UsersPage() {
               <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm z-10">
                 <tr>
                   <th className="text-left px-3 py-2.5 font-medium text-xs text-foreground">
-                    User ID
+                    {t("users.table.userId")}
                   </th>
                   <th className="text-left px-3 py-2.5 font-medium text-xs text-foreground">
-                    UUID v4
+                    {t("users.table.uuid")}
                   </th>
                   <th className="px-3 py-2.5 w-10">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t("users.table.actions")}</span>
                   </th>
                 </tr>
               </thead>
@@ -296,7 +301,7 @@ export default function UsersPage() {
                 {filtered.length === 0 && !usersQuery.isLoading && (
                   <tr>
                     <td colSpan={3} className="px-3 py-8 text-center text-xs text-muted-foreground">
-                      {filter ? "No users match the filter." : "No users yet."}
+                      {filter ? t("users.filter.empty") : t("users.empty")}
                     </td>
                   </tr>
                 )}
@@ -329,18 +334,14 @@ export default function UsersPage() {
           <Separator />
 
           <div className="rounded-md border p-3 space-y-2 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground text-sm">How mappings work</p>
-            <p>
-              Memobase requires UUID v4 user IDs. CozyMemory maintains a Redis mapping
-              so you can use any string as a user ID.
-            </p>
+            <p className="font-medium text-foreground text-sm">{t("users.howWorks.title")}</p>
+            <p>{t("users.howWorks.body")}</p>
             <ul className="space-y-1 list-disc list-inside">
-              <li><code className="text-xs">cm:uid:&#123;user_id&#125;</code> → UUID (forward)</li>
-              <li><code className="text-xs">cm:uuid:&#123;uuid&#125;</code> → user_id (reverse)</li>
+              <li><code className="text-xs">cm:uid:&#123;user_id&#125;</code> → UUID ({t("users.howWorks.forward")})</li>
+              <li><code className="text-xs">cm:uuid:&#123;uuid&#125;</code> → user_id ({t("users.howWorks.reverse")})</li>
             </ul>
             <p className="pt-1 text-amber-700 dark:text-amber-300">
-              Deleting a mapping orphans the Memobase profile data — the UUID still exists
-              in Memobase but becomes unreachable via CozyMemory.
+              {t("users.delete.warn")}
             </p>
           </div>
         </div>

@@ -152,6 +152,15 @@ export const en = {
   "users.info.requirement":
     "Memobase requires UUID v4 user IDs. CozyMemory maintains a Redis mapping so you can use any string identifier.",
   "users.copy.tooltip": "Copy UUID",
+  "users.stats.total": "users with active UUID mappings",
+  "users.filter.match": "{n} of {total} users match \"{q}\"",
+  "users.filter.empty": "No users match the filter.",
+  "users.empty": "No users yet.",
+  "users.howWorks.title": "How mappings work",
+  "users.howWorks.body":
+    "Memobase requires UUID v4 user IDs. CozyMemory maintains a Redis mapping so you can use any string as a user ID.",
+  "users.howWorks.forward": "forward",
+  "users.howWorks.reverse": "reverse",
 
   // ── Knowledge Base ──────────────────────────────────────────────────
   "knowledge.title": "Knowledge Base",

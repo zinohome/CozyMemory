@@ -20,6 +20,7 @@ const MemoryRow = memo(function MemoryRow({
   mem: ConversationMemory;
   onDelete: (id: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border p-3 text-sm">
       <div className="flex-1 space-y-1">
@@ -33,8 +34,8 @@ const MemoryRow = memo(function MemoryRow({
         variant="ghost"
         size="icon"
         className="shrink-0 h-7 w-7"
-        aria-label="Delete memory"
-        title="Delete"
+        aria-label={t("memory.delete.aria")}
+        title={t("common.delete")}
         onClick={() => onDelete(mem.id)}
       >
         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -82,7 +83,7 @@ export default function MemoryLabPage() {
       if (ctx?.previous) qc.setQueryData(["memories", userId], ctx.previous);
       toast.error((e as Error).message);
     },
-    onSuccess: () => toast.success("Memory deleted"),
+    onSuccess: () => toast.success(t("memory.delete.success")),
     onSettled: () => qc.invalidateQueries({ queryKey: ["memories", userId] }),
   });
 
@@ -102,8 +103,8 @@ export default function MemoryLabPage() {
   return (
     <div className="space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold">Memory Lab</h1>
-        <p className="text-muted-foreground text-sm mt-1">Browse and manage Mem0 conversation memories.</p>
+        <h1 className="text-2xl font-bold">{t("memory.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("memory.subtitle")}</p>
       </div>
 
       <Card>
@@ -111,12 +112,12 @@ export default function MemoryLabPage() {
           <UserSelector
             onConfirm={handleLoad}
             loading={listQuery.isFetching}
-            buttonLabel="Load"
+            buttonLabel={t("common.load")}
           />
 
           <div className="flex gap-2">
             <Input
-              placeholder="Semantic search…"
+              placeholder={t("memory.search.placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && userId && searchQuery && searchMutation.mutate()}
@@ -126,7 +127,7 @@ export default function MemoryLabPage() {
               variant="outline"
               onClick={() => searchMutation.mutate()}
               disabled={!searchQuery || !userId || searchMutation.isPending}
-              aria-label="Search memories"
+              aria-label={t("memory.search.btnAria")}
             >
               {searchMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -143,14 +144,14 @@ export default function MemoryLabPage() {
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {searchMutation.data ? (
-              <>Showing {displayList.length} search results for &ldquo;{searchQuery}&rdquo;</>
+              t("memory.count.search", { n: displayList.length, q: searchQuery })
             ) : (
-              <>{listQuery.data.total} memories for <strong>{userId}</strong></>
+              <>{t("memory.count.total", { n: listQuery.data.total ?? 0 })} <strong>{userId}</strong></>
             )}
           </span>
           {searchMutation.data && (
             <Button variant="ghost" size="sm" onClick={() => searchMutation.reset()}>
-              Clear search
+              {t("memory.clearSearch")}
             </Button>
           )}
         </div>
@@ -162,7 +163,7 @@ export default function MemoryLabPage() {
             <MemoryRow key={mem.id} mem={mem} onDelete={handleDelete} />
           ))}
           {listQuery.data && displayList.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No memories found.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t("memory.empty")}</p>
           )}
           {!userId && (
             <EmptyState

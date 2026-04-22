@@ -151,6 +151,15 @@ export const zh: Record<TKey, string> = {
   "users.info.requirement":
     "Memobase 强制要求 user_id 是 UUID v4。CozyMemory 在 Redis 里维护一层映射，让你可以用任意字符串。",
   "users.copy.tooltip": "复制 UUID",
+  "users.stats.total": "个用户有活动 UUID 映射",
+  "users.filter.match": "{n} / {total} 个用户匹配 \"{q}\"",
+  "users.filter.empty": "无匹配用户。",
+  "users.empty": "暂无用户。",
+  "users.howWorks.title": "映射工作原理",
+  "users.howWorks.body":
+    "Memobase 强制要求 user_id 为 UUID v4。CozyMemory 在 Redis 里维护一层映射，让你可以用任意字符串作为 user_id。",
+  "users.howWorks.forward": "正向",
+  "users.howWorks.reverse": "反向",
 
   // ── Knowledge Base ──────────────────────────────────────────────────
   "knowledge.title": "知识库",

@@ -22,6 +22,7 @@ const ProfileItemRow = memo(function ProfileItemRow({
   item: ProfileItem;
   onDelete: (id: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border p-3 text-sm">
       <div className="flex-1 space-y-1">
@@ -35,8 +36,8 @@ const ProfileItemRow = memo(function ProfileItemRow({
         variant="ghost"
         size="icon"
         className="shrink-0 h-7 w-7"
-        aria-label="Delete topic"
-        title="Delete"
+        aria-label={t("profiles.delete.aria")}
+        title={t("common.delete")}
         onClick={() => onDelete(item.id)}
       >
         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -86,7 +87,7 @@ export default function ProfilesPage() {
       if (ctx?.previous) qc.setQueryData(["profile", userId], ctx.previous);
       toast.error((e as Error).message);
     },
-    onSuccess: () => toast.success("Topic deleted"),
+    onSuccess: () => toast.success(t("profiles.delete.success")),
     onSettled: () => qc.invalidateQueries({ queryKey: ["profile", userId] }),
   });
 
@@ -95,7 +96,7 @@ export default function ProfilesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["profile", userId] });
       setNewItem({ topic: "", sub_topic: "", content: "" });
-      toast.success("Topic added");
+      toast.success(t("profiles.add.success"));
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -112,8 +113,8 @@ export default function ProfilesPage() {
   return (
     <div className="space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold">User Profiles</h1>
-        <p className="text-muted-foreground text-sm mt-1">Manage Memobase structured user profiles.</p>
+        <h1 className="text-2xl font-bold">{t("profiles.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("profiles.subtitle")}</p>
       </div>
 
       <Card>
@@ -121,7 +122,7 @@ export default function ProfilesPage() {
           <UserSelector
             onConfirm={handleLoad}
             loading={profileQuery.isFetching}
-            buttonLabel="Load"
+            buttonLabel={t("common.load")}
           />
         </CardContent>
       </Card>
@@ -130,7 +131,7 @@ export default function ProfilesPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <User className="h-4 w-4" /> Context Prompt
+              <User className="h-4 w-4" /> {t("profiles.contextPrompt")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -144,8 +145,10 @@ export default function ProfilesPage() {
       {profileQuery.data?.data && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{(profileQuery.data.data.topics ?? []).length} profile items</span>
-            <span className="text-xs text-muted-foreground">for {userId}</span>
+            <span className="text-sm font-medium">
+              {t("profiles.items.count", { n: (profileQuery.data.data.topics ?? []).length })}
+            </span>
+            <span className="text-xs text-muted-foreground">{t("profiles.items.for")} {userId}</span>
           </div>
           <ScrollArea className="h-64">
             <div className="space-y-2 pr-2">
@@ -157,7 +160,7 @@ export default function ProfilesPage() {
                 />
               ))}
               {(profileQuery.data.data.topics ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No profile items.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t("profiles.empty")}</p>
               )}
             </div>
           </ScrollArea>
@@ -165,22 +168,22 @@ export default function ProfilesPage() {
           <Separator />
 
           <div className="space-y-2">
-            <p className="text-sm font-medium">Add item</p>
+            <p className="text-sm font-medium">{t("profiles.add.title")}</p>
             <div className="grid grid-cols-2 gap-2">
               <Input
-                placeholder="topic (e.g. interest)"
+                placeholder={t("profiles.add.topic")}
                 value={newItem.topic}
                 onChange={(e) => setNewItem((p) => ({ ...p, topic: e.target.value }))}
               />
               <Input
-                placeholder="sub_topic (e.g. sport)"
+                placeholder={t("profiles.add.subTopic")}
                 value={newItem.sub_topic}
                 onChange={(e) => setNewItem((p) => ({ ...p, sub_topic: e.target.value }))}
               />
             </div>
             <div className="flex gap-2">
               <Input
-                placeholder="content"
+                placeholder={t("profiles.add.content")}
                 value={newItem.content}
                 onChange={(e) => setNewItem((p) => ({ ...p, content: e.target.value }))}
               />
@@ -188,7 +191,7 @@ export default function ProfilesPage() {
                 onClick={() => addMutation.mutate()}
                 disabled={!newItem.topic || !newItem.content || addMutation.isPending || !userId}
               >
-                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("profiles.add.btn")}
               </Button>
             </div>
           </div>
