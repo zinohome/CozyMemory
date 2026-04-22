@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { HotkeyBinding } from "@/lib/use-hotkeys";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   open: boolean;
@@ -27,14 +28,14 @@ function renderKey(keys: string) {
 }
 
 export function ShortcutHelpDialog({ open, onOpenChange, bindings }: Props) {
+  const t = useT();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogTitle>{t("hotkeys.title")}</DialogTitle>
           <DialogDescription>
-            Press <kbd className="px-1 border rounded text-[10px] bg-muted">?</kbd> anytime (outside
-            text fields) to reopen this list.
+            {t("hotkeys.desc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5 text-sm">

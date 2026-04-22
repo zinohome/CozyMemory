@@ -31,6 +31,7 @@ import {
   CheckCircle,
   History,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -78,18 +79,23 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return resp.json() as Promise<T>;
 }
 
-function fmtDate(s: string | null): string {
-  if (!s) return "never";
-  const d = new Date(s);
-  const now = Date.now();
-  const diff = (now - d.getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return d.toLocaleDateString();
+function useFmtDate() {
+  const t = useT();
+  return (s: string | null): string => {
+    if (!s) return t("settings.server.time.never");
+    const d = new Date(s);
+    const now = Date.now();
+    const diff = (now - d.getTime()) / 1000;
+    if (diff < 60) return t("settings.server.time.justNow");
+    if (diff < 3600) return t("settings.server.time.minAgo", { n: Math.floor(diff / 60) });
+    if (diff < 86400) return t("settings.server.time.hourAgo", { n: Math.floor(diff / 3600) });
+    return d.toLocaleDateString();
+  };
 }
 
 export function ServerApiKeysPanel() {
+  const t = useT();
+  const fmtDate = useFmtDate();
   const { apiKey } = useAppStore();
 
   const [keys, setKeys] = useState<ApiKeyRecord[] | null>(null);
@@ -140,7 +146,7 @@ export function ServerApiKeysPanel() {
       const err = e as Error & { status?: number };
       if (err.status === 401) {
         setIsBootstrap(false);
-        setLoadErr("Bootstrap key required — current client key is either missing or is a dynamic key. Server auth management only accepts keys defined in COZY_API_KEYS env var.");
+        setLoadErr(t("settings.server.notBootstrap"));
       } else {
         setLoadErr(err.message);
       }
@@ -148,7 +154,7 @@ export function ServerApiKeysPanel() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     refresh();
@@ -165,7 +171,7 @@ export function ServerApiKeysPanel() {
       setRevealedKey({ id: r.record.id, key: r.key, action: "created" });
       setNewName("");
       await refresh();
-      toast.success(`Key "${r.record.name}" created`);
+      toast.success(t("settings.server.toast.created", { name: r.record.name }));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -182,7 +188,7 @@ export function ServerApiKeysPanel() {
       const r = await adminFetch<ApiKeyCreateResponse>(`/api-keys/${id}/rotate`, { method: "POST" });
       setRevealedKey({ id, key: r.key, action: "rotated" });
       await refresh();
-      toast.success("Key rotated");
+      toast.success(t("settings.server.toast.rotated"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -195,7 +201,7 @@ export function ServerApiKeysPanel() {
         body: JSON.stringify({ disabled: !rec.disabled }),
       });
       await refresh();
-      toast.success(rec.disabled ? "Key enabled" : "Key disabled");
+      toast.success(rec.disabled ? t("settings.server.toast.enabled") : t("settings.server.toast.disabled"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -213,7 +219,7 @@ export function ServerApiKeysPanel() {
       });
       setEditingId(null);
       await refresh();
-      toast.success("Key renamed");
+      toast.success(t("settings.server.toast.renamed"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -227,7 +233,7 @@ export function ServerApiKeysPanel() {
     try {
       await adminFetch(`/api-keys/${id}`, { method: "DELETE" });
       await refresh();
-      toast.success("Key deleted");
+      toast.success(t("settings.server.toast.deleted"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -242,18 +248,17 @@ export function ServerApiKeysPanel() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <KeyRound className="h-4 w-4" /> Server API Keys
+            <KeyRound className="h-4 w-4" /> {t("settings.server.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Dynamic keys stored in Redis. Requires a <strong>bootstrap key</strong> (one of{" "}
-            <code>COZY_API_KEYS</code> env values) in the client field above.
+            {t("settings.server.desc2")}
           </p>
 
           {loading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading keys…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("settings.server.loading")}
             </div>
           )}
 
@@ -265,7 +270,9 @@ export function ServerApiKeysPanel() {
             <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <CheckCircle className="h-4 w-4 text-amber-600" />
-                Key {revealedKey.action} — save it now, it won&apos;t be shown again
+                {revealedKey.action === "created"
+                  ? t("settings.server.reveal.created")
+                  : t("settings.server.reveal.rotated")}
               </div>
               <div className="flex gap-2">
                 <Input
@@ -278,13 +285,13 @@ export function ServerApiKeysPanel() {
                   variant="outline"
                   size="icon"
                   onClick={() => copyToClipboard(revealedKey.key)}
-                  title="Copy"
-                  aria-label="Copy key to clipboard"
+                  title={t("settings.server.reveal.copy")}
+                  aria-label={t("settings.server.reveal.copyAria")}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setRevealedKey(null)}>
-                  Dismiss
+                  {t("settings.server.reveal.dismiss")}
                 </Button>
               </div>
             </div>
@@ -296,10 +303,10 @@ export function ServerApiKeysPanel() {
               {/* Create row */}
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="new-name" className="text-xs">New key name</Label>
+                  <Label htmlFor="new-name" className="text-xs">{t("settings.server.newName")}</Label>
                   <Input
                     id="new-name"
-                    placeholder="e.g. production-backend"
+                    placeholder={t("settings.server.newName.placeholder")}
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleCreate()}
@@ -307,14 +314,14 @@ export function ServerApiKeysPanel() {
                 </div>
                 <Button onClick={handleCreate} disabled={!newName.trim() || creating}>
                   {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  <span className="ml-1">Create</span>
+                  <span className="ml-1">{t("settings.server.createBtn")}</span>
                 </Button>
               </div>
 
               {/* List */}
               {keys && keys.length === 0 && (
                 <p className="text-sm text-muted-foreground py-3">
-                  No dynamic keys yet — create one above.
+                  {t("settings.server.emptyList")}
                 </p>
               )}
               {keys && keys.length > 0 && (
@@ -349,10 +356,10 @@ export function ServerApiKeysPanel() {
                           )}
                           <div className="flex gap-2 items-center text-xs text-muted-foreground">
                             <code className="font-mono">{k.prefix}…</code>
-                            <span>· used {fmtDate(k.last_used_at)}</span>
+                            <span>{t("settings.server.usedAgo", { when: fmtDate(k.last_used_at) })}</span>
                             {k.disabled && (
                               <Badge variant="destructive" className="text-[10px] h-4">
-                                disabled
+                                {t("settings.server.disabledBadge")}
                               </Badge>
                             )}
                           </div>
@@ -360,8 +367,12 @@ export function ServerApiKeysPanel() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          title={k.disabled ? "Enable" : "Disable"}
-                          aria-label={k.disabled ? `Enable ${k.name}` : `Disable ${k.name}`}
+                          title={k.disabled ? t("settings.server.action.enable") : t("settings.server.action.disable")}
+                          aria-label={
+                            k.disabled
+                              ? t("settings.server.action.enableAria", { name: k.name })
+                              : t("settings.server.action.disableAria", { name: k.name })
+                          }
                           onClick={() => handleToggleDisabled(k)}
                         >
                           {k.disabled ? (
@@ -373,8 +384,12 @@ export function ServerApiKeysPanel() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          title={logsId === k.id ? "Hide logs" : "View logs"}
-                          aria-label={logsId === k.id ? `Hide logs for ${k.name}` : `View logs for ${k.name}`}
+                          title={logsId === k.id ? t("settings.server.action.hideLogs") : t("settings.server.action.viewLogs")}
+                          aria-label={
+                            logsId === k.id
+                              ? t("settings.server.action.hideLogsAria", { name: k.name })
+                              : t("settings.server.action.viewLogsAria", { name: k.name })
+                          }
                           onClick={() => toggleLogs(k.id)}
                         >
                           <History className="h-3.5 w-3.5" />
@@ -382,8 +397,8 @@ export function ServerApiKeysPanel() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          title="Rotate"
-                          aria-label={`Rotate ${k.name}`}
+                          title={t("settings.server.action.rotateTitle")}
+                          aria-label={t("settings.server.action.rotateAria", { name: k.name })}
                           onClick={() => handleRotate(k.id)}
                         >
                           <RotateCw className="h-3.5 w-3.5" />
@@ -391,8 +406,8 @@ export function ServerApiKeysPanel() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          title="Delete"
-                          aria-label={`Delete ${k.name}`}
+                          title={t("settings.server.action.deleteTitle")}
+                          aria-label={t("settings.server.action.deleteAria", { name: k.name })}
                           onClick={() => handleDelete(k.id, k.name)}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -402,10 +417,10 @@ export function ServerApiKeysPanel() {
                         <div className="rounded-md border border-t-0 rounded-t-none bg-muted/30 px-3 py-2 text-xs">
                           {logsLoading ? (
                             <div className="flex items-center gap-2 text-muted-foreground">
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("settings.server.logs.loading")}
                             </div>
                           ) : logs.length === 0 ? (
-                            <p className="text-muted-foreground">No recent usage.</p>
+                            <p className="text-muted-foreground">{t("settings.server.logs.empty")}</p>
                           ) : (
                             <div className="space-y-0.5 max-h-60 overflow-auto">
                               {logs.map((e, i) => (
@@ -451,17 +466,21 @@ export function ServerApiKeysPanel() {
         onOpenChange={(o) => !o && setConfirmState(null)}
         title={
           confirmState?.kind === "rotate"
-            ? "Rotate this key?"
+            ? t("settings.server.confirm.rotateTitle")
             : confirmState?.kind === "delete"
-              ? `Delete key "${confirmState.name}"?`
+              ? t("settings.server.confirm.deleteTitle", { name: confirmState.name })
               : ""
         }
         description={
           confirmState?.kind === "rotate"
-            ? "The old key will stop working immediately."
-            : "This is immediate and irreversible."
+            ? t("settings.server.confirm.rotateDesc")
+            : t("settings.server.confirm.deleteDesc")
         }
-        confirmLabel={confirmState?.kind === "rotate" ? "Rotate" : "Delete"}
+        confirmLabel={
+          confirmState?.kind === "rotate"
+            ? t("settings.server.confirm.rotateBtn")
+            : t("settings.server.confirm.deleteBtn")
+        }
         destructive={confirmState?.kind === "delete"}
         onConfirm={() => {
           if (!confirmState) return;
