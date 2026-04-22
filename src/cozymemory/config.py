@@ -51,6 +51,23 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_USER_MAPPING_TTL: int = 0  # 0 = 永不过期；正整数 = 秒
 
+    # PostgreSQL 平台账号库（Organization / Developer / App / ApiKey 等）
+    # 同 postgres 实例和 memobase 共用，不同 database
+    # asyncpg 驱动 URL schema: postgresql+asyncpg://user:pass@host:port/db
+    #
+    # 端口逻辑：
+    #   容器内（docker compose）→ cozy_postgres:5432（服务名解析）
+    #   host 本地开发 / alembic → localhost:5433（避 5432 的老 PG 冲突）
+    # 默认给 host 本地开发用；容器通过 .env 的 DATABASE_URL 环境变量覆写为 cozy_postgres:5432
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://cozymemory_user:cozymemory_pass@localhost:5433/cozymemory"
+    )
+
+    # JWT（开发者 Dashboard 登录）
+    JWT_SECRET: str = "change-me-in-production"  # 部署时必须设置
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_TTL_SECONDS: int = 86400  # 24h
+
     # 日志
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"

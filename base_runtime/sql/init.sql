@@ -24,3 +24,15 @@ GRANT ALL PRIVILEGES ON DATABASE memobase TO memobase;
 
 \c memobase
 CREATE EXTENSION IF NOT EXISTS vector;
+
+-- ===========================
+-- CozyMemory 平台账号库
+-- ===========================
+CREATE USER cozymemory_user WITH PASSWORD 'cozymemory_pass';
+CREATE DATABASE cozymemory OWNER cozymemory_user;
+ALTER DATABASE cozymemory SET default_transaction_isolation TO 'read committed';
+ALTER DATABASE cozymemory SET timezone TO 'UTC';
+GRANT ALL PRIVILEGES ON DATABASE cozymemory TO cozymemory_user;
+
+\c cozymemory
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

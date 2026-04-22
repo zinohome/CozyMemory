@@ -17,6 +17,10 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required (see .env.example)}
       PGDATA: /var/lib/postgresql/data/pgdata
+    # 暴露到 host 5433（避开 5432 的另一个 cozyenginev2 老 PG 冲突），
+    # 供本地 alembic / 单元测试连接；容器间仍通过 cozy_postgres:5432
+    ports:
+      - "5433:5432"
     volumes:
       - /data/CozyMemory/postgres:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -313,6 +317,11 @@ services:
       # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
       REDIS_USER_MAPPING_TTL: "0"
+      # PostgreSQL 平台账号库（Organization / Developer / App / ApiKey）
+      # 容器内通过 service name 解析；host 端口 5433 供本机 alembic
+      DATABASE_URL: "postgresql+asyncpg://cozymemory_user:cozymemory_pass@postgres:5432/cozymemory"
+      # JWT（Dashboard 登录）— 生产必须改
+      JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
       COZY_API_KEYS: ${COZY_API_KEYS:-}
     depends_on:
