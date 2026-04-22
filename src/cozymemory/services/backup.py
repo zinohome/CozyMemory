@@ -10,7 +10,7 @@ MemoryBundle；导入时反向分发写回。
   - Memobase profile topic 精确恢复（add_profile 支持 id 无关，属性保真）。
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 
@@ -84,7 +84,7 @@ class BackupService:
                     datasets.append(dump)
 
         bundle = MemoryBundle(
-            exported_at=datetime.now(timezone.utc),
+            exported_at=datetime.now(UTC),
             user_id=user_id,
             conversations=conv_resp.data or [],
             profile_topics=topics,

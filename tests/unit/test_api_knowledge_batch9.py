@@ -3,7 +3,7 @@
 验证 batch 9 新增 4 个 endpoint 的路由、响应格式、错误处理、multipart 解析。
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -149,7 +149,7 @@ async def test_list_dataset_data_success(client, mock_service):
                     name="doc1",
                     mime_type="text/plain",
                     extension="txt",
-                    created_at=datetime(2026, 4, 22, tzinfo=timezone.utc),
+                    created_at=datetime(2026, 4, 22, tzinfo=UTC),
                 ),
                 DatasetDataItem(id="d2", name="doc2"),
             ],

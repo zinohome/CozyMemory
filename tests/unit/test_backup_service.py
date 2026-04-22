@@ -4,7 +4,7 @@
 失败单条不中断整体、dataset dump 从 graph 抽 DocumentChunk.text。
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -28,7 +28,6 @@ from cozymemory.models.profile import (
     UserProfile,
 )
 from cozymemory.services.backup import BackupService
-
 
 # ───────────────────────── 测试用 fixtures ─────────────────────────
 
@@ -192,7 +191,7 @@ def _make_bundle(
     user_id="u1",
 ) -> MemoryBundle:
     return MemoryBundle(
-        exported_at=datetime.now(timezone.utc),
+        exported_at=datetime.now(UTC),
         user_id=user_id,
         conversations=conversations or [],
         profile_topics=topics or [],

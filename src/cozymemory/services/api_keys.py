@@ -13,7 +13,7 @@ import hashlib
 import json
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as aioredis
 
@@ -55,7 +55,10 @@ class ApiKeyStore:
         raw = await self._r.hgetall(f"{_META_PREFIX}{key_id}")
         if not raw:
             return None
-        data = {k.decode() if isinstance(k, bytes) else k: (v.decode() if isinstance(v, bytes) else v) for k, v in raw.items()}
+        data = {
+            (k.decode() if isinstance(k, bytes) else k): (v.decode() if isinstance(v, bytes) else v)
+            for k, v in raw.items()
+        }
         try:
             return ApiKeyRecord(
                 id=key_id,
@@ -102,7 +105,7 @@ class ApiKeyStore:
             id=key_id,
             name=name,
             prefix=prefix,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             last_used_at=None,
             disabled=False,
         )
@@ -156,7 +159,7 @@ class ApiKeyStore:
         try:
             entry = json.dumps(
                 {
-                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "ts": datetime.now(UTC).isoformat(),
                     "method": method,
                     "path": path,
                     "status": status,
@@ -208,6 +211,6 @@ class ApiKeyStore:
         await self._r.hset(
             f"{_META_PREFIX}{key_id}",
             "last_used_at",
-            datetime.now(timezone.utc).isoformat(),
+            datetime.now(UTC).isoformat(),
         )
         return key_id

@@ -1,6 +1,6 @@
 """/api/v1/admin/api-keys 路由测试。"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -40,7 +40,7 @@ def _record(kid: str = "k1", name: str = "test") -> ApiKeyRecord:
         id=kid,
         name=name,
         prefix="cozy_abc12345",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         last_used_at=None,
         disabled=False,
     )
@@ -150,7 +150,7 @@ async def test_get_logs(client, mock_store):
     mock_store.get_logs = AsyncMock(
         return_value=[
             ApiKeyLogEntry(
-                ts=datetime.now(timezone.utc),
+                ts=datetime.now(UTC),
                 method="GET",
                 path="/users",
                 status=200,

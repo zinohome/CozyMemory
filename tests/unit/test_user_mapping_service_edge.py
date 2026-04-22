@@ -30,7 +30,7 @@ async def test_create_with_ttl_expires_key(redis_client):
     svc = UserMappingService(redis_client, ttl=60)
     uuid_str = await svc.get_or_create_uuid("alice")
     # 正向键 TTL 被设置
-    ttl = await redis_client.ttl(f"cm:uid:alice")
+    ttl = await redis_client.ttl("cm:uid:alice")
     assert ttl > 0 and ttl <= 60
     # 反向键也有 TTL
     # 注意：服务写反向键时用 setex，但 setex 用 ttl 参数
@@ -65,7 +65,6 @@ async def test_get_or_create_nx_fails_reads_winner(redis_client, monkeypatch):
 
     # 打补丁：让 get 返回 None（表示本次看不到现有值，进入慢路径）
     # 但 SET NX 返回 None（表示写失败，别人抢先），后续 get 又能读到赢家
-    original_get = redis_client.get
     original_set = redis_client.set
     call_state = {"gets": 0}
 

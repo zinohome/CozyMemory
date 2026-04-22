@@ -18,8 +18,8 @@ except ImportError:  # pragma: no cover
     HAVE_FAKEREDIS = False
 
 from cozymemory.services.api_keys import (
-    ApiKeyStore,
     _LOG_MAX_ENTRIES,
+    ApiKeyStore,
     _generate_key,
     _hash_key,
 )
