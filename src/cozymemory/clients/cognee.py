@@ -84,7 +84,7 @@ class CogneeClient(BaseClient):
             return False
 
     async def add(self, data: str, dataset: str) -> dict[str, Any]:
-        """添加数据到 Cognee"""
+        """添加文本到 Cognee（包装成 data.txt 上传）"""
         response = await self._request_with_auth(
             "POST",
             "/api/v1/add",
@@ -92,6 +92,61 @@ class CogneeClient(BaseClient):
             files=[("data", ("data.txt", data.encode("utf-8"), "text/plain"))],
         )
         return dict(response.json())
+
+    async def add_files(
+        self,
+        files: list[tuple[str, bytes, str]],
+        dataset: str,
+    ) -> dict[str, Any]:
+        """上传一个或多个文件到 Cognee 的 dataset。
+
+        files: 列表，每项 (filename, bytes, content_type)
+        """
+        multipart = [("data", (name, content, ct)) for (name, content, ct) in files]
+        response = await self._request_with_auth(
+            "POST",
+            "/api/v1/add",
+            data={"datasetName": dataset},
+            files=multipart,
+        )
+        return dict(response.json())
+
+    async def list_dataset_data(self, dataset_id: str) -> list[dict[str, Any]]:
+        """列出某 dataset 下所有已上传的原始文档（GET /datasets/{id}/data）"""
+        response = await self._request_with_auth(
+            "GET", f"/api/v1/datasets/{dataset_id}/data"
+        )
+        data = response.json()
+        return list(data) if isinstance(data, list) else []
+
+    async def get_raw_data(
+        self, dataset_id: str, data_id: str
+    ) -> tuple[bytes, str, str]:
+        """获取原始文件内容。返回 (bytes, content-type, filename)。"""
+        response = await self._request_with_auth(
+            "GET",
+            f"/api/v1/datasets/{dataset_id}/data/{data_id}/raw",
+            # httpx 默认已按 bytes 读取 response.content；此处不需要 stream=True
+        )
+        content_type = response.headers.get("content-type", "application/octet-stream")
+        # Cognee FileResponse 的 content-disposition 形如: attachment; filename="xxx.txt"
+        cd = response.headers.get("content-disposition", "")
+        filename = ""
+        if "filename=" in cd:
+            filename = cd.split("filename=", 1)[1].strip().strip('"')
+        return response.content, content_type, filename
+
+    async def delete_dataset_data(self, dataset_id: str, data_id: str) -> bool:
+        """删除 dataset 下某条文档（DELETE /datasets/{dataset_id}/data/{data_id}）"""
+        try:
+            await self._request_with_auth(
+                "DELETE", f"/api/v1/datasets/{dataset_id}/data/{data_id}"
+            )
+            return True
+        except EngineError as e:
+            if e.status_code == 404:
+                return True  # 幂等：不存在视为已删除
+            raise
 
     async def cognify(
         self, datasets: list[str] | None = None, run_in_background: bool = True

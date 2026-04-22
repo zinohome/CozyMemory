@@ -5,14 +5,15 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.responses import JSONResponse, Response
 
 from ...api.deps import get_knowledge_service
 from ...clients.base import EngineError
 from ...models.common import ErrorResponse
 from ...models.knowledge import (
     CognifyStatusResponse,
+    DatasetDataListResponse,
     DatasetGraphResponse,
     KnowledgeAddRequest,
     KnowledgeAddResponse,
@@ -107,15 +108,129 @@ async def list_datasets(
     "/add",
     response_model=KnowledgeAddResponse,
     responses={502: {"model": ErrorResponse}},
-    summary="添加文档到知识库",
+    summary="添加文本到知识库",
 )
 async def add_knowledge(
     request: KnowledgeAddRequest,
     service: KnowledgeService = Depends(get_knowledge_service),
 ) -> KnowledgeAddResponse | JSONResponse:
-    """添加文档到知识库"""
+    """添加纯文本到知识库（JSON body）"""
     try:
         return await service.add(data=request.data, dataset=request.dataset)
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.post(
+    "/add-files",
+    response_model=KnowledgeAddResponse,
+    responses={502: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
+    summary="上传文件到知识库",
+)
+async def add_files(
+    dataset: str = Form(..., description="数据集名称"),
+    files: list[UploadFile] = File(..., description="一个或多个文件"),
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> KnowledgeAddResponse | JSONResponse:
+    """通过 multipart/form-data 上传一个或多个文件到指定数据集。"""
+    if not files:
+        return JSONResponse(
+            status_code=400,
+            content=ErrorResponse(
+                success=False, error="ValidationError", detail="至少提供一个文件"
+            ).model_dump(),
+        )
+    try:
+        payload: list[tuple[str, bytes, str]] = []
+        for f in files:
+            content = await f.read()
+            if not content:
+                continue
+            payload.append(
+                (f.filename or "upload.bin", content, f.content_type or "application/octet-stream")
+            )
+        if not payload:
+            return JSONResponse(
+                status_code=400,
+                content=ErrorResponse(
+                    success=False, error="ValidationError", detail="所有文件都为空"
+                ).model_dump(),
+            )
+        return await service.add_files(files=payload, dataset=dataset)
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.get(
+    "/datasets/{dataset_id}/data",
+    response_model=DatasetDataListResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="列出数据集文档",
+)
+async def list_dataset_data(
+    dataset_id: str,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> DatasetDataListResponse | JSONResponse:
+    """列出指定数据集下所有已上传的原始文档（未分片，Cognee Data 表）"""
+    try:
+        return await service.list_dataset_data(dataset_id=dataset_id)
+    except EngineError as e:
+        return _engine_error_response(e)
+
+
+@router.get(
+    "/datasets/{dataset_id}/data/{data_id}/raw",
+    response_model=None,
+    responses={
+        200: {"content": {"application/octet-stream": {}}, "description": "原始文件字节流"},
+        404: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+    summary="下载/查看原始文件",
+)
+async def get_raw_data(
+    dataset_id: str,
+    data_id: str,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> Response | JSONResponse:
+    """代理 Cognee 的原文下载，返回原始字节 + content-type。
+
+    浏览器可直接打开（PDF / 图片），或 fetch 拿文本。
+    """
+    try:
+        content, content_type, filename = await service.get_raw_data(
+            dataset_id=dataset_id, data_id=data_id
+        )
+        headers: dict[str, str] = {}
+        if filename:
+            # 用 inline 让浏览器尝试内嵌显示；前端需要下载时自己改成 attachment
+            headers["content-disposition"] = f'inline; filename="{filename}"'
+        return Response(content=content, media_type=content_type, headers=headers)
+    except EngineError as e:
+        if e.status_code == 404:
+            return JSONResponse(
+                status_code=404,
+                content=ErrorResponse(
+                    success=False, error="NotFoundError", detail="文档不存在"
+                ).model_dump(),
+            )
+        return _engine_error_response(e)
+
+
+@router.delete(
+    "/datasets/{dataset_id}/data/{data_id}",
+    response_model=KnowledgeDeleteResponse,
+    responses={502: {"model": ErrorResponse}},
+    summary="从数据集删除单个文档",
+)
+async def delete_dataset_data(
+    dataset_id: str,
+    data_id: str,
+    service: KnowledgeService = Depends(get_knowledge_service),
+) -> KnowledgeDeleteResponse | JSONResponse:
+    """从数据集删除一条原始文档（不影响已生成的图谱节点）"""
+    try:
+        return await service.delete_dataset_data(dataset_id=dataset_id, data_id=data_id)
     except EngineError as e:
         return _engine_error_response(e)
 

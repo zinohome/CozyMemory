@@ -159,3 +159,27 @@ class DatasetGraphResponse(BaseModel):
     data: Any = Field(None, description="Cognee 图谱原始数据（nodes + edges）")
 
     model_config = {"extra": "allow"}
+
+
+class DatasetDataItem(BaseModel):
+    """数据集内一条原始文档条目（Cognee Data 表）"""
+
+    id: str = Field(..., description="data_id (UUID)")
+    name: str = Field("", description="文档名称/原文件名")
+    mime_type: str | None = Field(None, description="MIME 类型，如 text/plain / application/pdf")
+    extension: str | None = Field(None, description="文件后缀，如 txt / pdf")
+    raw_data_location: str | None = Field(None, description="后端原文存储路径（调试用，前端不展示）")
+    created_at: datetime | None = Field(None)
+    updated_at: datetime | None = Field(None)
+
+    model_config = {"extra": "allow"}
+
+
+class DatasetDataListResponse(BaseModel):
+    """数据集文档列表响应"""
+
+    success: bool = True
+    dataset_id: str
+    data: list[DatasetDataItem] = Field(default_factory=list)
+    total: int = 0
+    message: str = ""

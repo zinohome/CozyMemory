@@ -8,6 +8,8 @@ import structlog
 from ..clients.cognee import CogneeClient
 from ..models.knowledge import (
     CognifyStatusResponse,
+    DatasetDataItem,
+    DatasetDataListResponse,
     DatasetGraphResponse,
     KnowledgeAddResponse,
     KnowledgeCognifyResponse,
@@ -27,11 +29,58 @@ class KnowledgeService:
         self.client = client
 
     async def add(self, data: str, dataset: str) -> KnowledgeAddResponse:
-        """添加文档到知识库"""
+        """添加文本到知识库"""
         result = await self.client.add(data=data, dataset=dataset)
         return KnowledgeAddResponse(
             success=True, data_id=result.get("id"), dataset_name=dataset, message="数据已添加"
         )
+
+    async def add_files(
+        self, files: list[tuple[str, bytes, str]], dataset: str
+    ) -> KnowledgeAddResponse:
+        """上传文件到知识库"""
+        result = await self.client.add_files(files=files, dataset=dataset)
+        return KnowledgeAddResponse(
+            success=True,
+            data_id=result.get("id"),
+            dataset_name=dataset,
+            message=f"已上传 {len(files)} 个文件",
+        )
+
+    async def list_dataset_data(self, dataset_id: str) -> DatasetDataListResponse:
+        """列出 dataset 下的原始文档（Cognee Data 表）"""
+        raw_items = await self.client.list_dataset_data(dataset_id=dataset_id)
+        items = [
+            DatasetDataItem(
+                id=str(it.get("id", "")),
+                name=str(it.get("name") or ""),
+                mime_type=it.get("mime_type") or it.get("mimeType"),
+                extension=it.get("extension") or it.get("fileExtension"),
+                raw_data_location=it.get("raw_data_location") or it.get("rawDataLocation"),
+                created_at=it.get("createdAt") or it.get("created_at"),
+                updated_at=it.get("updatedAt") or it.get("updated_at"),
+            )
+            for it in raw_items
+        ]
+        return DatasetDataListResponse(
+            success=True, dataset_id=dataset_id, data=items, total=len(items)
+        )
+
+    async def get_raw_data(
+        self, dataset_id: str, data_id: str
+    ) -> tuple[bytes, str, str]:
+        """拉取原始文件内容 (bytes, content_type, filename)"""
+        return await self.client.get_raw_data(dataset_id=dataset_id, data_id=data_id)
+
+    async def delete_dataset_data(
+        self, dataset_id: str, data_id: str
+    ) -> KnowledgeDeleteResponse:
+        """从 dataset 删除某条文档"""
+        success = await self.client.delete_dataset_data(
+            dataset_id=dataset_id, data_id=data_id
+        )
+        msg = "文档已删除" if success else "删除失败"
+        return KnowledgeDeleteResponse(success=success, message=msg)
 
     async def cognify(
         self, datasets: list[str] | None = None, run_in_background: bool = True
