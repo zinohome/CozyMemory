@@ -179,12 +179,6 @@ export const en = {
   "knowledge.dataset.refreshAria": "Refresh datasets",
   "knowledge.dataset.createAria": "Create dataset",
   "knowledge.dataset.namePrompt": "Dataset name",
-  "knowledge.add.placeholder": "Paste text to ingest…",
-  "knowledge.add.btn": "Add",
-  "knowledge.cognify.btn": "Cognify",
-  "knowledge.cognify.desc":
-    "Builds entities + relations + embeddings. Run after Add.",
-  "knowledge.search.placeholder": "Ask a question…",
   "knowledge.search.type.aria": "Search type",
   "knowledge.search.type.CHUNKS": "Chunks",
   "knowledge.search.type.SUMMARIES": "Summaries",
@@ -194,6 +188,43 @@ export const en = {
   "knowledge.graph.empty": "No graph data. Run Cognify first.",
   "knowledge.graph.loading": "Loading graph…",
   "knowledge.empty.noDatasets": "No datasets. Create one to get started.",
+  "knowledge.datasets": "Datasets",
+  "knowledge.dataset.noMatch": "No match for \"{q}\"",
+  "knowledge.dataset.none": "No datasets yet.",
+  "knowledge.dataset.deleteAria": "Delete dataset {name}",
+  "knowledge.dataset.deleteTitle": "Delete dataset \"{name}\"?",
+  "knowledge.dataset.deleteDesc": "Also removes all graph data. Irreversible.",
+  "knowledge.dataset.createTitle": "Create",
+  "knowledge.dataset.deleteHint": "Delete dataset",
+  "knowledge.dataset.refreshTitle": "Refresh",
+  "knowledge.dataset.newName": "New dataset name",
+  "knowledge.add.tab": "Add Data",
+  "knowledge.add.dataset": "Dataset",
+  "knowledge.add.noDatasetLabel": "default (no dataset selected)",
+  "knowledge.add.placeholderNew":
+    "Enter text to add to the knowledge base…",
+  "knowledge.add.button": "Add to Knowledge Base",
+  "knowledge.add.success": "Added! data_id: {id}",
+  "knowledge.search.placeholderNew":
+    "Search the knowledge graph…",
+  "knowledge.search.empty":
+    "No results. Try a different query or run cognify first.",
+  "knowledge.cognify.tab": "Cognify",
+  "knowledge.cognify.desc":
+    "Build the knowledge graph for {dataset}. This may take 30–120 seconds.",
+  "knowledge.cognify.allDatasets": "all datasets",
+  "knowledge.cognify.start": "Start Cognify",
+  "knowledge.cognify.jobId": "Job ID:",
+  "knowledge.cognify.status": "Status:",
+  "knowledge.cognify.viewGraph": "View graph →",
+  "knowledge.graph.tab": "Graph",
+  "knowledge.graph.dataset": "Dataset:",
+  "knowledge.graph.refresh": "Refresh",
+  "knowledge.toast.datasetDeleted": "Dataset deleted",
+  "knowledge.toast.added":
+    "Document added — run cognify to build graph",
+  "knowledge.toast.cognifyStarted":
+    "Cognify started — search may be empty until it finishes",
 
   // ── Context Studio ──────────────────────────────────────────────────
   "context.title": "Context Studio",
@@ -219,6 +250,27 @@ export const en = {
   "context.tab.knowledge": "Knowledge",
   "context.tab.errors": "Errors",
   "context.empty": "Run a fetch to see results.",
+  "context.params.title": "Parameters",
+  "context.query.optional": "Query (optional)",
+  "context.query.sample": "What does the user like?",
+  "context.agentId": "Agent ID",
+  "context.sessionId": "Session ID",
+  "context.optional": "optional",
+  "context.engines.section": "Engines",
+  "context.engines.conversations": "Mem0 Conversations",
+  "context.engines.profile": "Memobase Profile",
+  "context.engines.knowledge": "Cognee Knowledge",
+  "context.fetchingBtn": "Fetching…",
+  "context.fetchCtxBtn": "Fetch Context",
+  "context.client.latency": "client: {n}ms",
+  "context.server.latency": "server: {n}ms",
+  "context.errors.count": "{n} engine error(s)",
+  "context.errors.title": "Engine errors",
+  "context.empty.conversations": "No conversation memories.",
+  "context.empty.profile": "No profile context.",
+  "context.empty.knowledge": "No knowledge results.",
+  "context.selectFirst":
+    "Select a user and click \"Fetch Context\" to see results.",
 
   // ── Playground ──────────────────────────────────────────────────────
   "playground.title": "Playground",
@@ -251,6 +303,9 @@ export const en = {
   "playground.contextPanel.empty":
     "Send a message to see what memories/profile/knowledge were injected into the system prompt.",
   "playground.cancelled": "…(cancelled)",
+  "playground.settings.prepended":
+    "Prepended to every turn; retrieved context is appended underneath. Persists in this browser.",
+  "playground.thinking": "Thinking…",
 
   // ── Backup ──────────────────────────────────────────────────────────
   "backup.title": "Backup",

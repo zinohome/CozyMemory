@@ -257,7 +257,7 @@ export default function PlaygroundPage() {
         if (streamingText) {
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: streamingText + " …(cancelled)", createdAt: new Date().toISOString() },
+            { role: "assistant", content: streamingText + " " + t("playground.cancelled"), createdAt: new Date().toISOString() },
           ]);
         }
       } else {
@@ -295,9 +295,9 @@ export default function PlaygroundPage() {
     <div className="space-y-4 max-w-6xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Playground</h1>
+          <h1 className="text-2xl font-bold">{t("playground.title")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Chat augmented by Mem0 memories, Memobase profile, and Cognee knowledge.
+            {t("playground.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -306,8 +306,8 @@ export default function PlaygroundPage() {
               value={activeId ?? undefined}
               onValueChange={(v) => v && setActive(v)}
             >
-              <SelectTrigger className="w-52 text-xs" aria-label="Load session">
-                <SelectValue placeholder="Load session…" />
+              <SelectTrigger className="w-52 text-xs" aria-label={t("playground.loadSessionAria")}>
+                <SelectValue placeholder={t("playground.loadSession") + "…"} />
               </SelectTrigger>
               <SelectContent>
                 {sessions.map((s) => (
@@ -320,16 +320,16 @@ export default function PlaygroundPage() {
               </SelectContent>
             </Select>
           )}
-          <Button variant="outline" size="sm" onClick={handleNewChat} aria-label="New chat">
-            <Plus className="h-3.5 w-3.5 mr-1.5" /> New
+          <Button variant="outline" size="sm" onClick={handleNewChat} aria-label={t("playground.newChat")}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> {t("playground.newChat.short")}
           </Button>
           {activeId && (
             <Button
               variant="outline"
               size="icon"
               onClick={() => deleteSession(activeId)}
-              title="Delete this session"
-              aria-label="Delete current session"
+              title={t("playground.deleteSession")}
+              aria-label={t("playground.deleteSession")}
             >
               <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
@@ -339,37 +339,41 @@ export default function PlaygroundPage() {
             size="sm"
             onClick={handleReset}
             disabled={messages.length === 0}
-            aria-label="Reset current session"
+            aria-label={t("playground.resetSession")}
           >
-            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> {t("playground.resetSession")}
           </Button>
         </div>
       </div>
 
       <Card>
         <CardContent className="pt-4">
-          <UserSelector onConfirm={setUserId} buttonLabel="Use" />
+          <UserSelector onConfirm={setUserId} buttonLabel={t("common.use")} />
 
           <details className="mt-3 group">
             <summary className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
               <Sliders className="h-3 w-3" />
               <span className="group-open:font-medium">
-                Model: {effectiveModel || "<empty>"} · temp {temperature} · max {maxTokens}
-                {playgroundSystemPrompt ? " · custom prompt" : ""}
+                {t("playground.settings.summary", {
+                  model: effectiveModel || "<empty>",
+                  temp: temperature,
+                  max: maxTokens,
+                  custom: playgroundSystemPrompt ? " · " + t("playground.settings.customPrompt") : "",
+                })}
               </span>
               <span className="ml-1 opacity-60 group-open:rotate-90 transition-transform">▶</span>
             </summary>
 
             <div className="space-y-1.5 mt-3">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">System prompt</Label>
+                <Label className="text-xs">{t("playground.settings.systemPrompt")}</Label>
                 {playgroundSystemPrompt && (
                   <button
                     type="button"
                     className="text-[11px] text-muted-foreground hover:text-foreground underline"
                     onClick={() => setPlaygroundSystemPrompt("")}
                   >
-                    Reset to default
+                    {t("playground.settings.resetPrompt")}
                   </button>
                 )}
               </div>
@@ -380,16 +384,15 @@ export default function PlaygroundPage() {
                 placeholder={DEFAULT_PLAYGROUND_SYSTEM_PROMPT}
               />
               <p className="text-[11px] text-muted-foreground">
-                Prepended to every turn; retrieved context is appended underneath. Persists in
-                this browser.
+                {t("playground.settings.prepended")}
               </p>
             </div>
 
             <div className="grid grid-cols-[1fr_auto_auto] gap-2 mt-3 items-end">
               <div className="space-y-1">
-                <Label className="text-xs">Model</Label>
+                <Label className="text-xs">{t("playground.settings.model")}</Label>
                 <Select value={model} onValueChange={(v) => setModel(v ?? MODEL_PRESETS[0])}>
-                  <SelectTrigger className="h-9 text-xs" aria-label="Model">
+                  <SelectTrigger className="h-9 text-xs" aria-label={t("playground.settings.model")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -398,12 +401,12 @@ export default function PlaygroundPage() {
                         {m}
                       </SelectItem>
                     ))}
-                    <SelectItem value={CUSTOM_MODEL}>Custom…</SelectItem>
+                    <SelectItem value={CUSTOM_MODEL}>{t("playground.settings.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {model === CUSTOM_MODEL && (
                   <Input
-                    placeholder="model-name"
+                    placeholder={t("playground.settings.customModel")}
                     value={customModel}
                     onChange={(e) => setCustomModel(e.target.value)}
                     className="h-9 text-xs font-mono mt-1"
@@ -412,7 +415,7 @@ export default function PlaygroundPage() {
               </div>
 
               <div className="space-y-1 w-24">
-                <Label className="text-xs">Temperature</Label>
+                <Label className="text-xs">{t("playground.settings.temperature")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -425,7 +428,7 @@ export default function PlaygroundPage() {
               </div>
 
               <div className="space-y-1 w-24">
-                <Label className="text-xs">Max tokens</Label>
+                <Label className="text-xs">{t("playground.settings.maxTokens")}</Label>
                 <Input
                   type="number"
                   min={16}
@@ -482,7 +485,7 @@ export default function PlaygroundPage() {
                     <div className="bg-muted rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
                       {streamingText || (
                         <span className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("playground.thinking")}
                         </span>
                       )}
                       {streamingText && (
@@ -499,11 +502,11 @@ export default function PlaygroundPage() {
               <span>
                 {saveStatus === "saving" && (
                   <span className="flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" /> saving to memory…
+                    <Loader2 className="h-3 w-3 animate-spin" /> {t("playground.save.saving")}
                   </span>
                 )}
-                {saveStatus === "saved" && "✅ last turn saved to Mem0"}
-                {saveStatus === "error" && "⚠️ memory save failed"}
+                {saveStatus === "saved" && t("playground.save.saved")}
+                {saveStatus === "error" && t("playground.save.error")}
               </span>
             </div>
 
@@ -511,7 +514,7 @@ export default function PlaygroundPage() {
 
             <div className="flex gap-2">
               <Textarea
-                placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
+                placeholder={t("playground.input.placeholder")}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -524,11 +527,11 @@ export default function PlaygroundPage() {
                 className="min-h-[60px] max-h-[120px] resize-none"
               />
               {isStreaming ? (
-                <Button onClick={handleCancel} variant="destructive" title="Stop generating" aria-label="Stop generating">
+                <Button onClick={handleCancel} variant="destructive" title={t("playground.stop.aria")} aria-label={t("playground.stop.aria")}>
                   <Square className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSend} disabled={!input.trim() || !userId} aria-label="Send message">
+                <Button onClick={handleSend} disabled={!input.trim() || !userId} aria-label={t("playground.send.aria")}>
                   <Send className="h-4 w-4" />
                 </Button>
               )}

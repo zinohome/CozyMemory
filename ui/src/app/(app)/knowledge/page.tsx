@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, RefreshCw, Search, Plus, GitBranch, Network, Trash2 } from "lucide-react";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useT } from "@/lib/i18n";
 
 // ── Dataset row with inline delete confirm ────────────────────────────────
 
@@ -32,6 +33,7 @@ function DatasetRow({
   onDelete: () => void;
   isDeleting: boolean;
 }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
 
   return (
@@ -61,7 +63,7 @@ function DatasetRow({
               className="h-6 px-2 text-xs"
               onClick={(e) => { e.stopPropagation(); setConfirming(false); onDelete(); }}
             >
-              Yes
+              {t("common.yes")}
             </Button>
             <Button
               size="sm"
@@ -69,7 +71,7 @@ function DatasetRow({
               className="h-6 px-2 text-xs"
               onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
             >
-              No
+              {t("common.no")}
             </Button>
           </span>
         ) : (
@@ -77,8 +79,8 @@ function DatasetRow({
             variant="ghost"
             size="icon"
             className="h-7 w-7 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-            title="Delete dataset"
-            aria-label={`Delete dataset ${ds.name}`}
+            title={t("knowledge.dataset.deleteHint")}
+            aria-label={t("knowledge.dataset.deleteAria", { name: ds.name })}
             onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
           >
             <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -90,6 +92,7 @@ function DatasetRow({
 }
 
 export default function KnowledgePage() {
+  const t = useT();
   const qc = useQueryClient();
   const [selectedDataset, setSelectedDataset] = useState<KnowledgeDataset | null>(null);
   const [addText, setAddText] = useState("");
@@ -155,7 +158,7 @@ export default function KnowledgePage() {
     },
     onSuccess: (_, datasetId) => {
       qc.removeQueries({ queryKey: ["graph", datasetId] });
-      toast.success("Dataset deleted");
+      toast.success(t("knowledge.toast.datasetDeleted"));
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["datasets"] }),
   });
@@ -179,7 +182,7 @@ export default function KnowledgePage() {
     mutationFn: () => knowledgeApi.add(addText, selectedDataset?.name ?? "default"),
     onSuccess: () => {
       setAddText("");
-      toast.success("Document added — run cognify to build graph");
+      toast.success(t("knowledge.toast.added"));
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -188,7 +191,7 @@ export default function KnowledgePage() {
     mutationFn: () => knowledgeApi.cognify(selectedDataset ? [selectedDataset.name] : undefined),
     onSuccess: (data) => {
       if (data.pipeline_run_id) setCognifyJobId(data.pipeline_run_id);
-      toast.info("Cognify started — search may be empty until it finishes");
+      toast.info(t("knowledge.toast.cognifyStarted"));
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -207,28 +210,28 @@ export default function KnowledgePage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Knowledge Base</h1>
-        <p className="text-muted-foreground text-sm mt-1">Manage Cognee datasets and knowledge graphs.</p>
+        <h1 className="text-2xl font-bold">{t("knowledge.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("knowledge.subtitle")}</p>
       </div>
 
       <div className="grid lg:grid-cols-[240px_1fr] gap-4 min-w-0">
         {/* ── Dataset list ── */}
         <div className="space-y-2 min-w-0">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Datasets</p>
+            <p className="text-sm font-medium">{t("knowledge.datasets")}</p>
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              aria-label="Refresh datasets"
-              title="Refresh"
+              aria-label={t("knowledge.dataset.refreshAria")}
+              title={t("knowledge.dataset.refreshTitle")}
               onClick={() => qc.invalidateQueries({ queryKey: ["datasets"] })}
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
           </div>
           <Input
-            placeholder="Filter datasets…"
+            placeholder={t("knowledge.dataset.filter")}
             value={datasetFilter}
             onChange={(e) => setDatasetFilter(e.target.value)}
             className="h-8 text-xs"
@@ -249,15 +252,15 @@ export default function KnowledgePage() {
               {!datasetsQuery.isLoading && filteredDatasets.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">
                   {datasetFilter
-                    ? `No match for "${datasetFilter}"`
-                    : "No datasets yet."}
+                    ? t("knowledge.dataset.noMatch", { q: datasetFilter })
+                    : t("knowledge.dataset.none")}
                 </p>
               )}
             </div>
           </ScrollArea>
           <div className="flex gap-1 min-w-0">
             <Input
-              placeholder="New dataset name"
+              placeholder={t("knowledge.dataset.newName")}
               id="new-ds"
               className="text-xs h-8 min-w-0 flex-1"
               value={newDatasetName}
@@ -269,8 +272,8 @@ export default function KnowledgePage() {
               variant="outline"
               size="icon"
               className="h-8 w-8 shrink-0"
-              aria-label="Create dataset"
-              title="Create"
+              aria-label={t("knowledge.dataset.createAria")}
+              title={t("knowledge.dataset.createTitle")}
               onClick={handleCreateDataset}
               disabled={!newDatasetName.trim() || createDatasetMutation.isPending}
             >
@@ -289,26 +292,26 @@ export default function KnowledgePage() {
         {/* ── Main panel ── */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="add">Add Data</TabsTrigger>
-            <TabsTrigger value="search">Search</TabsTrigger>
-            <TabsTrigger value="cognify">Cognify</TabsTrigger>
+            <TabsTrigger value="add">{t("knowledge.add.tab")}</TabsTrigger>
+            <TabsTrigger value="search">{t("knowledge.tab.search")}</TabsTrigger>
+            <TabsTrigger value="cognify">{t("knowledge.cognify.tab")}</TabsTrigger>
             <TabsTrigger value="graph" disabled={!selectedDataset} className="gap-1.5">
               <Network className="h-3.5 w-3.5" />
-              Graph
+              {t("knowledge.graph.tab")}
             </TabsTrigger>
           </TabsList>
 
           {/* ─ Add ─ */}
           <TabsContent value="add" className="space-y-3 mt-3">
             <div className="space-y-1.5">
-              <Label>Dataset</Label>
+              <Label>{t("knowledge.add.dataset")}</Label>
               <p className="text-sm text-muted-foreground">
-                {selectedDataset ? selectedDataset.name : <span className="italic">default (no dataset selected)</span>}
+                {selectedDataset ? selectedDataset.name : <span className="italic">{t("knowledge.add.noDatasetLabel")}</span>}
               </p>
             </div>
             <Textarea
               rows={5}
-              placeholder="Enter text to add to the knowledge base…"
+              placeholder={t("knowledge.add.placeholderNew")}
               value={addText}
               onChange={(e) => setAddText(e.target.value)}
             />
@@ -318,11 +321,11 @@ export default function KnowledgePage() {
               ) : (
                 <Plus className="h-4 w-4 mr-2" />
               )}
-              Add to Knowledge Base
+              {t("knowledge.add.button")}
             </Button>
             {addMutation.isSuccess && (
               <p className="text-xs text-green-600 dark:text-green-400">
-                Added! data_id: {addMutation.data?.data_id}
+                {t("knowledge.add.success", { id: addMutation.data?.data_id ?? "" })}
               </p>
             )}
           </TabsContent>
@@ -331,7 +334,7 @@ export default function KnowledgePage() {
           <TabsContent value="search" className="space-y-3 mt-3">
             <div className="flex gap-2">
               <Input
-                placeholder="Search the knowledge graph…"
+                placeholder={t("knowledge.search.placeholderNew")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && searchMutation.mutate()}
@@ -340,14 +343,14 @@ export default function KnowledgePage() {
                 value={searchType}
                 onValueChange={(v) => setSearchType((v as SearchType) ?? "GRAPH_COMPLETION")}
               >
-                <SelectTrigger className="w-44" aria-label="Search type">
+                <SelectTrigger className="w-44" aria-label={t("knowledge.search.type.aria")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CHUNKS">Chunks</SelectItem>
-                  <SelectItem value="SUMMARIES">Summaries</SelectItem>
-                  <SelectItem value="RAG_COMPLETION">RAG</SelectItem>
-                  <SelectItem value="GRAPH_COMPLETION">Graph</SelectItem>
+                  <SelectItem value="CHUNKS">{t("knowledge.search.type.CHUNKS")}</SelectItem>
+                  <SelectItem value="SUMMARIES">{t("knowledge.search.type.SUMMARIES")}</SelectItem>
+                  <SelectItem value="RAG_COMPLETION">{t("knowledge.search.type.RAG_COMPLETION")}</SelectItem>
+                  <SelectItem value="GRAPH_COMPLETION">{t("knowledge.search.type.GRAPH_COMPLETION")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -375,7 +378,7 @@ export default function KnowledgePage() {
                   </div>
                 ))}
                 {searchMutation.isSuccess && searchMutation.data?.data?.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No results. Try a different query or run cognify first.</p>
+                  <p className="text-sm text-muted-foreground">{t("knowledge.search.empty")}</p>
                 )}
               </div>
             </ScrollArea>
@@ -384,9 +387,9 @@ export default function KnowledgePage() {
           {/* ─ Cognify ─ */}
           <TabsContent value="cognify" className="space-y-3 mt-3">
             <p className="text-sm text-muted-foreground">
-              Build the knowledge graph for{" "}
-              <strong>{selectedDataset ? selectedDataset.name : "all datasets"}</strong>.
-              This may take 30–120 seconds.
+              {t("knowledge.cognify.desc", {
+                dataset: selectedDataset?.name ?? t("knowledge.cognify.allDatasets"),
+              })}
             </p>
             <Button onClick={() => cognifyMutation.mutate()} disabled={cognifyMutation.isPending}>
               {cognifyMutation.isPending ? (
@@ -394,19 +397,19 @@ export default function KnowledgePage() {
               ) : (
                 <GitBranch className="h-4 w-4 mr-2" />
               )}
-              Start Cognify
+              {t("knowledge.cognify.start")}
             </Button>
 
             {cognifyJobId && (
               <Card>
                 <CardContent className="pt-3 pb-3 text-sm space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground text-xs">Job ID:</span>
+                    <span className="text-muted-foreground text-xs">{t("knowledge.cognify.jobId")}</span>
                     <span className="font-mono text-xs">{cognifyJobId}</span>
                   </div>
                   {cognifyStatusQuery.data && (
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground text-xs">Status:</span>
+                      <span className="text-muted-foreground text-xs">{t("knowledge.cognify.status")}</span>
                       <Badge
                         variant={
                           cognifyStatusQuery.data.status === "completed"
@@ -429,7 +432,7 @@ export default function KnowledgePage() {
                           className="h-auto p-0 text-xs"
                           onClick={() => setActiveTab("graph")}
                         >
-                          View graph →
+                          {t("knowledge.cognify.viewGraph")}
                         </Button>
                       )}
                     </div>
@@ -443,7 +446,7 @@ export default function KnowledgePage() {
           <TabsContent value="graph" className="mt-3 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm text-muted-foreground min-w-0 truncate">
-                Dataset: <strong>{selectedDataset?.name}</strong>
+                {t("knowledge.graph.dataset")} <strong>{selectedDataset?.name}</strong>
               </p>
               <Button
                 variant="outline"
@@ -457,14 +460,14 @@ export default function KnowledgePage() {
                 ) : (
                   <RefreshCw className="h-3.5 w-3.5" />
                 )}
-                <span className="ml-1.5">Refresh</span>
+                <span className="ml-1.5">{t("knowledge.graph.refresh")}</span>
               </Button>
             </div>
 
             {graphQuery.isFetching && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading graph…
+                {t("knowledge.graph.loading")}
               </div>
             )}
 
@@ -478,9 +481,9 @@ export default function KnowledgePage() {
       <ConfirmDialog
         open={!!deleteConfirm}
         onOpenChange={(o) => !o && setDeleteConfirm(null)}
-        title={`Delete dataset "${deleteConfirm?.name ?? ""}"?`}
-        description="Also removes all graph data. Irreversible."
-        confirmLabel="Delete"
+        title={t("knowledge.dataset.deleteTitle", { name: deleteConfirm?.name ?? "" })}
+        description={t("knowledge.dataset.deleteDesc")}
+        confirmLabel={t("common.delete")}
         destructive
         onConfirm={() => {
           if (deleteConfirm) deleteDatasetMutation.mutate(deleteConfirm.id);

@@ -178,12 +178,6 @@ export const zh: Record<TKey, string> = {
   "knowledge.dataset.refreshAria": "刷新数据集",
   "knowledge.dataset.createAria": "创建数据集",
   "knowledge.dataset.namePrompt": "数据集名称",
-  "knowledge.add.placeholder": "粘贴要投喂的文本…",
-  "knowledge.add.btn": "添加",
-  "knowledge.cognify.btn": "构建图谱",
-  "knowledge.cognify.desc":
-    "抽取实体 + 关系 + 嵌入。在添加文档之后运行。",
-  "knowledge.search.placeholder": "问一个问题…",
   "knowledge.search.type.aria": "搜索类型",
   "knowledge.search.type.CHUNKS": "文本块",
   "knowledge.search.type.SUMMARIES": "摘要",
@@ -193,6 +187,43 @@ export const zh: Record<TKey, string> = {
   "knowledge.graph.empty": "暂无图谱数据。请先运行构建图谱。",
   "knowledge.graph.loading": "加载图谱中…",
   "knowledge.empty.noDatasets": "暂无数据集。先创建一个。",
+  "knowledge.datasets": "数据集",
+  "knowledge.dataset.noMatch": "没有匹配 \"{q}\" 的数据集",
+  "knowledge.dataset.none": "暂无数据集。",
+  "knowledge.dataset.deleteAria": "删除数据集 {name}",
+  "knowledge.dataset.deleteTitle": "删除数据集 \"{name}\"？",
+  "knowledge.dataset.deleteDesc": "同时移除所有图谱数据，不可撤销。",
+  "knowledge.dataset.createTitle": "创建",
+  "knowledge.dataset.deleteHint": "删除数据集",
+  "knowledge.dataset.refreshTitle": "刷新",
+  "knowledge.dataset.newName": "新数据集名称",
+  "knowledge.add.tab": "添加数据",
+  "knowledge.add.dataset": "数据集",
+  "knowledge.add.noDatasetLabel": "默认（未选择数据集）",
+  "knowledge.add.placeholderNew":
+    "输入要添加到知识库的文本…",
+  "knowledge.add.button": "添加到知识库",
+  "knowledge.add.success": "已添加！data_id：{id}",
+  "knowledge.search.placeholderNew":
+    "搜索知识图谱…",
+  "knowledge.search.empty":
+    "没有结果。换个查询，或者先运行构建图谱。",
+  "knowledge.cognify.tab": "构建图谱",
+  "knowledge.cognify.desc":
+    "为 {dataset} 构建知识图谱。这可能需要 30–120 秒。",
+  "knowledge.cognify.allDatasets": "所有数据集",
+  "knowledge.cognify.start": "开始构建",
+  "knowledge.cognify.jobId": "任务 ID：",
+  "knowledge.cognify.status": "状态：",
+  "knowledge.cognify.viewGraph": "查看图谱 →",
+  "knowledge.graph.tab": "图谱",
+  "knowledge.graph.dataset": "数据集：",
+  "knowledge.graph.refresh": "刷新",
+  "knowledge.toast.datasetDeleted": "数据集已删除",
+  "knowledge.toast.added":
+    "文档已添加 — 运行构建图谱来建图",
+  "knowledge.toast.cognifyStarted":
+    "构建已启动 — 完成前搜索可能为空",
 
   // ── Context Studio ──────────────────────────────────────────────────
   "context.title": "上下文调试",
@@ -218,6 +249,27 @@ export const zh: Record<TKey, string> = {
   "context.tab.knowledge": "知识",
   "context.tab.errors": "错误",
   "context.empty": "点击获取上下文查看结果。",
+  "context.params.title": "参数",
+  "context.query.optional": "查询（可选）",
+  "context.query.sample": "用户喜欢什么？",
+  "context.agentId": "Agent ID",
+  "context.sessionId": "会话 ID",
+  "context.optional": "可选",
+  "context.engines.section": "引擎",
+  "context.engines.conversations": "Mem0 对话",
+  "context.engines.profile": "Memobase 画像",
+  "context.engines.knowledge": "Cognee 知识",
+  "context.fetchingBtn": "获取中…",
+  "context.fetchCtxBtn": "获取上下文",
+  "context.client.latency": "客户端：{n} 毫秒",
+  "context.server.latency": "服务端：{n} 毫秒",
+  "context.errors.count": "{n} 个引擎错误",
+  "context.errors.title": "引擎错误",
+  "context.empty.conversations": "没有对话记忆。",
+  "context.empty.profile": "没有画像上下文。",
+  "context.empty.knowledge": "没有知识结果。",
+  "context.selectFirst":
+    "选一个用户并点击 \"获取上下文\" 查看结果。",
 
   // ── Playground ──────────────────────────────────────────────────────
   "playground.title": "对话沙盒",
@@ -250,6 +302,9 @@ export const zh: Record<TKey, string> = {
   "playground.contextPanel.empty":
     "发送一条消息，看看记忆/画像/知识被注入到系统提示的内容。",
   "playground.cancelled": "…（已取消）",
+  "playground.settings.prepended":
+    "每轮都会拼接到前面，检索到的上下文会跟在后面。浏览器本地持久化。",
+  "playground.thinking": "思考中…",
 
   // ── Backup ──────────────────────────────────────────────────────────
   "backup.title": "备份",
