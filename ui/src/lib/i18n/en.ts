@@ -325,6 +325,38 @@ export const en = {
   "backup.success.import": "Import complete",
   "backup.warn.knowledge":
     "Knowledge graph restore re-runs Cognify — chunks preserved, entities/edges regenerated.",
+  "backup.page.subtitle":
+    "Export a user's Mem0 memories + Memobase profile as a portable JSON bundle. Use import to restore into the same or a different user.",
+  "backup.user.select": "User to export",
+  "backup.user.confirmBtn": "Select",
+  "backup.user.chosen": "Selected:",
+  "backup.datasets.label": "Include Cognee datasets (optional)",
+  "backup.datasets.hint":
+    "Selected: {n} / {total}. Datasets are global, not tied to the user — checked ones will be embedded in this bundle.",
+  "backup.download": "Download bundle",
+  "backup.file.label": "JSON bundle file",
+  "backup.preview.title": "Bundle preview",
+  "backup.preview.from": "from {id}…",
+  "backup.preview.memories": "{n} memories",
+  "backup.preview.profileTopics": "{n} profile topics",
+  "backup.preview.datasets": "{n} datasets · {docs} docs",
+  "backup.target.label":
+    "Target user ID (leave empty to restore into the original {id}…)",
+  "backup.import.target.btn": "Import into {id}",
+  "backup.export.countToast": "Exported {n} items",
+  "backup.import.successToast": "Bundle imported",
+  "backup.result.importedInto": "Imported into",
+  "backup.result.convs":
+    "Conversations: {imp} imported, {skip} skipped",
+  "backup.result.profiles":
+    "Profiles: {imp} imported, {skip} skipped",
+  "backup.result.datasets":
+    "Datasets: {ds} imported · {docs} docs · cognify queued",
+  "backup.result.errors": "{n} errors",
+  "backup.note":
+    "Note: Mem0 doesn't retain original messages, only extracted facts. On import, each fact is replayed as a user message so Mem0 re-extracts — results may differ slightly from the source. Memobase profiles restore exactly.",
+  "backup.error.pickUser": "Pick a user first",
+  "backup.error.invalidBundle": "Invalid bundle: missing version or user_id",
 
   // ── Settings ────────────────────────────────────────────────────────
   "settings.title": "Settings",
@@ -349,6 +381,17 @@ export const en = {
   "settings.audit.empty": "No audit records yet.",
   "settings.audit.refresh": "Refresh audit log",
   "settings.saved": "Settings saved",
+  "settings.client.desc2":
+    "Sent as X-Cozy-API-Key on every request. Stored in this browser's localStorage. Use the server panel below to create/rotate keys.",
+  "settings.client.keyLabel": "Key",
+  "settings.client.save": "Save",
+  "settings.client.test": "Test",
+  "settings.client.hideAria": "Hide key",
+  "settings.client.revealAria": "Reveal key",
+  "settings.client.probe.unauthorized": "401 Unauthorized — key rejected by server",
+  "settings.client.probe.okWithKey": "200 OK — key accepted",
+  "settings.client.probe.okNoAuth": "200 OK — server has no auth enabled",
+  "settings.client.probe.http": "HTTP {code}",
 
   // ── Hotkeys help ────────────────────────────────────────────────────
   "hotkeys.title": "Keyboard Shortcuts",

@@ -323,6 +323,38 @@ export const zh: Record<TKey, string> = {
   "backup.success.import": "导入完成",
   "backup.warn.knowledge":
     "知识图谱恢复会重新 Cognify——文本块保真，实体/边会重新生成。",
+  "backup.page.subtitle":
+    "将某个用户的 Mem0 记忆 + Memobase 画像导出为可移植的 JSON 包。导入可恢复到同一个或不同的用户。",
+  "backup.user.select": "要导出的用户",
+  "backup.user.confirmBtn": "选中",
+  "backup.user.chosen": "已选：",
+  "backup.datasets.label": "包含 Cognee 数据集（可选）",
+  "backup.datasets.hint":
+    "已选 {n} / {total}。数据集是全局的，不绑定用户——勾选的会嵌入到这个包里。",
+  "backup.download": "下载备份包",
+  "backup.file.label": "JSON 备份文件",
+  "backup.preview.title": "备份包预览",
+  "backup.preview.from": "来源：{id}…",
+  "backup.preview.memories": "{n} 条记忆",
+  "backup.preview.profileTopics": "{n} 个画像条目",
+  "backup.preview.datasets": "{n} 个数据集 · {docs} 篇文档",
+  "backup.target.label":
+    "目标 user_id（留空则恢复到原用户 {id}…）",
+  "backup.import.target.btn": "导入到 {id}",
+  "backup.export.countToast": "已导出 {n} 个条目",
+  "backup.import.successToast": "备份包已导入",
+  "backup.result.importedInto": "已导入到",
+  "backup.result.convs":
+    "对话：导入 {imp} 条，跳过 {skip} 条",
+  "backup.result.profiles":
+    "画像：导入 {imp} 条，跳过 {skip} 条",
+  "backup.result.datasets":
+    "数据集：导入 {ds} 个 · {docs} 篇文档 · cognify 已排队",
+  "backup.result.errors": "{n} 个错误",
+  "backup.note":
+    "注意：Mem0 不保留原始消息，只保留抽取出的事实。导入时每条事实会被当作 user 消息重新喂给 Mem0 抽取——结果可能和源略有差异。Memobase 画像是完全保真恢复的。",
+  "backup.error.pickUser": "请先选一个用户",
+  "backup.error.invalidBundle": "备份包无效：缺少 version 或 user_id",
 
   // ── Settings ────────────────────────────────────────────────────────
   "settings.title": "设置",
@@ -347,6 +379,17 @@ export const zh: Record<TKey, string> = {
   "settings.audit.empty": "暂无审计记录。",
   "settings.audit.refresh": "刷新审计日志",
   "settings.saved": "设置已保存",
+  "settings.client.desc2":
+    "每个请求都会带 X-Cozy-API-Key 头。存在浏览器 localStorage 里。下面服务端面板可以创建/轮换 key。",
+  "settings.client.keyLabel": "Key",
+  "settings.client.save": "保存",
+  "settings.client.test": "测试",
+  "settings.client.hideAria": "隐藏 key",
+  "settings.client.revealAria": "显示 key",
+  "settings.client.probe.unauthorized": "401 未授权——服务端拒绝了这把 key",
+  "settings.client.probe.okWithKey": "200 OK——key 被接受",
+  "settings.client.probe.okNoAuth": "200 OK——服务端没开鉴权",
+  "settings.client.probe.http": "HTTP {code}",
 
   // ── Hotkeys help ────────────────────────────────────────────────────
   "hotkeys.title": "快捷键",

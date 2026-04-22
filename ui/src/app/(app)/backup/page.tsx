@@ -22,6 +22,7 @@ import { getApiKey } from "@/lib/store";
 import { knowledgeApi, type KnowledgeDataset } from "@/lib/api";
 import { toast } from "sonner";
 import { Download, Upload, Loader2, CheckCircle2, Database } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -53,6 +54,7 @@ function authHeaders(): Record<string, string> {
 }
 
 export default function BackupPage() {
+  const t = useT();
   const [exportUserId, setExportUserId] = useState("");
   const [targetUserId, setTargetUserId] = useState("");
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -78,7 +80,7 @@ export default function BackupPage() {
 
   const exportMutation = useMutation({
     mutationFn: async () => {
-      if (!exportUserId) throw new Error("Pick a user first");
+      if (!exportUserId) throw new Error(t("backup.error.pickUser"));
       const dsQuery = selectedDs.size > 0 ? `?datasets=${[...selectedDs].join(",")}` : "";
       const resp = await fetch(
         `${BASE_URL}/api/v1/backup/export/${encodeURIComponent(exportUserId)}${dsQuery}`,
@@ -101,7 +103,7 @@ export default function BackupPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success(`Exported ${bundle.conversations.length + (bundle.profile_topics?.length ?? 0)} items`);
+      toast.success(t("backup.export.countToast", { n: bundle.conversations.length + (bundle.profile_topics?.length ?? 0) }));
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -125,7 +127,7 @@ export default function BackupPage() {
     onSuccess: (result) => {
       setImportResult(result);
       setPreviewBundle(null); // 导入完清预览，防止重复提交
-      toast.success("Bundle imported");
+      toast.success(t("backup.import.successToast"));
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -139,7 +141,7 @@ export default function BackupPage() {
       const text = await file.text();
       const parsed = JSON.parse(text) as MemoryBundle;
       if (!parsed.version || !parsed.user_id) {
-        throw new Error("Invalid bundle: missing version or user_id");
+        throw new Error(t("backup.error.invalidBundle"));
       }
       setPreviewBundle(parsed);
     } catch (e) {
@@ -157,10 +159,9 @@ export default function BackupPage() {
   return (
     <div className="space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold">Backup</h1>
+        <h1 className="text-2xl font-bold">{t("backup.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Export a user&apos;s Mem0 memories + Memobase profile as a portable JSON bundle. Use
-          import to restore into the same or a different user.
+          {t("backup.page.subtitle")}
         </p>
       </div>
 
@@ -168,25 +169,25 @@ export default function BackupPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Download className="h-4 w-4" /> Export
+            <Download className="h-4 w-4" /> {t("backup.export.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <UserSelector
-            label="User to export"
+            label={t("backup.user.select")}
             onConfirm={setExportUserId}
-            buttonLabel="Select"
+            buttonLabel={t("backup.user.confirmBtn")}
           />
           {exportUserId && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              Selected: <code className="font-mono">{exportUserId}</code>
+              {t("backup.user.chosen")} <code className="font-mono">{exportUserId}</code>
             </div>
           )}
 
           {datasets.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1.5">
-                <Database className="h-3.5 w-3.5" /> Include Cognee datasets (optional)
+                <Database className="h-3.5 w-3.5" /> {t("backup.datasets.label")}
               </Label>
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-auto rounded-md border p-2">
                 {datasets.map((d) => (
@@ -204,8 +205,7 @@ export default function BackupPage() {
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Selected: {selectedDs.size} / {datasets.length}. Datasets are global, not tied to
-                the user — checked ones will be embedded in this bundle.
+                {t("backup.datasets.hint", { n: selectedDs.size, total: datasets.length })}
               </p>
             </div>
           )}
@@ -216,7 +216,7 @@ export default function BackupPage() {
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            Download bundle
+            {t("backup.download")}
           </Button>
         </CardContent>
       </Card>
@@ -225,12 +225,12 @@ export default function BackupPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Upload className="h-4 w-4" /> Import
+            <Upload className="h-4 w-4" /> {t("backup.import.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="bundle-file">JSON bundle file</Label>
+            <Label htmlFor="bundle-file">{t("backup.file.label")}</Label>
             <Input
               id="bundle-file"
               type="file"
@@ -242,21 +242,24 @@ export default function BackupPage() {
 
           {previewBundle && (
             <div className="rounded-md border p-3 space-y-2 text-xs">
-              <p className="font-medium">Bundle preview</p>
+              <p className="font-medium">{t("backup.preview.title")}</p>
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="outline">v{previewBundle.version}</Badge>
                 <Badge variant="secondary">
-                  from {previewBundle.user_id.slice(0, 12)}…
+                  {t("backup.preview.from", { id: previewBundle.user_id.slice(0, 12) })}
                 </Badge>
                 <Badge variant="secondary">
-                  {previewBundle.conversations.length} memories
+                  {t("backup.preview.memories", { n: previewBundle.conversations.length })}
                 </Badge>
                 <Badge variant="secondary">
-                  {previewBundle.profile_topics.length} profile topics
+                  {t("backup.preview.profileTopics", { n: previewBundle.profile_topics.length })}
                 </Badge>
                 {previewBundle.datasets && previewBundle.datasets.length > 0 && (
                   <Badge variant="secondary">
-                    {previewBundle.datasets.length} datasets · {previewBundle.datasets.reduce((n, d) => n + d.documents.length, 0)} docs
+                    {t("backup.preview.datasets", {
+                      n: previewBundle.datasets.length,
+                      docs: previewBundle.datasets.reduce((n, d) => n + d.documents.length, 0),
+                    })}
                   </Badge>
                 )}
                 <Badge variant="outline">
@@ -266,7 +269,7 @@ export default function BackupPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="target-id" className="text-xs">
-                  Target user ID (leave empty to restore into the original {previewBundle.user_id.slice(0, 8)}…)
+                  {t("backup.target.label", { id: previewBundle.user_id.slice(0, 8) })}
                 </Label>
                 <Input
                   id="target-id"
@@ -282,7 +285,9 @@ export default function BackupPage() {
                 ) : (
                   <Upload className="h-4 w-4 mr-2" />
                 )}
-                Import into {targetUserId || previewBundle.user_id.slice(0, 8) + "…"}
+                {t("backup.import.target.btn", {
+                  id: targetUserId || previewBundle.user_id.slice(0, 8) + "…",
+                })}
               </Button>
             </div>
           )}
@@ -290,27 +295,33 @@ export default function BackupPage() {
           {importResult && (
             <div className="rounded-md border border-green-500/30 bg-green-500/5 p-3 space-y-1 text-xs">
               <p className="flex items-center gap-1 text-green-700 dark:text-green-400">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Imported into{" "}
+                <CheckCircle2 className="h-3.5 w-3.5" /> {t("backup.result.importedInto")}{" "}
                 <code className="font-mono">{importResult.user_id}</code>
               </p>
               <p>
-                Conversations: {importResult.conversations_imported} imported,{" "}
-                {importResult.conversations_skipped} skipped
+                {t("backup.result.convs", {
+                  imp: importResult.conversations_imported,
+                  skip: importResult.conversations_skipped,
+                })}
               </p>
               <p>
-                Profiles: {importResult.profiles_imported} imported,{" "}
-                {importResult.profiles_skipped} skipped
+                {t("backup.result.profiles", {
+                  imp: importResult.profiles_imported,
+                  skip: importResult.profiles_skipped,
+                })}
               </p>
               {(importResult.datasets_imported ?? 0) + (importResult.documents_imported ?? 0) > 0 && (
                 <p>
-                  Datasets: {importResult.datasets_imported ?? 0} imported ·{" "}
-                  {importResult.documents_imported ?? 0} docs · cognify queued
+                  {t("backup.result.datasets", {
+                    ds: importResult.datasets_imported ?? 0,
+                    docs: importResult.documents_imported ?? 0,
+                  })}
                 </p>
               )}
               {importResult.errors.length > 0 && (
                 <details>
                   <summary className="cursor-pointer text-destructive">
-                    {importResult.errors.length} errors
+                    {t("backup.result.errors", { n: importResult.errors.length })}
                   </summary>
                   <ul className="list-disc pl-5 mt-1">
                     {importResult.errors.slice(0, 10).map((e, i) => (
@@ -325,9 +336,7 @@ export default function BackupPage() {
           )}
 
           <p className="text-xs text-muted-foreground">
-            <strong>Note:</strong> Mem0 doesn&apos;t retain original messages, only extracted
-            facts. On import, each fact is replayed as a user message so Mem0 re-extracts —
-            results may differ slightly from the source. Memobase profiles restore exactly.
+            {t("backup.note")}
           </p>
         </CardContent>
       </Card>

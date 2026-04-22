@@ -18,10 +18,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServerApiKeysPanel } from "@/components/server-api-keys-panel";
 import { KeyRound, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function SettingsPage() {
+  const t = useT();
   const { apiKey, setApiKey } = useAppStore();
   const [draft, setDraft] = useState(apiKey);
   const [reveal, setReveal] = useState(false);
@@ -48,13 +50,15 @@ export default function SettingsPage() {
       });
       if (resp.status === 401) {
         setProbe("fail");
-        setProbeMsg("401 Unauthorized — key rejected by server");
+        setProbeMsg(t("settings.client.probe.unauthorized"));
       } else if (resp.ok) {
         setProbe("ok");
-        setProbeMsg(`200 OK — ${draft.trim() ? "key accepted" : "server has no auth enabled"}`);
+        setProbeMsg(draft.trim()
+          ? t("settings.client.probe.okWithKey")
+          : t("settings.client.probe.okNoAuth"));
       } else {
         setProbe("fail");
-        setProbeMsg(`HTTP ${resp.status}`);
+        setProbeMsg(t("settings.client.probe.http", { code: resp.status }));
       }
     } catch (e) {
       setProbe("fail");
@@ -67,9 +71,9 @@ export default function SettingsPage() {
   return (
     <div className="space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Client-side preferences + server-side API key management.
+          {t("settings.subtitle")}
         </p>
       </div>
 
@@ -77,17 +81,16 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <KeyRound className="h-4 w-4" /> Client API Key
+            <KeyRound className="h-4 w-4" /> {t("settings.client.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Sent as <code className="font-mono">X-Cozy-API-Key</code> on every request. Stored in
-            this browser&apos;s localStorage. Use the server panel below to create/rotate keys.
+            {t("settings.client.desc2")}
           </p>
 
           <div className="space-y-1.5">
-            <Label htmlFor="api-key">Key</Label>
+            <Label htmlFor="api-key">{t("settings.client.keyLabel")}</Label>
             <div className="flex gap-2">
               <Input
                 id="api-key"
@@ -102,8 +105,8 @@ export default function SettingsPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => setReveal((r) => !r)}
-                aria-label={reveal ? "Hide key" : "Reveal key"}
-                title={reveal ? "Hide" : "Reveal"}
+                aria-label={reveal ? t("settings.client.hideAria") : t("settings.client.revealAria")}
+                title={reveal ? t("settings.client.hide") : t("settings.client.show")}
               >
                 {reveal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
@@ -111,9 +114,9 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button onClick={save} disabled={!dirty}>Save</Button>
+            <Button onClick={save} disabled={!dirty}>{t("settings.client.save")}</Button>
             <Button variant="outline" onClick={test} disabled={probe === "probing"}>
-              {probe === "probing" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Test"}
+              {probe === "probing" ? <Loader2 className="h-4 w-4 animate-spin" /> : t("settings.client.test")}
             </Button>
             {probe === "ok" && (
               <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
