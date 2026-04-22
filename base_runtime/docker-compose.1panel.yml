@@ -363,6 +363,44 @@ services:
   # Caddy 反向代理
   # ==========================================
 
+  # ──────────────────── Observability ────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: cozy_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /data/CozyMemory/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: cozy_grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-cozyadmin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - /data/CozyMemory/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
   caddy:
     image: caddy:alpine
     container_name: cozy_caddy
@@ -374,6 +412,7 @@ services:
       - "8081:8081"
       - "8019:8019"
       - "8088:8088"
+      - "3001:3001"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./nav:/srv/nav:ro
@@ -387,6 +426,7 @@ services:
       - memobase-server-api
       - cozymemory-api
       - cozymemory-ui
+      - grafana
     networks:
       - 1panel-network
     labels:

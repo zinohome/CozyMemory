@@ -148,7 +148,7 @@ def create_app() -> FastAPI:
     #   b. Redis 里用户创建的动态 key（可 CRUD，普通权限）
     # 鉴权关闭的条件：env 为空 AND 不想强制（通过 COZY_AUTH_REQUIRE_DYNAMIC
     # 开关暂不支持）。当 env 空 = 关闭。
-    _AUTH_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/api/v1/health")
+    _AUTH_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/api/v1/health", "/metrics")
     _ADMIN_PREFIX = "/api/v1/admin"
 
     @app.middleware("http")
@@ -259,4 +259,19 @@ def create_app() -> FastAPI:
     # 注册路由
     app.include_router(v1_router)
 
+    # Prometheus 指标暴露 — /metrics endpoint 给 Prom scrape
+    # 默认指标包含：http_requests_total、http_request_duration_seconds、
+    #              http_request_size_bytes、http_response_size_bytes，按 handler/method/status 分组。
+    # /health 和 /metrics 本身排除（避免自引用和高频干扰）。
+    from prometheus_fastapi_instrumentator import Instrumentator
+
+    Instrumentator(
+        should_group_status_codes=False,
+        should_ignore_untemplated=True,
+        should_respect_env_var=False,
+        excluded_handlers=["/api/v1/health", "/metrics"],
+    ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+
+    # 自定义引擎健康 gauge — 每次 /api/v1/health 被调用时更新
+    # 由 HealthResponse 路由侧写入
     return app

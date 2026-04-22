@@ -13,7 +13,11 @@
 }
 
 # CozyMemory 统一服务层 (:8000)
+# /metrics 不对外暴露（Prometheus 从 compose 内网直接抓 cozymemory:8000/metrics）
 :8000 {
+	@metrics path /metrics
+	respond @metrics "Not Found" 404
+
 	reverse_proxy cozymemory-api:8000
 }
 
@@ -55,6 +59,11 @@
 # CozyMemory UI (:8088)
 :8088 {
 	reverse_proxy cozymemory-ui:3000
+}
+
+# Grafana (:3001)
+:3001 {
+	reverse_proxy grafana:3000
 }
 
 # LLM API 代理 (:9090) — 内部专用，剥除 oneapi.naivehero.top 的重复 Server 响应头

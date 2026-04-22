@@ -1,0 +1,23 @@
+# Prometheus 主配置
+#
+# scrape_interval: 每 15 秒拉一次指标
+# retention（在 compose command 里设置）: 30 天，磁盘占用 ~3GB（粗估）
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    deployment: cozymemory-prod
+
+scrape_configs:
+  # CozyMemory FastAPI /metrics
+  - job_name: cozymemory-api
+    static_configs:
+      - targets: ["cozymemory:8000"]
+    metrics_path: /metrics
+    # 鉴权中间件已把 /metrics 豁免，无需携带 API key
+
+  # Prometheus 自身监控
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

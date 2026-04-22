@@ -7,6 +7,7 @@ from fastapi import APIRouter
 
 from ...api.deps import get_cognee_client, get_mem0_client, get_memobase_client
 from ...config import settings
+from ...metrics import engine_latency_ms, engine_up
 from ...models.common import EngineStatus, HealthResponse
 
 logger = structlog.get_logger()
@@ -84,5 +85,12 @@ async def health_check() -> HealthResponse:
         overall = "degraded"
     else:
         overall = "unhealthy"
+
+    # 写 Prometheus 指标：每次 /health 调用都更新
+    # （Prom scrape 时会拉到最新值；UI/外部监控共用）
+    for key, engine in engines.items():
+        engine_up.labels(engine=key).set(1 if engine.status == "healthy" else 0)
+        if engine.latency_ms is not None:
+            engine_latency_ms.labels(engine=key).set(engine.latency_ms)
 
     return HealthResponse(status=overall, engines=engines)
