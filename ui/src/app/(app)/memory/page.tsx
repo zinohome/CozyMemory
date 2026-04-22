@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search, Trash2, MessageSquare } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
+import { useT } from "@/lib/i18n";
 
 const MemoryRow = memo(function MemoryRow({
   mem,
@@ -43,6 +44,7 @@ const MemoryRow = memo(function MemoryRow({
 });
 
 export default function MemoryLabPage() {
+  const t = useT();
   const [userId, setUserId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
@@ -165,9 +167,9 @@ export default function MemoryLabPage() {
           {!userId && (
             <EmptyState
               icon={MessageSquare}
-              title="No user selected"
-              description="Pick a user above to browse their Mem0 conversation memories, or head to Playground to start a new chat."
-              action={{ label: "Open Playground", href: "/playground" }}
+              title={t("empty.noUser.title")}
+              description={t("empty.memory.desc")}
+              action={{ label: t("empty.openPlayground"), href: "/playground" }}
             />
           )}
         </div>

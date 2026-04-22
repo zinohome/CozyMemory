@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Trash2, User } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
+import { useT } from "@/lib/i18n";
 
 const ProfileItemRow = memo(function ProfileItemRow({
   item,
@@ -45,6 +46,7 @@ const ProfileItemRow = memo(function ProfileItemRow({
 });
 
 export default function ProfilesPage() {
+  const t = useT();
   const [userId, setUserId] = useState("");
   const [newItem, setNewItem] = useState({ topic: "", sub_topic: "", content: "" });
   const qc = useQueryClient();
@@ -196,9 +198,9 @@ export default function ProfilesPage() {
       {!userId && (
         <EmptyState
           icon={User}
-          title="No user selected"
-          description="Pick a user above to view their Memobase profile, LLM context prompt, and manage topics."
-          action={{ label: "Open Playground", href: "/playground" }}
+          title={t("empty.noUser.title")}
+          description={t("empty.profiles.desc")}
+          action={{ label: t("empty.openPlayground"), href: "/playground" }}
         />
       )}
     </div>

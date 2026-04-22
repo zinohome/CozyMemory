@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useMetricsStore, WINDOW_PRESETS, type WindowMinutes } from "@/lib/metrics-store";
 import { Sparkline } from "@/components/sparkline";
+import { useT } from "@/lib/i18n";
+import type { TKey } from "@/lib/i18n/en";
 
 // ── Engine health card ────────────────────────────────────────────────────
 
@@ -27,6 +29,10 @@ function EngineCard({ engine }: { engine: EngineStatus }) {
   const Icon = meta.icon;
   const healthy = engine.status === "healthy";
   const disabled = engine.status === "disabled";
+  const t = useT();
+
+  // 把后端 status 字符串映射到 i18n 字典的 key；未知状态保留原文
+  const statusKey = `dashboard.status.${engine.status}` as TKey;
 
   return (
     <Card>
@@ -39,7 +45,7 @@ function EngineCard({ engine }: { engine: EngineStatus }) {
           variant={healthy ? "default" : disabled ? "secondary" : "destructive"}
           className="shrink-0"
         >
-          {engine.status}
+          {t(statusKey)}
         </Badge>
       </CardHeader>
       <CardContent>
@@ -74,6 +80,11 @@ function stats(values: (number | null)[]): { min: number; avg: number; max: numb
   return { min: Math.min(...finite), avg: sum / finite.length, max: Math.max(...finite) };
 }
 
+function NoSamples() {
+  const t = useT();
+  return <div className="text-muted-foreground">{t("dashboard.obs.noSamples")}</div>;
+}
+
 function LatencyRow({
   label,
   values,
@@ -100,18 +111,19 @@ function LatencyRow({
       />
       {s ? (
         <div className="flex-1 flex gap-3 text-muted-foreground font-mono">
-          <span>min {fmtMs(s.min)}</span>
-          <span>avg {fmtMs(s.avg)}</span>
-          <span>max {fmtMs(s.max)}</span>
+          <span>min {formatValue ? formatValue(s.min) : fmtMs(s.min)}</span>
+          <span>avg {formatValue ? formatValue(s.avg) : fmtMs(s.avg)}</span>
+          <span>max {formatValue ? formatValue(s.max) : fmtMs(s.max)}</span>
         </div>
       ) : (
-        <div className="text-muted-foreground">no samples yet</div>
+        <NoSamples />
       )}
     </div>
   );
 }
 
 function ObservabilityPanel() {
+  const t = useT();
   const latency = useMetricsStore((s) => s.latency);
   const counts = useMetricsStore((s) => s.counts);
   const [windowMinutes, setWindowMinutes] = useState<WindowMinutes>(10);
@@ -136,7 +148,7 @@ function ObservabilityPanel() {
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-sm font-semibold flex items-center gap-1.5">
-          <Activity className="h-4 w-4" /> Observability
+          <Activity className="h-4 w-4" /> {t("dashboard.observability")}
         </h2>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border text-xs overflow-hidden">
@@ -152,12 +164,12 @@ function ObservabilityPanel() {
                   (i > 0 ? " border-l" : "")
                 }
               >
-                {p.label}
+                {t(`dashboard.window.${p.label.toLowerCase()}` as TKey)}
               </button>
             ))}
           </div>
           <span className="text-xs text-muted-foreground">
-            {visibleLatency.length} pts · buffer {elapsedMin}min · 10s cadence
+            {t("dashboard.obs.bufferInfo", { n: visibleLatency.length, elapsed: elapsedMin })}
           </span>
         </div>
       </div>
@@ -166,7 +178,7 @@ function ObservabilityPanel() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5">
-              <Activity className="h-3.5 w-3.5" /> Engine latency
+              <Activity className="h-3.5 w-3.5" /> {t("dashboard.obs.engineLatency")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -179,12 +191,12 @@ function ObservabilityPanel() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5">
-              <TrendingUp className="h-3.5 w-3.5" /> Memory growth
+              <TrendingUp className="h-3.5 w-3.5" /> {t("dashboard.obs.memoryGrowth")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <LatencyRow label="Users" values={userValues} timestamps={countsTs} color="#2563eb" formatValue={(v) => `${v}`} />
-            <LatencyRow label="Datasets" values={datasetValues} timestamps={countsTs} color="#7c3aed" formatValue={(v) => `${v}`} />
+            <LatencyRow label={t("dashboard.users")} values={userValues} timestamps={countsTs} color="#2563eb" formatValue={(v) => `${v}`} />
+            <LatencyRow label={t("dashboard.stat.datasets")} values={datasetValues} timestamps={countsTs} color="#7c3aed" formatValue={(v) => `${v}`} />
           </CardContent>
         </Card>
       </div>
@@ -231,6 +243,7 @@ function StatTile({
 const MAX_USERS_SHOWN = 30;
 
 function UsersTable({ userIds }: { userIds: string[] }) {
+  const t = useT();
   const shown = userIds.slice(0, MAX_USERS_SHOWN);
 
   // Fan-out parallel memory count queries — one per user
@@ -247,11 +260,11 @@ function UsersTable({ userIds }: { userIds: string[] }) {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
-          Users
+          {t("dashboard.users")}
         </h2>
         {userIds.length > MAX_USERS_SHOWN && (
           <span className="text-xs text-muted-foreground">
-            showing {MAX_USERS_SHOWN} of {userIds.length}
+            {t("dashboard.users.showing", { n: MAX_USERS_SHOWN, total: userIds.length })}
           </span>
         )}
       </div>
@@ -260,8 +273,8 @@ function UsersTable({ userIds }: { userIds: string[] }) {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">User ID</th>
-              <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Memories</th>
+              <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("dashboard.users.col.id")}</th>
+              <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">{t("dashboard.users.col.memories")}</th>
             </tr>
           </thead>
           <tbody>
@@ -274,7 +287,7 @@ function UsersTable({ userIds }: { userIds: string[] }) {
                     {q.isFetching ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin inline text-muted-foreground" />
                     ) : q.isError ? (
-                      <span className="text-destructive text-xs">err</span>
+                      <span className="text-destructive text-xs">{t("dashboard.users.err")}</span>
                     ) : (
                       <Badge variant="secondary">{q.data}</Badge>
                     )}
@@ -285,7 +298,7 @@ function UsersTable({ userIds }: { userIds: string[] }) {
             {shown.length === 0 && (
               <tr>
                 <td colSpan={2} className="px-3 py-4 text-center text-xs text-muted-foreground">
-                  No users yet — memories will appear after the first conversation is added.
+                  {t("dashboard.users.empty")}
                 </td>
               </tr>
             )}
@@ -299,20 +312,21 @@ function UsersTable({ userIds }: { userIds: string[] }) {
 // ── Datasets table ────────────────────────────────────────────────────────
 
 function DatasetsTable({ datasets }: { datasets: KnowledgeDataset[] }) {
+  const t = useT();
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-semibold flex items-center gap-2">
         <Database className="h-4 w-4 text-muted-foreground" />
-        Knowledge Datasets
+        {t("dashboard.knowledgeDatasets")}
       </h2>
 
       <div className="rounded-md border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Name</th>
-              <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden sm:table-cell">Dataset ID</th>
-              <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground hidden md:table-cell">Created</th>
+              <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">{t("dashboard.datasets.col.name")}</th>
+              <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden sm:table-cell">{t("dashboard.datasets.col.id")}</th>
+              <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground hidden md:table-cell">{t("dashboard.datasets.col.created")}</th>
             </tr>
           </thead>
           <tbody>
@@ -330,7 +344,7 @@ function DatasetsTable({ datasets }: { datasets: KnowledgeDataset[] }) {
             {datasets.length === 0 && (
               <tr>
                 <td colSpan={3} className="px-3 py-4 text-center text-xs text-muted-foreground">
-                  No datasets yet — add data and run cognify to create one.
+                  {t("dashboard.datasets.empty")}
                 </td>
               </tr>
             )}
@@ -344,6 +358,7 @@ function DatasetsTable({ datasets }: { datasets: KnowledgeDataset[] }) {
 // ── Dashboard page ────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const t = useT();
   const qc = useQueryClient();
   const fetchingCount = useIsFetching();
   const isRefreshing = fetchingCount > 0;
@@ -382,15 +397,15 @@ export default function DashboardPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Overview of all memory engines and stored data.
+            {t("dashboard.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {lastRefreshed && !isRefreshing && (
             <span className="text-xs text-muted-foreground hidden sm:block">
-              Updated {lastRefreshed.toLocaleTimeString()}
+              {t("dashboard.updated", { time: lastRefreshed.toLocaleTimeString() })}
             </span>
           )}
           <Button
@@ -401,7 +416,7 @@ export default function DashboardPage() {
             className="gap-1.5"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            {isRefreshing ? "Refreshing…" : "Refresh"}
+            {isRefreshing ? t("dashboard.refreshing") : t("dashboard.refresh")}
           </Button>
         </div>
       </div>
@@ -410,22 +425,22 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatTile
           icon={Users}
-          label="Total Users"
+          label={t("dashboard.stat.totalUsers")}
           value={usersQuery.data?.total}
           loading={usersQuery.isLoading}
           color="text-blue-500"
         />
         <StatTile
           icon={Database}
-          label="Datasets"
+          label={t("dashboard.stat.datasets")}
           value={datasetsQuery.data?.data?.length ?? 0}
           loading={datasetsQuery.isLoading}
           color="text-purple-500"
         />
         <StatTile
           icon={MemoryStick}
-          label="API Status"
-          value={healthQuery.data?.status}
+          label={t("dashboard.stat.apiStatus")}
+          value={healthQuery.data?.status ? t(`dashboard.status.${healthQuery.data.status}` as TKey) : undefined}
           loading={healthQuery.isLoading}
           color={
             healthQuery.data?.status === "healthy"
@@ -439,17 +454,17 @@ export default function DashboardPage() {
 
       {/* ── Engine health ── */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Engine Health</h2>
+        <h2 className="text-sm font-semibold">{t("dashboard.engineHealth")}</h2>
 
         {healthQuery.isLoading && (
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking engines…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("dashboard.checkingEngines")}
           </div>
         )}
         {healthQuery.error && (
           <Card className="border-destructive">
             <CardContent className="pt-4 text-sm text-destructive">
-              Cannot reach CozyMemory API: {String(healthQuery.error)}
+              {t("dashboard.apiUnreachable", { err: String(healthQuery.error) })}
             </CardContent>
           </Card>
         )}
@@ -472,7 +487,7 @@ export default function DashboardPage() {
       {/* ── Users + memory counts ── */}
       {usersQuery.isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading users…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("dashboard.users.loading")}
         </div>
       ) : (
         <UsersTable userIds={userIds} />
@@ -483,7 +498,7 @@ export default function DashboardPage() {
       {/* ── Datasets ── */}
       {datasetsQuery.isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading datasets…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("dashboard.datasets.loading")}
         </div>
       ) : (
         <DatasetsTable datasets={datasetList} />

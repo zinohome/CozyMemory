@@ -34,6 +34,7 @@ import { Loader2, Send, RotateCcw, Square, Sliders, Plus, Trash2, MessageCircle 
 import { ContextInspector } from "@/components/context-inspector";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
+import { useT } from "@/lib/i18n";
 import { usePlaygroundSessions, type ChatMsg } from "@/lib/playground-sessions-store";
 
 function formatContextAsSystemBlock(head: string, ctx: ContextResponse): string {
@@ -97,6 +98,7 @@ const MODEL_PRESETS = [
 const CUSTOM_MODEL = "__custom__";
 
 export default function PlaygroundPage() {
+  const t = useT();
   const { sessions, activeId, newSession, setActive, upsertMessages, deleteSession } =
     usePlaygroundSessions();
   const activeSession = sessions.find((s) => s.id === activeId) ?? null;
@@ -448,13 +450,13 @@ export default function PlaygroundPage() {
                 {messages.length === 0 && (
                   userId ? (
                     <p className="text-sm text-muted-foreground text-center py-16">
-                      Type a message to start
+                      {t("playground.typeToStart")}
                     </p>
                   ) : (
                     <EmptyState
                       icon={MessageCircle}
-                      title="No user selected"
-                      description="Pick a user above to start a chat augmented with their memories, profile, and knowledge graph."
+                      title={t("empty.noUser.title")}
+                      description={t("empty.playground.desc")}
                       className="my-8"
                     />
                   )
