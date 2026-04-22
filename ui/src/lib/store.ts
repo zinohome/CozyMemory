@@ -22,6 +22,10 @@ interface AppState {
   // Playground system prompt — 空字符串 = 用默认
   playgroundSystemPrompt: string;
   setPlaygroundSystemPrompt: (p: string) => void;
+
+  // UI 语言，默认中文
+  locale: "zh" | "en";
+  setLocale: (l: "zh" | "en") => void;
 }
 
 export const DEFAULT_PLAYGROUND_SYSTEM_PROMPT =
@@ -43,6 +47,9 @@ export const useAppStore = create<AppState>()(
 
       playgroundSystemPrompt: "",
       setPlaygroundSystemPrompt: (p) => set({ playgroundSystemPrompt: p }),
+
+      locale: "zh",
+      setLocale: (l) => set({ locale: l }),
     }),
     { name: "cozymemory-app" }
   )

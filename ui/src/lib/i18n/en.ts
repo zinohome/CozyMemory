@@ -1,0 +1,283 @@
+/**
+ * English dictionary — fallback language.
+ *
+ * Flat key namespace: group by feature (sidebar.*, dashboard.*, etc.).
+ * Interpolation via {name} placeholders, e.g. "Hello {name}" + { name: "x" }.
+ */
+
+export const en = {
+  // ── Sidebar / nav ───────────────────────────────────────────────────
+  "sidebar.brand": "CozyMemory",
+  "sidebar.group.memory": "Memory",
+  "sidebar.group.management": "Management",
+  "sidebar.item.dashboard": "Dashboard",
+  "sidebar.item.memory": "Memory Lab",
+  "sidebar.item.profiles": "User Profiles",
+  "sidebar.item.knowledge": "Knowledge Base",
+  "sidebar.item.context": "Context Studio",
+  "sidebar.item.playground": "Playground",
+  "sidebar.item.users": "Users",
+  "sidebar.item.backup": "Backup",
+  "sidebar.item.settings": "Settings",
+  "sidebar.theme": "Theme",
+  "sidebar.language": "Language",
+  "sidebar.language.zh": "中文",
+  "sidebar.language.en": "English",
+  "sidebar.aria.main": "Main",
+
+  // ── Common / shared ─────────────────────────────────────────────────
+  "common.load": "Load",
+  "common.loading": "Loading…",
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.delete": "Delete",
+  "common.create": "Create",
+  "common.refresh": "Refresh",
+  "common.search": "Search",
+  "common.close": "Close",
+  "common.yes": "Yes",
+  "common.no": "No",
+  "common.noResults": "No results.",
+  "common.error": "Error",
+  "common.copy": "Copy",
+  "common.copied": "Copied",
+  "common.userId": "User ID",
+  "common.selectUser": "Select a user…",
+  "common.enterNewId": "Enter new ID…",
+  "common.use": "Use",
+  "common.reset": "Reset",
+  "common.new": "New",
+  "common.add": "Add",
+  "common.edit": "Edit",
+  "common.rename": "Rename",
+  "common.confirm": "Confirm",
+
+  // ── EmptyState (shared) ─────────────────────────────────────────────
+  "empty.noUser.title": "No user selected",
+  "empty.memory.desc":
+    "Pick a user above to browse their Mem0 conversation memories, or head to Playground to start a new chat.",
+  "empty.profiles.desc":
+    "Pick a user above to view their Memobase profile, LLM context prompt, and manage topics.",
+  "empty.playground.desc":
+    "Pick a user above to start a chat augmented with their memories, profile, and knowledge graph.",
+  "empty.openPlayground": "Open Playground",
+
+  // ── Dashboard ───────────────────────────────────────────────────────
+  "dashboard.title": "Dashboard",
+  "dashboard.subtitle": "Three-engine health, user/dataset counts, and latency trends.",
+  "dashboard.engineHealth": "Engine Health",
+  "dashboard.observability": "Observability",
+  "dashboard.users": "Users",
+  "dashboard.knowledgeDatasets": "Knowledge Datasets",
+  "dashboard.window.10m": "10m",
+  "dashboard.window.1h": "1h",
+  "dashboard.window.6h": "6h",
+  "dashboard.latency.ms": "{v}ms",
+  "dashboard.time.agoSec": "{n}s ago",
+  "dashboard.time.agoMin": "{n}m ago",
+  "dashboard.time.agoHour": "{n}h ago",
+  "dashboard.status.up": "up",
+  "dashboard.status.down": "down",
+  "dashboard.users.total": "{n} users",
+  "dashboard.datasets.total": "{n} datasets",
+  "dashboard.noData": "No data yet. Metrics accumulate every 10s.",
+
+  // ── Memory Lab ──────────────────────────────────────────────────────
+  "memory.title": "Memory Lab",
+  "memory.subtitle": "Browse and manage Mem0 conversation memories.",
+  "memory.search.placeholder": "Semantic search…",
+  "memory.search.btnAria": "Search memories",
+  "memory.count.total": "{n} memories for",
+  "memory.count.search": "Showing {n} search results for \"{q}\"",
+  "memory.clearSearch": "Clear search",
+  "memory.empty": "No memories found.",
+  "memory.delete.aria": "Delete memory",
+  "memory.delete.success": "Memory deleted",
+
+  // ── User Profiles ───────────────────────────────────────────────────
+  "profiles.title": "User Profiles",
+  "profiles.subtitle": "Manage Memobase structured user profiles.",
+  "profiles.contextPrompt": "Context Prompt",
+  "profiles.items.count": "{n} profile items",
+  "profiles.items.for": "for",
+  "profiles.empty": "No profile items.",
+  "profiles.add.title": "Add item",
+  "profiles.add.topic": "topic (e.g. interest)",
+  "profiles.add.subTopic": "sub_topic (e.g. sport)",
+  "profiles.add.content": "content",
+  "profiles.add.btn": "Add",
+  "profiles.delete.aria": "Delete topic",
+  "profiles.delete.success": "Topic deleted",
+  "profiles.add.success": "Topic added",
+
+  // ── Users ──────────────────────────────────────────────────────────
+  "users.title": "Users",
+  "users.subtitle":
+    "Manage Redis user_id ↔ UUID v4 mappings used by the Memobase profile engine.",
+  "users.create.title": "Create UUID Mapping",
+  "users.create.desc":
+    "Manually assign a UUID v4 to a new user_id. Profile endpoints auto-create mappings on first call — use this for pre-warming or testing.",
+  "users.create.placeholder": "e.g. alice",
+  "users.create.btn": "Create",
+  "users.create.result.new": "new",
+  "users.create.result.existing": "existing",
+  "users.filter.placeholder": "Filter by user_id…",
+  "users.table.userId": "User ID",
+  "users.table.uuid": "UUID v4",
+  "users.table.actions": "Actions",
+  "users.table.noMapping": "no mapping",
+  "users.delete.aria": "Delete user mapping {id}",
+  "users.delete.warn":
+    "Deleting a mapping orphans the Memobase profile data — the UUID still exists in Memobase but becomes unreachable via CozyMemory.",
+  "users.info.requirement":
+    "Memobase requires UUID v4 user IDs. CozyMemory maintains a Redis mapping so you can use any string identifier.",
+  "users.copy.tooltip": "Copy UUID",
+
+  // ── Knowledge Base ──────────────────────────────────────────────────
+  "knowledge.title": "Knowledge Base",
+  "knowledge.subtitle": "Manage Cognee datasets and knowledge graphs.",
+  "knowledge.tab.datasets": "Datasets",
+  "knowledge.tab.add": "Add",
+  "knowledge.tab.cognify": "Cognify",
+  "knowledge.tab.search": "Search",
+  "knowledge.tab.graph": "Graph",
+  "knowledge.dataset.filter": "Filter datasets…",
+  "knowledge.dataset.create": "+ New dataset",
+  "knowledge.dataset.rename": "Rename",
+  "knowledge.dataset.delete": "Delete",
+  "knowledge.dataset.deleteConfirm":
+    "Delete dataset \"{name}\"? This removes all staged documents, chunks, and graph data.",
+  "knowledge.dataset.refreshAria": "Refresh datasets",
+  "knowledge.dataset.createAria": "Create dataset",
+  "knowledge.dataset.namePrompt": "Dataset name",
+  "knowledge.add.placeholder": "Paste text to ingest…",
+  "knowledge.add.btn": "Add",
+  "knowledge.cognify.btn": "Cognify",
+  "knowledge.cognify.desc":
+    "Builds entities + relations + embeddings. Run after Add.",
+  "knowledge.search.placeholder": "Ask a question…",
+  "knowledge.search.type.aria": "Search type",
+  "knowledge.search.type.CHUNKS": "Chunks",
+  "knowledge.search.type.SUMMARIES": "Summaries",
+  "knowledge.search.type.RAG_COMPLETION": "RAG",
+  "knowledge.search.type.GRAPH_COMPLETION": "Graph",
+  "knowledge.search.btn": "Search",
+  "knowledge.graph.empty": "No graph data. Run Cognify first.",
+  "knowledge.graph.loading": "Loading graph…",
+  "knowledge.empty.noDatasets": "No datasets. Create one to get started.",
+
+  // ── Context Studio ──────────────────────────────────────────────────
+  "context.title": "Context Studio",
+  "context.subtitle": "Fetch all three memory types in one concurrent call.",
+  "context.query.label": "Query",
+  "context.query.placeholder": "What would the user ask?",
+  "context.include.conversations": "Include conversations",
+  "context.include.profile": "Include profile",
+  "context.include.knowledge": "Include knowledge",
+  "context.memoryScope": "Memory scope",
+  "context.memoryScope.long": "Long-term",
+  "context.memoryScope.short": "Short-term",
+  "context.memoryScope.both": "Both",
+  "context.topK.label": "Top K",
+  "context.conversationLimit.label": "Conversation limit",
+  "context.maxTokens.label": "Max token size",
+  "context.timeout.label": "Engine timeout (ms)",
+  "context.searchType": "Knowledge search type",
+  "context.fetchBtn": "Fetch context",
+  "context.fetching": "Querying all three engines in parallel…",
+  "context.tab.conversations": "Conversations",
+  "context.tab.profile": "Profile",
+  "context.tab.knowledge": "Knowledge",
+  "context.tab.errors": "Errors",
+  "context.empty": "Run a fetch to see results.",
+
+  // ── Playground ──────────────────────────────────────────────────────
+  "playground.title": "Playground",
+  "playground.subtitle":
+    "Chat augmented by Mem0 memories, Memobase profile, and Cognee knowledge.",
+  "playground.loadSession": "Load session",
+  "playground.loadSessionAria": "Load session",
+  "playground.newChat": "New chat",
+  "playground.newChat.short": "New",
+  "playground.resetSession": "Reset",
+  "playground.deleteSession": "Delete current session",
+  "playground.input.placeholder": "Ask anything… (Enter to send, Shift+Enter for newline)",
+  "playground.send.aria": "Send message",
+  "playground.stop.aria": "Stop generating",
+  "playground.typeToStart": "Type a message to start",
+  "playground.settings.model": "Model",
+  "playground.settings.customModel": "model-name",
+  "playground.settings.custom": "Custom…",
+  "playground.settings.temperature": "Temperature",
+  "playground.settings.maxTokens": "Max tokens",
+  "playground.settings.systemPrompt": "System prompt",
+  "playground.settings.resetPrompt": "Reset to default",
+  "playground.settings.customPrompt": "custom prompt",
+  "playground.settings.summary":
+    "Model: {model} · temp {temp} · max {max}{custom}",
+  "playground.save.saving": "saving to memory…",
+  "playground.save.saved": "✅ last turn saved to Mem0",
+  "playground.save.error": "⚠️ memory save failed",
+  "playground.contextPanel.title": "Last context injected",
+  "playground.contextPanel.empty":
+    "Send a message to see what memories/profile/knowledge were injected into the system prompt.",
+  "playground.cancelled": "…(cancelled)",
+
+  // ── Backup ──────────────────────────────────────────────────────────
+  "backup.title": "Backup",
+  "backup.subtitle":
+    "Export and import per-user JSON snapshots across all three engines.",
+  "backup.export.title": "Export",
+  "backup.import.title": "Import",
+  "backup.include.conversations": "Mem0 conversations",
+  "backup.include.profile": "Memobase profile",
+  "backup.include.knowledge": "Cognee knowledge",
+  "backup.include.datasets": "Datasets to include",
+  "backup.export.btn": "Export",
+  "backup.import.file": "Select JSON file",
+  "backup.import.target": "Target user_id",
+  "backup.import.btn": "Import",
+  "backup.success.export": "Export complete",
+  "backup.success.import": "Import complete",
+  "backup.warn.knowledge":
+    "Knowledge graph restore re-runs Cognify — chunks preserved, entities/edges regenerated.",
+
+  // ── Settings ────────────────────────────────────────────────────────
+  "settings.title": "Settings",
+  "settings.subtitle": "Client preferences + server API key management.",
+  "settings.client.title": "Client API Key",
+  "settings.client.desc":
+    "Persisted to localStorage. Sent as X-Cozy-API-Key on every request. Leave empty to disable.",
+  "settings.client.placeholder": "Paste your Cozy API key…",
+  "settings.client.show": "Show",
+  "settings.client.hide": "Hide",
+  "settings.server.title": "Server-side API Keys",
+  "settings.server.desc":
+    "Dynamic API keys stored in Redis. Use these for third-party integrations you may want to revoke later.",
+  "settings.server.create": "Create key",
+  "settings.server.rotate": "Rotate",
+  "settings.server.rotateConfirm":
+    "Rotate key? The old key will stop working immediately.",
+  "settings.server.deleteConfirm": "Delete this key? This cannot be undone.",
+  "settings.server.empty": "No server keys yet.",
+  "settings.audit.title": "Audit Log",
+  "settings.audit.desc": "Last 200 API calls per key.",
+  "settings.audit.empty": "No audit records yet.",
+  "settings.audit.refresh": "Refresh audit log",
+  "settings.saved": "Settings saved",
+
+  // ── Hotkeys help ────────────────────────────────────────────────────
+  "hotkeys.title": "Keyboard Shortcuts",
+  "hotkeys.desc": "Gmail-style sequences. Disabled while typing in inputs.",
+  "hotkeys.help": "Show this help",
+  "hotkeys.close": "Close",
+  "hotkeys.go": "Go to",
+
+  // ── Errors / toasts ─────────────────────────────────────────────────
+  "error.network": "Network error. Please try again.",
+  "error.unauthorized": "Unauthorized. Check your API key in Settings.",
+  "error.notFound": "Not found.",
+  "error.internal": "Server error. Check logs.",
+} as const;
+
+export type TKey = keyof typeof en;

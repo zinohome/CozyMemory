@@ -13,6 +13,7 @@ import {
   MessagesSquare,
   Settings,
   Archive,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,45 +27,51 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useT, type Locale } from "@/lib/i18n";
+import type { TKey } from "@/lib/i18n/en";
 
-const MEMORY_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/memory", label: "Memory Lab", icon: MessageSquare },
-  { href: "/profiles", label: "User Profiles", icon: User },
-  { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
-  { href: "/context", label: "Context Studio", icon: Sparkles },
-  { href: "/playground", label: "Playground", icon: MessagesSquare },
+type NavItem = { href: string; labelKey: TKey; icon: LucideIcon };
+
+const MEMORY_ITEMS: NavItem[] = [
+  { href: "/dashboard", labelKey: "sidebar.item.dashboard", icon: LayoutDashboard },
+  { href: "/memory", labelKey: "sidebar.item.memory", icon: MessageSquare },
+  { href: "/profiles", labelKey: "sidebar.item.profiles", icon: User },
+  { href: "/knowledge", labelKey: "sidebar.item.knowledge", icon: BookOpen },
+  { href: "/context", labelKey: "sidebar.item.context", icon: Sparkles },
+  { href: "/playground", labelKey: "sidebar.item.playground", icon: MessagesSquare },
 ];
 
-const MANAGE_ITEMS = [
-  { href: "/users", label: "Users", icon: KeyRound },
-  { href: "/backup", label: "Backup", icon: Archive },
-  { href: "/settings", label: "Settings", icon: Settings },
+const MANAGE_ITEMS: NavItem[] = [
+  { href: "/users", labelKey: "sidebar.item.users", icon: KeyRound },
+  { href: "/backup", labelKey: "sidebar.item.backup", icon: Archive },
+  { href: "/settings", labelKey: "sidebar.item.settings", icon: Settings },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
-    <Sidebar role="navigation" aria-label="Main">
+    <Sidebar role="navigation" aria-label={t("sidebar.aria.main")}>
       <SidebarHeader className="px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
-          <span className="font-semibold text-sm">CozyMemory</span>
+          <span className="font-semibold text-sm">{t("sidebar.brand")}</span>
         </div>
       </SidebarHeader>
 
       <SidebarContent className="pt-1">
         <SidebarGroup>
-          <SidebarGroupLabel>Memory</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.group.memory")}</SidebarGroupLabel>
           <SidebarMenu>
-            {MEMORY_ITEMS.map(({ href, label, icon: Icon }) => {
+            {MEMORY_ITEMS.map(({ href, labelKey, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton render={<Link href={href} />} isActive={active}>
                     <Icon className="h-4 w-4" />
-                    <span>{label}</span>
+                    <span>{t(labelKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -73,15 +80,15 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.group.management")}</SidebarGroupLabel>
           <SidebarMenu>
-            {MANAGE_ITEMS.map(({ href, label, icon: Icon }) => {
+            {MANAGE_ITEMS.map(({ href, labelKey, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton render={<Link href={href} />} isActive={active}>
                     <Icon className="h-4 w-4" />
-                    <span>{label}</span>
+                    <span>{t(labelKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -90,12 +97,19 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t px-3 py-2">
+      <SidebarFooter className="border-t px-3 py-2 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Theme</span>
+          <span className="text-xs text-muted-foreground">{t("sidebar.theme")}</span>
           <ThemeToggle />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">{t("sidebar.language")}</span>
+          <LanguageToggle />
         </div>
       </SidebarFooter>
     </Sidebar>
   );
 }
+
+// locale 类型被下游 LanguageToggle 用，export 避免 tree-shake 问题
+export type { Locale };
