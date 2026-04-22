@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 中文 UI + 使用文档（batch 7）
+- `docs/usage-cn.md`：338 行中文使用说明（快速开始 3 步 / 三引擎架构图
+  / 9 页作用+字段+典型流程+常见坑 / FAQ / 快捷键表）
+- i18n 基建：`ui/src/lib/i18n/{index,en,zh}.tsx` 轻量 Context + useT
+  hook + 扁平字典 + `{name}` 插值；缺 key 开发态 warn
+- 语言状态：Zustand store 新增 `locale`（默认 `zh`，持久化 localStorage）
+- Sidebar footer 加 `<LanguageToggle />`，和 ThemeToggle 并列；一键切换
+- 9 页全部迁移：Dashboard / Memory Lab / User Profiles / Users /
+  Knowledge Base / Context Studio / Playground / Backup / Settings
+- 共享组件：EmptyState 3 站点 / ContextInspector 右侧面板
+- 字典 ~200 keys（sidebar / common / empty / 9 页 / hotkeys / errors）
+- ServerApiKeysPanel + Hotkeys help Dialog 暂留英文（后续补完）
+
 ### Fixed — A11y + Perf audit (batch 6)
 - axe-core 扫 9 页，修全部 **critical / serious** 问题，post-rebuild 0
   violations：
