@@ -584,6 +584,7 @@ export const en = {
   "operator.knowledge_raw": "Knowledge (global)",
   "operator.health": "Health / Metrics",
   "operator.backup": "Backup",
+  "operator.settings": "Legacy Settings",
   "operator.landing_desc":
     "Enter your bootstrap API key to access global ops views.",
   "operator.bootstrap_key": "Bootstrap Key",

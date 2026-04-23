@@ -579,6 +579,7 @@ export const zh: Record<TKey, string> = {
   "operator.knowledge_raw": "知识库（全局）",
   "operator.health": "运行状态",
   "operator.backup": "备份",
+  "operator.settings": "遗留设置",
   "operator.landing_desc": "输入 bootstrap 密钥进入全局运维视图。",
   "operator.bootstrap_key": "Bootstrap 密钥",
   "operator.bootstrap_key_hint":

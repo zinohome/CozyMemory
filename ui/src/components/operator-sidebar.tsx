@@ -10,6 +10,7 @@ import {
   Database,
   Activity,
   Archive,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ const ITEMS: NavItem[] = [
   { href: "/operator/knowledge-raw", labelKey: "operator.knowledge_raw", icon: Database },
   { href: "/operator/health", labelKey: "operator.health", icon: Activity },
   { href: "/operator/backup", labelKey: "operator.backup", icon: Archive },
+  { href: "/operator/settings", labelKey: "operator.settings", icon: Settings },
 ];
 
 export function OperatorSidebar() {
