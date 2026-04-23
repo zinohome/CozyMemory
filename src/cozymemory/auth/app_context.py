@@ -34,7 +34,7 @@ class AppContext:
     """当前请求的 App 归属 + 鉴权来源。"""
 
     app_id: UUID
-    api_key_id: UUID
+    api_key_id: UUID | None
     _session: AsyncSession
     _app: App | None = None  # 懒加载缓存
 
@@ -75,12 +75,12 @@ def get_app_context(
     """宽容版：没有 app 归属时返 None（bootstrap key 走这条路）。"""
     api_key_id = getattr(request.state, "api_key_id", None)
     app_id = getattr(request.state, "app_id", None)
-    if not api_key_id or not app_id:
+    if not app_id:
         return None
     try:
         return AppContext(
             app_id=UUID(str(app_id)),
-            api_key_id=UUID(str(api_key_id)),
+            api_key_id=UUID(str(api_key_id)) if api_key_id else None,
             _session=session,
         )
     except (ValueError, TypeError):
