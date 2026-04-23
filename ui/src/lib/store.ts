@@ -35,7 +35,15 @@ interface AppState {
   // UI 语言，默认中文
   locale: "zh" | "en";
   setLocale: (l: "zh" | "en") => void;
+
+  // Sidebar 宽度（像素），可拖拽；180-400 范围
+  sidebarWidth: number;
+  setSidebarWidth: (w: number) => void;
 }
+
+export const SIDEBAR_MIN_PX = 180;
+export const SIDEBAR_MAX_PX = 400;
+export const SIDEBAR_DEFAULT_PX = 240;
 
 export const DEFAULT_PLAYGROUND_SYSTEM_PROMPT =
   "You are a helpful assistant with long-term memory of the user. " +
@@ -67,6 +75,10 @@ export const useAppStore = create<AppState>()(
 
       locale: "zh",
       setLocale: (l) => set({ locale: l }),
+
+      sidebarWidth: SIDEBAR_DEFAULT_PX,
+      setSidebarWidth: (w) =>
+        set({ sidebarWidth: Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, w)) }),
     }),
     { name: "cozymemory-app" }
   )

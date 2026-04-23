@@ -30,7 +30,7 @@ export function LoginForm() {
       );
       setJwt(r.access_token);
       document.cookie = "cm_auth=1; Path=/; SameSite=Lax";
-      router.replace("/apps");
+      router.replace("/home");
     } catch {
       toast.error(t("auth.login_failed"));
     } finally {

@@ -19,6 +19,7 @@ export const en = {
   "sidebar.item.users": "Users",
   "sidebar.item.backup": "Backup",
   "sidebar.item.settings": "Settings",
+  "sidebar.item.home": "Home",
   "sidebar.theme": "Theme",
   "sidebar.language": "Language",
   "sidebar.language.zh": "中文",
@@ -592,6 +593,30 @@ export const en = {
     "From your .env COZY_API_KEYS; stored in sessionStorage only — clears on browser close.",
   "operator.enter": "Enter Operator Mode",
   "operator.key_invalid": "Key rejected. Check your bootstrap value.",
+
+  // ── Developer Home ──────────────────────────────────────────────────
+  "home.title": "Home",
+  "home.subtitle": "Overview of your apps and memory platform activity.",
+  "home.stat.apps": "Apps",
+  "home.stat.users": "External Users",
+  "home.stat.users_hint": "Sum across all apps.",
+  "home.stat.engines": "Memory Engines",
+  "home.stat.engines_hint": "Mem0 · Memobase · Cognee",
+  "home.quick.title": "Quick actions",
+  "home.quick.new_app": "New App",
+  "home.quick.browse_apps": "Browse apps",
+  "home.recent_apps": "Recent apps",
+  "home.app_card.users": "users",
+
+  // ── Operator Dashboard ──────────────────────────────────────────────
+  "operator.dashboard_title": "Operator Overview",
+  "operator.dashboard_subtitle": "Cross-org platform stats and engine health.",
+  "operator.stat.orgs": "Organizations",
+  "operator.stat.users": "Users (global)",
+  "operator.stat.datasets": "Datasets",
+  "operator.stat.api_status": "API Status",
+  "operator.engine_health": "Engine Health",
+  "operator.quick_links": "Quick links",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",

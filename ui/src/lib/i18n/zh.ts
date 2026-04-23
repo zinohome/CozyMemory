@@ -18,6 +18,7 @@ export const zh: Record<TKey, string> = {
   "sidebar.item.users": "用户映射",
   "sidebar.item.backup": "备份",
   "sidebar.item.settings": "设置",
+  "sidebar.item.home": "主页",
   "sidebar.theme": "主题",
   "sidebar.language": "语言",
   "sidebar.language.zh": "中文",
@@ -586,6 +587,30 @@ export const zh: Record<TKey, string> = {
     "来自 .env 的 COZY_API_KEYS；仅保存在当前会话，关闭浏览器即清除。",
   "operator.enter": "进入 Operator 模式",
   "operator.key_invalid": "密钥无效，请检查 bootstrap 配置。",
+
+  // ── Developer Home ──────────────────────────────────────────────────
+  "home.title": "主页",
+  "home.subtitle": "查看当前组织下所有 App 和记忆平台的整体情况。",
+  "home.stat.apps": "应用数",
+  "home.stat.users": "外部用户",
+  "home.stat.users_hint": "所有 App 汇总",
+  "home.stat.engines": "记忆引擎",
+  "home.stat.engines_hint": "Mem0 · Memobase · Cognee",
+  "home.quick.title": "快捷操作",
+  "home.quick.new_app": "新建 App",
+  "home.quick.browse_apps": "查看应用列表",
+  "home.recent_apps": "最近的应用",
+  "home.app_card.users": "位用户",
+
+  // ── Operator Dashboard ──────────────────────────────────────────────
+  "operator.dashboard_title": "运维总览",
+  "operator.dashboard_subtitle": "跨组织平台统计与引擎健康状态。",
+  "operator.stat.orgs": "组织数",
+  "operator.stat.users": "全局用户",
+  "operator.stat.datasets": "数据集",
+  "operator.stat.api_status": "API 状态",
+  "operator.engine_health": "引擎健康",
+  "operator.quick_links": "快捷入口",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "网络错误，请重试。",
