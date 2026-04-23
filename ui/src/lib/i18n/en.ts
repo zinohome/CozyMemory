@@ -496,6 +496,20 @@ export const en = {
   "hotkeys.go.backup": "Go to Backup",
   "hotkeys.go.settings": "Go to Settings",
 
+  // ── Auth ────────────────────────────────────────────────────────────
+  "auth.login": "Log in",
+  "auth.login_submit": "Log in",
+  "auth.login_failed": "Login failed, please check your credentials",
+  "auth.email": "Email",
+  "auth.password": "Password",
+  "auth.register": "Sign up",
+  "auth.register_submit": "Create account",
+  "auth.register_failed": "Sign up failed",
+  "auth.org_name": "Organization name",
+  "auth.org_slug": "Organization slug",
+  "auth.go_register": "Don't have an account? Sign up",
+  "auth.go_login": "Already have an account? Log in",
+
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",
   "error.unauthorized": "Unauthorized. Check your API key in Settings.",

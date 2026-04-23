@@ -494,6 +494,20 @@ export const zh: Record<TKey, string> = {
   "hotkeys.go.backup": "跳到备份",
   "hotkeys.go.settings": "跳到设置",
 
+  // ── Auth ────────────────────────────────────────────────────────────
+  "auth.login": "登录",
+  "auth.login_submit": "登录",
+  "auth.login_failed": "登录失败，请检查邮箱/密码",
+  "auth.email": "邮箱",
+  "auth.password": "密码",
+  "auth.register": "注册",
+  "auth.register_submit": "注册",
+  "auth.register_failed": "注册失败",
+  "auth.org_name": "组织名",
+  "auth.org_slug": "组织 slug",
+  "auth.go_register": "还没账号？去注册",
+  "auth.go_login": "已有账号？去登录",
+
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "网络错误，请重试。",
   "error.unauthorized": "未授权。请在设置里检查 API Key。",
