@@ -522,6 +522,32 @@ export const en = {
   "apps.slug_conflict": "Slug already taken",
   "apps.none": "No apps yet",
   "apps.none_create_cta": "Go create an App",
+  "apps.users_title": "External Users",
+  "apps.users_manage_hint": "View external user mappings for this app",
+
+  // ── API Keys (per-app) ──────────────────────────────────────────────
+  "keys.title": "API Keys",
+  "keys.create": "New Key",
+  "keys.name": "Name",
+  "keys.name_placeholder": "Key name (e.g. prod / staging)",
+  "keys.prefix": "Prefix",
+  "keys.status": "Status",
+  "keys.status_active": "Active",
+  "keys.last_used": "Last used",
+  "keys.rotate": "Rotate",
+  "keys.created_once": "Key created — shown once only",
+  "keys.created_warning":
+    "Copy and save this key — it will not be shown again",
+  "keys.copy": "Copy",
+  "keys.copied": "Copied",
+  "keys.saved_ack": "I've saved it",
+  "keys.rotate_confirm_title": "Rotate this key?",
+  "keys.rotate_confirm_desc":
+    "The old key will stop working immediately once you rotate.",
+  "keys.delete_confirm_title": "Delete this key?",
+  "keys.delete_confirm_desc":
+    "Clients using this key will stop working immediately",
+  "keys.manage_hint": "View and manage API keys for this app",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",
