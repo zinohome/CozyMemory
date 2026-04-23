@@ -126,14 +126,15 @@ async def test_bearer_plus_cross_org_app_id_rejected(client):
 
 
 @pytest.mark.asyncio
-async def test_bearer_without_app_id_on_business_route_passes_middleware(client, mock_conv):
+async def test_bearer_without_app_id_on_business_route_now_rejected(client, mock_conv):
+    """Step 8 收紧：Bearer 无 AppId 调业务路由现在是 401"""
     token, _, _ = await _register_and_app(client)
     r = await client.post(
         "/api/v1/conversations",
         headers={"Authorization": f"Bearer {token}"},
         json={"user_id": "x", "messages": [{"role": "user", "content": "x"}]},
     )
-    assert r.status_code != 401
+    assert r.status_code == 401
 
 
 @pytest.mark.asyncio

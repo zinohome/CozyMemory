@@ -156,6 +156,15 @@ def create_app() -> FastAPI:
         "/api/v1/dashboard",  # Dashboard 管理接口走 JWT，不走 X-Cozy-API-Key
     )
 
+    # Step 8: 业务路由白名单 —— Bearer 分支无 AppId 调这些路径 → 401。
+    # 管理类路径（dashboard / auth）由 _AUTH_EXEMPT_PREFIXES 豁免，不进中间件。
+    _BEARER_REQUIRES_APP_ID_PREFIXES = (
+        "/api/v1/conversations",
+        "/api/v1/profiles",
+        "/api/v1/context",
+        "/api/v1/knowledge",
+    )
+
     @app.middleware("http")
     async def require_api_key(request: Request, call_next: Any) -> Response:
         if not settings.auth_enabled:
@@ -193,38 +202,50 @@ def create_app() -> FastAPI:
                 ok = False
         # 2) Bearer JWT + 可选 X-Cozy-App-Id — Dashboard UI 路径
         elif authorization.startswith("Bearer "):
-            try:
-                from sqlalchemy import select as _select
-
-                from .auth.jwt import decode_access_token
-                from .db.engine import _session_factory, init_engine
-                from .db.models import App, Developer
-
-                if _session_factory is None:
-                    init_engine()
-                assert _session_factory is not None
-                payload = decode_access_token(authorization[7:])
-                dev_id = payload.get("sub")
-                async with _session_factory() as s:
-                    dev = (await s.execute(_select(Developer).where(Developer.id == dev_id))).scalar_one_or_none()
-                    if dev is None:
-                        ok = False
-                    else:
-                        app_id_hdr = request.headers.get("x-cozy-app-id", "")
-                        if app_id_hdr:
-                            row = (await s.execute(_select(App).where(App.id == app_id_hdr))).scalar_one_or_none()
-                            if row is None or str(row.org_id) != str(dev.org_id):
-                                ok = False
-                            else:
-                                ok = True
-                                request.state.app_id = str(row.id)
-                                request.state.api_key_id = None
-                                request.state.developer_id = str(dev.id)
-                        else:
-                            ok = True
-                            request.state.developer_id = str(dev.id)
-            except Exception:
+            path = request.url.path
+            # Step 8: /operator/* 拒 JWT —— 那里只认 bootstrap
+            if path.startswith("/api/v1/operator"):
                 ok = False
+            else:
+                try:
+                    from sqlalchemy import select as _select
+
+                    from .auth.jwt import decode_access_token
+                    from .db.engine import _session_factory, init_engine
+                    from .db.models import App, Developer
+                    if _session_factory is None:
+                        init_engine()
+                    assert _session_factory is not None
+                    payload = decode_access_token(authorization[7:])
+                    dev_id = payload.get("sub")
+                    async with _session_factory() as s:
+                        dev = (await s.execute(
+                            _select(Developer).where(Developer.id == dev_id)
+                        )).scalar_one_or_none()
+                        if dev is None:
+                            ok = False
+                        else:
+                            app_id_hdr = request.headers.get("x-cozy-app-id", "")
+                            if app_id_hdr:
+                                row = (await s.execute(
+                                    _select(App).where(App.id == app_id_hdr)
+                                )).scalar_one_or_none()
+                                if row is None or str(row.org_id) != str(dev.org_id):
+                                    ok = False
+                                else:
+                                    ok = True
+                                    request.state.app_id = str(row.id)
+                                    request.state.api_key_id = None
+                                    request.state.developer_id = str(dev.id)
+                            else:
+                                # Step 8: 业务路由强制 AppId；其他路径（非业务）放行
+                                if any(path.startswith(p) for p in _BEARER_REQUIRES_APP_ID_PREFIXES):
+                                    ok = False
+                                else:
+                                    ok = True
+                                    request.state.developer_id = str(dev.id)
+                except Exception:
+                    ok = False
 
         if not ok:
             origin = request.headers.get("origin")
@@ -233,7 +254,7 @@ def create_app() -> FastAPI:
                 content=ErrorResponse(
                     success=False,
                     error="Unauthorized",
-                    detail="Missing or invalid X-Cozy-API-Key / Bearer token",
+                    detail="Missing or invalid X-Cozy-API-Key / Bearer token; business routes require X-Cozy-App-Id when using Bearer",
                 ).model_dump(),
                 headers={
                     "Access-Control-Allow-Origin": origin or "*",
