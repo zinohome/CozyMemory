@@ -62,6 +62,9 @@ export type ApiError = S["ErrorResponse"];
 type ApiFetchInit = RequestInit & {
   params?: Record<string, string | number | boolean | undefined>;
   scoped?: boolean;
+  // 某些端点（如改密码、删 key 等）自己用 401 表达业务错误，不应
+  // 触发自动登出 + 跳 /login。调用方设 skipAuthRedirect:true 关闭。
+  skipAuthRedirect?: boolean;
 };
 
 // 统一的鉴权 header 构造：JWT 优先（多租户 dashboard 路径），否则走 legacy
@@ -85,10 +88,10 @@ export function buildAuthHeaders(scoped: boolean = true): Record<string, string>
 }
 
 async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
-  // Destructure custom `params` / `scoped` out so they are never forwarded to
-  // fetch() — the fetch spec does not recognise them and some polyfills throw
-  // on unknown keys.
-  const { params, scoped = true, ...fetchInit } = init ?? {};
+  // Destructure custom `params` / `scoped` / `skipAuthRedirect` out so they are
+  // never forwarded to fetch() — the fetch spec does not recognise them and
+  // some polyfills throw on unknown keys.
+  const { params, scoped = true, skipAuthRedirect = false, ...fetchInit } = init ?? {};
 
   const url = new URL(`${BASE_URL}${API_PREFIX}${path}`);
   if (params) {
@@ -113,7 +116,8 @@ async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
   });
 
   // 401 + JWT was in flight => session expired; clear auth and redirect.
-  if (res.status === 401 && getJwt()) {
+  // skipAuthRedirect=true 时（如改密码接口）把 401 当业务错误抛给调用方处理。
+  if (res.status === 401 && getJwt() && !skipAuthRedirect) {
     useAppStore.getState().logout();
     if (typeof window !== "undefined") {
       window.location.assign("/login");

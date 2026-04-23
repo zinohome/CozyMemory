@@ -19,9 +19,17 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import func
+
 from ...auth import get_current_developer, require_role
-from ...db import App, AuditLog, Developer, get_session
+from ...db import App, AuditLog, Developer, Organization, get_session
 from ...models.app import AppCreate, AppInfo, AppListResponse, AppUpdate
+from ...models.auth import (
+    MemberInfo,
+    MemberListResponse,
+    OrganizationInfo,
+    UpdateOrganizationRequest,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -206,3 +214,136 @@ async def delete_app(
     await session.commit()
     # 204 不返 body
     return None
+
+
+# ── Organization (当前登录者所在 org) ─────────────────────────────────
+
+async def _get_own_org(dev: Developer, session: AsyncSession) -> Organization:
+    org = (
+        await session.execute(select(Organization).where(Organization.id == dev.org_id))
+    ).scalar_one_or_none()
+    if org is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="org not found")
+    return org
+
+
+async def _org_counts(org_id: UUID, session: AsyncSession) -> tuple[int, int]:
+    dev_count = int(
+        (
+            await session.execute(
+                select(func.count(Developer.id)).where(Developer.org_id == org_id)
+            )
+        ).scalar()
+        or 0
+    )
+    app_count = int(
+        (
+            await session.execute(
+                select(func.count(App.id)).where(App.org_id == org_id)
+            )
+        ).scalar()
+        or 0
+    )
+    return dev_count, app_count
+
+
+@router.get(
+    "/organization",
+    response_model=OrganizationInfo,
+    summary="查看当前 org 信息 + 成员 / App 计数",
+)
+async def get_organization(
+    dev: Developer = Depends(get_current_developer),
+    session: AsyncSession = Depends(get_session),
+) -> OrganizationInfo:
+    org = await _get_own_org(dev, session)
+    dev_count, app_count = await _org_counts(org.id, session)
+    return OrganizationInfo(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        created_at=org.created_at,
+        developer_count=dev_count,
+        app_count=app_count,
+    )
+
+
+@router.patch(
+    "/organization",
+    response_model=OrganizationInfo,
+    summary="修改当前 org 的 name / slug（仅 owner）",
+)
+async def update_organization(
+    body: UpdateOrganizationRequest,
+    request: Request,
+    dev: Developer = Depends(require_role("owner")),
+    session: AsyncSession = Depends(get_session),
+) -> OrganizationInfo:
+    if body.name is None and body.slug is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="no fields to update"
+        )
+    org = await _get_own_org(dev, session)
+    if body.name is not None:
+        org.name = body.name
+    if body.slug is not None:
+        org.slug = body.slug
+    try:
+        await session.flush()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="org_slug already taken"
+        )
+    _audit(
+        session,
+        dev,
+        action="org.updated",
+        app_id=None,
+        request=request,
+        meta={"changed": {k: v for k, v in body.model_dump().items() if v is not None}},
+    )
+    await session.commit()
+    await session.refresh(org)
+    dev_count, app_count = await _org_counts(org.id, session)
+    return OrganizationInfo(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        created_at=org.created_at,
+        developer_count=dev_count,
+        app_count=app_count,
+    )
+
+
+@router.get(
+    "/organization/developers",
+    response_model=MemberListResponse,
+    summary="列当前 org 下所有 Developer",
+)
+async def list_developers(
+    dev: Developer = Depends(get_current_developer),
+    session: AsyncSession = Depends(get_session),
+) -> MemberListResponse:
+    rows = (
+        await session.execute(
+            select(Developer)
+            .where(Developer.org_id == dev.org_id)
+            .order_by(Developer.created_at)
+        )
+    ).scalars().all()
+    return MemberListResponse(
+        data=[
+            MemberInfo(
+                id=d.id,
+                email=d.email,
+                name=d.name,
+                role=d.role,
+                is_active=d.is_active,
+                last_login_at=d.last_login_at,
+                created_at=d.created_at,
+            )
+            for d in rows
+        ],
+        total=len(rows),
+    )

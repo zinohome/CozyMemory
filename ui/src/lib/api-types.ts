@@ -92,6 +92,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 修改当前登录 Developer 的密码
+         * @description 验证旧密码后替换 password_hash。
+         *
+         *     安全考虑：不区分"旧密码错"和"账号问题"，统一 401；新密码不允许与旧密码相同。
+         */
+        patch: operations["change_password_api_v1_auth_password_patch"];
+        trace?: never;
+    };
     "/api/v1/dashboard/apps": {
         parameters: {
             query?: never;
@@ -127,6 +149,41 @@ export interface paths {
         head?: never;
         /** 修改 App 的 name / description（owner/admin） */
         patch: operations["update_app_api_v1_dashboard_apps__app_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/dashboard/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查看当前 org 信息 + 成员 / App 计数 */
+        get: operations["get_organization_api_v1_dashboard_organization_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** 修改当前 org 的 name / slug（仅 owner） */
+        patch: operations["update_organization_api_v1_dashboard_organization_patch"];
+        trace?: never;
+    };
+    "/api/v1/dashboard/organization/developers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列当前 org 下所有 Developer */
+        get: operations["list_developers_api_v1_dashboard_organization_developers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/dashboard/apps/{app_id}/keys": {
@@ -1075,6 +1132,16 @@ export interface components {
             files: string[];
         };
         /**
+         * ChangePasswordRequest
+         * @description 修改密码：需提供旧密码 + 新密码。
+         */
+        ChangePasswordRequest: {
+            /** Old Password */
+            old_password: string;
+            /** New Password */
+            new_password: string;
+        };
+        /**
          * CognifyStatusResponse
          * @description Cognify 任务状态响应（透传 Cognee 原始响应）
          */
@@ -1969,6 +2036,39 @@ export interface components {
             password: string;
         };
         /**
+         * MemberInfo
+         * @description Org 成员（developer）列表项。
+         */
+        MemberInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Login At */
+            last_login_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MemberListResponse */
+        MemberListResponse: {
+            /** Data */
+            data: components["schemas"]["MemberInfo"][];
+            /** Total */
+            total: number;
+        };
+        /**
          * MemoryBundle
          * @description 单用户记忆导出包。可选附带 Cognee 数据集（数据集与用户无关）。
          */
@@ -2046,6 +2146,30 @@ export interface components {
             created_at: string;
             /** Dev Count */
             dev_count: number;
+            /** App Count */
+            app_count: number;
+        };
+        /**
+         * OrganizationInfo
+         * @description 当前登录者所在 org 的完整信息。
+         */
+        OrganizationInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Developer Count */
+            developer_count: number;
             /** App Count */
             app_count: number;
         };
@@ -2361,6 +2485,16 @@ export interface components {
             expires_in: number;
             developer: components["schemas"]["DeveloperInfo"];
         };
+        /**
+         * UpdateOrganizationRequest
+         * @description 修改 Organization 属性（目前只支持 name 和 slug）。仅 owner 能操作。
+         */
+        UpdateOrganizationRequest: {
+            /** Name */
+            name?: string | null;
+            /** Slug */
+            slug?: string | null;
+        };
         /** UserListResponse */
         UserListResponse: {
             /**
@@ -2548,6 +2682,37 @@ export interface operations {
             };
         };
     };
+    change_password_api_v1_auth_password_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_apps_api_v1_dashboard_apps_get: {
         parameters: {
             query?: never;
@@ -2692,6 +2857,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_organization_api_v1_dashboard_organization_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInfo"];
+                };
+            };
+        };
+    };
+    update_organization_api_v1_dashboard_organization_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrganizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_developers_api_v1_dashboard_organization_developers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberListResponse"];
                 };
             };
         };

@@ -15,6 +15,7 @@ from ...auth import create_access_token, get_current_developer, hash_password, v
 from ...config import settings
 from ...db import Developer, Organization, get_session
 from ...models.auth import (
+    ChangePasswordRequest,
     DeveloperInfo,
     LoginRequest,
     RegisterRequest,
@@ -151,3 +152,28 @@ async def me(
     org_result = await session.execute(select(Organization).where(Organization.id == dev.org_id))
     org = org_result.scalar_one()
     return _to_developer_info(dev, org)
+
+
+@router.patch(
+    "/password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="修改当前登录 Developer 的密码",
+)
+async def change_password(
+    body: ChangePasswordRequest,
+    dev: Developer = Depends(get_current_developer),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """验证旧密码后替换 password_hash。
+
+    安全考虑：不区分"旧密码错"和"账号问题"，统一 401；新密码不允许与旧密码相同。
+    """
+    if not verify_password(body.old_password, dev.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
+    if body.old_password == body.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="new password must differ from current",
+        )
+    dev.password_hash = hash_password(body.new_password)
+    await session.commit()

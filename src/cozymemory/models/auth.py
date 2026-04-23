@@ -64,3 +64,50 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int = Field(..., description="秒")
     developer: DeveloperInfo
+
+
+class ChangePasswordRequest(BaseModel):
+    """修改密码：需提供旧密码 + 新密码。"""
+
+    old_password: str = Field(..., min_length=1, max_length=72)
+    new_password: str = Field(..., min_length=8, max_length=72)
+
+
+class UpdateOrganizationRequest(BaseModel):
+    """修改 Organization 属性（目前只支持 name 和 slug）。仅 owner 能操作。"""
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    slug: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=64,
+        pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+    )
+
+
+class OrganizationInfo(BaseModel):
+    """当前登录者所在 org 的完整信息。"""
+
+    id: UUID
+    name: str
+    slug: str
+    created_at: datetime
+    developer_count: int
+    app_count: int
+
+
+class MemberInfo(BaseModel):
+    """Org 成员（developer）列表项。"""
+
+    id: UUID
+    email: str
+    name: str
+    role: str
+    is_active: bool
+    last_login_at: datetime | None
+    created_at: datetime
+
+
+class MemberListResponse(BaseModel):
+    data: list[MemberInfo]
+    total: int
