@@ -1,12 +1,7 @@
-// NOTE: Next.js 16 deprecates the `middleware` file convention in favor of
-// `proxy`. We intentionally keep `middleware.ts` here to match the task spec;
-// if/when migrating to `proxy.ts`, rename the file and the exported function
-// (`middleware` -> `proxy`). See
-// `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md`.
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const p = req.nextUrl.pathname;
   const isPublic =
     p.startsWith("/login") ||
