@@ -565,6 +565,16 @@ export const en = {
   "users.pagination": "Page {page} of {pages} — {total} users",
   "users.none": "No external users for this app yet",
 
+  // ── App Workspace (Step 8.7) ────────────────────────────────────────
+  "app_workspace.title": "App Workspace",
+  "app_workspace.back_to_apps": "← All apps",
+  "app_workspace.overview": "Overview",
+  "app_workspace.memory": "Memory",
+  "app_workspace.profiles": "Profiles",
+  "app_workspace.knowledge": "Knowledge",
+  "app_workspace.context": "Context",
+  "app_workspace.playground": "Playground",
+
   // ── Operator mode (Step 8) ──────────────────────────────────────────
   "operator.sidebar.title": "Operator",
   "operator.orgs": "Organizations",

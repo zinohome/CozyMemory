@@ -560,6 +560,16 @@ export const zh: Record<TKey, string> = {
   "users.pagination": "第 {page} / {pages} 页，共 {total} 个用户",
   "users.none": "此 App 下还没有 external user",
 
+  // ── App Workspace (Step 8.7) ────────────────────────────────────────
+  "app_workspace.title": "应用工作台",
+  "app_workspace.back_to_apps": "← 返回应用列表",
+  "app_workspace.overview": "概览",
+  "app_workspace.memory": "对话记忆",
+  "app_workspace.profiles": "用户画像",
+  "app_workspace.knowledge": "知识库",
+  "app_workspace.context": "上下文调试",
+  "app_workspace.playground": "沙盒",
+
   // ── Operator mode (Step 8) ──────────────────────────────────────────
   "operator.sidebar.title": "Operator",
   "operator.orgs": "组织列表",
