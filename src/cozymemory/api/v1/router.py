@@ -8,6 +8,7 @@ from .backup import router as backup_router
 from .context import router as context_router
 from .conversation import router as conversation_router
 from .dashboard import router as dashboard_router
+from .dashboard_users import router as dashboard_users_router
 from .health import router as health_router
 from .knowledge import router as knowledge_router
 from .profile import router as profile_router
@@ -18,6 +19,7 @@ router.include_router(health_router)
 router.include_router(auth_router)
 router.include_router(dashboard_router)  # /dashboard/apps
 router.include_router(api_keys_router)  # /dashboard/apps/{app_id}/keys
+router.include_router(dashboard_users_router)  # /dashboard/apps/{app_id}/users
 router.include_router(conversation_router)
 router.include_router(profile_router)
 router.include_router(knowledge_router)
