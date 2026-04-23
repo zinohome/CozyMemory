@@ -1,7 +1,5 @@
 """CozyMemory FastAPI 应用入口"""
 
-import asyncio
-import hashlib
 import time
 import uuid
 from collections.abc import AsyncIterator
@@ -157,8 +155,6 @@ def create_app() -> FastAPI:
         "/api/v1/auth",  # 开发者注册/登录走 JWT，不走 X-Cozy-API-Key
         "/api/v1/dashboard",  # Dashboard 管理接口走 JWT，不走 X-Cozy-API-Key
     )
-    _ADMIN_PREFIX = "/api/v1/admin"
-
     @app.middleware("http")
     async def require_api_key(request: Request, call_next: Any) -> Response:
         if not settings.auth_enabled:
@@ -170,29 +166,33 @@ def create_app() -> FastAPI:
             return await call_next(request)
 
         provided = request.headers.get("x-cozy-api-key", "")
-        is_bootstrap = provided and provided in settings.api_keys_set
-        is_admin_path = path.startswith(_ADMIN_PREFIX)
-        auth_key_id: str | None = None  # 鉴权成功的 key id，供审计日志引用
 
-        if is_admin_path:
-            # admin 路由 only bootstrap key
-            ok = is_bootstrap
-            if ok:
-                auth_key_id = "bootstrap:" + hashlib.sha256(provided.encode()).hexdigest()[:16]
-        else:
-            # 普通路由：bootstrap 或动态 key 都接受
-            ok = is_bootstrap
-            if ok:
-                auth_key_id = "bootstrap:" + hashlib.sha256(provided.encode()).hexdigest()[:16]
-            elif provided:
-                try:
-                    # 懒加载，避免 startup 先依赖 Redis
-                    from .api.deps import get_api_key_store
+        # 两路鉴权：
+        # 1) bootstrap（env COZY_API_KEYS） — 前置快速判，不打 DB
+        # 2) PG 里 Developer 创建的 App key — batch 17 Phase 2 Step 3 迁移
+        ok = False
+        if provided and provided in settings.api_keys_set:
+            ok = True
+            # bootstrap key 没 app 归属，直接放行不写 request.state
+        elif provided:
+            try:
+                from .db.engine import _session_factory, init_engine
+                from .services.api_key_store import ApiKeyStore
 
-                    auth_key_id = await get_api_key_store().verify_and_touch(provided)
-                    ok = auth_key_id is not None
-                except Exception:
-                    ok = False
+                if _session_factory is None:
+                    init_engine()
+                assert _session_factory is not None
+                async with _session_factory() as s:
+                    store = ApiKeyStore(s)
+                    record = await store.verify_and_touch(provided)
+                    await s.commit()
+                    if record is not None:
+                        ok = True
+                        # 注入 app 上下文，下一步 Step 4 的路由用
+                        request.state.api_key_id = str(record.id)
+                        request.state.app_id = str(record.app_id)
+            except Exception:
+                ok = False
 
         if not ok:
             origin = request.headers.get("origin")
@@ -201,11 +201,7 @@ def create_app() -> FastAPI:
                 content=ErrorResponse(
                     success=False,
                     error="Unauthorized",
-                    detail=(
-                        "Admin operation requires a bootstrap key"
-                        if is_admin_path
-                        else "Missing or invalid X-Cozy-API-Key header"
-                    ),
+                    detail="Missing or invalid X-Cozy-API-Key header",
                 ).model_dump(),
                 headers={
                     "Access-Control-Allow-Origin": origin or "*",
@@ -213,23 +209,7 @@ def create_app() -> FastAPI:
                 },
             )
 
-        response = await call_next(request)
-        # 成功鉴权的 key 异步写入审计日志（不阻塞响应）
-        if auth_key_id:
-            try:
-                from .api.deps import get_api_key_store
-
-                asyncio.create_task(
-                    get_api_key_store().record_usage(
-                        key_id=auth_key_id,
-                        method=request.method,
-                        path=path,
-                        status=response.status_code,
-                    )
-                )
-            except Exception:
-                pass
-        return response
+        return await call_next(request)
 
     # 请求日志中间件：绑定 request_id / method / path 到 structlog contextvars
     @app.middleware("http")

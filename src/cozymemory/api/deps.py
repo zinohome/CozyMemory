@@ -9,7 +9,6 @@ from ..clients.cognee import CogneeClient
 from ..clients.mem0 import Mem0Client
 from ..clients.memobase import MemobaseClient
 from ..config import settings
-from ..services.api_keys import ApiKeyStore
 from ..services.backup import BackupService
 from ..services.context import ContextService
 from ..services.conversation import ConversationService
@@ -23,7 +22,6 @@ _memobase_client: MemobaseClient | None = None
 _cognee_client: CogneeClient | None = None
 _redis_client: aioredis.Redis | None = None
 _user_mapping_service: UserMappingService | None = None
-_api_key_store: ApiKeyStore | None = None
 
 
 def get_mem0_client() -> Mem0Client:
@@ -137,9 +135,3 @@ def get_backup_service() -> BackupService:
     )
 
 
-def get_api_key_store() -> ApiKeyStore:
-    """获取 API Key 存储服务单例"""
-    global _api_key_store
-    if _api_key_store is None:
-        _api_key_store = ApiKeyStore(redis_client=get_redis_client())
-    return _api_key_store
