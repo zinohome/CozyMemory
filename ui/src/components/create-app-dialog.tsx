@@ -55,7 +55,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactNode }) {
             <Input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              pattern="^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$"
+              pattern="^[a-z0-9][a-z0-9\-]{0,30}[a-z0-9]$"
               required
             />
           </div>

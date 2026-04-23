@@ -216,16 +216,9 @@ export const conversationsApi = {
 };
 
 // ── Users (ID mapping) ────────────────────────────────────────────────────
-
-export const usersApi = {
-  list: () => apiFetch<UserListResponse>("/users"),
-  getUuid: (userId: string, create = false) =>
-    apiFetch<UserMappingResponse>(`/users/${userId}/uuid`, { params: { create } }),
-  deleteMapping: (userId: string) =>
-    apiFetch<{ success: boolean; message: string; warning: string }>(`/users/${userId}/uuid`, {
-      method: "DELETE",
-    }),
-};
+// Step 8: /api/v1/users 搬到 /api/v1/operator/users-mapping（仅 operator 用）。
+// Developer 端看 App-scoped users：用 useAppUsers hook。
+// 此处不再导出 usersApi —— 老 Redis 全局视图属于 operator（operatorApi.listUsers）。
 
 // ── Profiles (Memobase) ───────────────────────────────────────────────────
 

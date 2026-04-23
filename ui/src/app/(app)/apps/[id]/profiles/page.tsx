@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, memo, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profilesApi, type ProfileItem, type ProfileResponse } from "@/lib/api";
 import { toast } from "sonner";
@@ -48,6 +49,8 @@ const ProfileItemRow = memo(function ProfileItemRow({
 
 export default function ProfilesPage() {
   const t = useT();
+  const params = useParams();
+  const appId = (params?.id as string | undefined) ?? "";
   const [userId, setUserId] = useState("");
   const [newItem, setNewItem] = useState({ topic: "", sub_topic: "", content: "" });
   const qc = useQueryClient();
@@ -203,7 +206,7 @@ export default function ProfilesPage() {
           icon={User}
           title={t("empty.noUser.title")}
           description={t("empty.profiles.desc")}
-          action={{ label: t("empty.openPlayground"), href: "/playground" }}
+          action={{ label: t("empty.openPlayground"), href: `/apps/${appId}/playground` }}
         />
       )}
     </div>

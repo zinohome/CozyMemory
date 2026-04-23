@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * 挂在 AppLayout 里的 side-effect 组件：每 10s 并发拉 health + users +
- * datasets，把结果 push 到 metrics-store。NOT 为用户可见 UI，只是轮询器。
+ * Operator 视角的轮询器：每 10s 并发拉 health / users / datasets，push 到
+ * metrics-store 给 /operator/health 页面画图。
  *
- * 跨页面导航保持活跃 —— Dashboard 离开也继续攒数据，回来时直接看到
- * 完整窗口。
+ * Step 8 后只挂在 operator layout 里 —— 用 operatorFetch（bootstrap key）
+ * 避开 Bearer+AppId 鉴权，不会因无 AppId 触发 401 → logout 回踢。
  */
 
 import { useEffect } from "react";
-import { healthApi, usersApi, knowledgeApi } from "@/lib/api";
+import { operatorApi } from "@/lib/api";
 import { useMetricsStore, POLL_INTERVAL_MS } from "@/lib/metrics-store";
 
 export function MetricsPoller() {
@@ -21,20 +21,15 @@ export function MetricsPoller() {
 
     async function tick() {
       const ts = Date.now();
-
-      // 并发拉三个端点；单个失败不影响其他 series
       const [healthRes, usersRes, datasetsRes] = await Promise.allSettled([
-        healthApi.check(),
-        usersApi.list(),
-        knowledgeApi.listDatasets(),
+        operatorApi.health(),
+        operatorApi.listUsers(),
+        operatorApi.listDatasets(),
       ]);
-
       if (aborted) return;
 
       if (healthRes.status === "fulfilled") {
         const h = healthRes.value;
-        // 后端 engines dict key 是小写 "mem0"/"memobase"/"cognee"，不是 name 字段
-        // 的 PascalCase。先按字面 key 查，失败 fallback 到扫 values 按 name 匹配。
         const engines = h.engines ?? {};
         const find = (target: string) => {
           const direct = engines[target.toLowerCase()]?.latency_ms;
@@ -58,13 +53,10 @@ export function MetricsPoller() {
       const users =
         usersRes.status === "fulfilled" ? (usersRes.value.total ?? usersRes.value.data?.length ?? 0) : 0;
       const datasets =
-        datasetsRes.status === "fulfilled"
-          ? (datasetsRes.value.data?.length ?? 0)
-          : 0;
+        datasetsRes.status === "fulfilled" ? (datasetsRes.value.data?.length ?? 0) : 0;
       pushCounts({ ts, users, datasets });
     }
 
-    // 首次立即跑一次，随后定时
     tick();
     const handle = setInterval(tick, POLL_INTERVAL_MS);
     return () => {

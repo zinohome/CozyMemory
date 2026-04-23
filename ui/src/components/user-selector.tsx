@@ -11,8 +11,7 @@
  */
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { usersApi } from "@/lib/api";
+import { useAppUsers } from "@/lib/hooks/use-app-users";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,16 +38,14 @@ export function UserSelector({
   loading = false,
 }: Props) {
   const { currentUserId, setCurrentUserId } = useAppStore();
+  const currentAppId = useAppStore((s) => s.currentAppId);
   const [localId, setLocalId] = useState(currentUserId);
   const [mode, setMode] = useState<"select" | "text">("select");
 
-  const { data, isFetching } = useQuery({
-    queryKey: ["users"],
-    queryFn: usersApi.list,
-    staleTime: 30_000,
-  });
-
-  const knownUsers = data?.data ?? [];
+  // 使用当前 App 的 external_users（来自 Step 7 的 dashboard users endpoint）。
+  // 没选 App 时 query 自动 disable（useAppUsers 内部 enabled: !!appId）。
+  const { data, isFetching } = useAppUsers(currentAppId, 500, 0);
+  const knownUsers = (data?.data ?? []).map((u) => u.external_user_id);
 
   function handleChange(val: string) {
     if (val === NEW_USER_SENTINEL) {

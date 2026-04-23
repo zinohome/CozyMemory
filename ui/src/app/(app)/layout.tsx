@@ -3,7 +3,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppSwitcher } from "@/components/app-switcher";
 import { UserMenu } from "@/components/user-menu";
 import { AuthGuard } from "@/components/auth-guard";
-import { MetricsPoller } from "@/components/metrics-poller";
 import { HotkeysProvider } from "@/components/hotkeys-provider";
 import { I18nProvider } from "@/lib/i18n";
 
@@ -12,7 +11,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <I18nProvider>
       <AuthGuard>
         <SidebarProvider>
-          <MetricsPoller />
+          {/* MetricsPoller removed: Step 8 deleted its only consumer (/dashboard page).
+              它轮询业务路由 (/users /knowledge/datasets) 会因无 AppId 触发 401 → logout 回踢. */}
           <HotkeysProvider />
           <div className="flex h-full w-full">
             <AppSidebar />

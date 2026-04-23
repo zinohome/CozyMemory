@@ -113,7 +113,7 @@ export function RegisterForm() {
             <Input
               id="org_slug"
               type="text"
-              pattern="^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+              pattern="^[a-z0-9][a-z0-9\-]*[a-z0-9]$"
               minLength={2}
               maxLength={64}
               value={orgSlug}

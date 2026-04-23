@@ -1,5 +1,6 @@
 import { OperatorGuard } from "@/components/operator-guard";
 import { OperatorSidebar } from "@/components/operator-sidebar";
+import { MetricsPoller } from "@/components/metrics-poller";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { I18nProvider } from "@/lib/i18n";
 
@@ -7,6 +8,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
   return (
     <I18nProvider>
       <OperatorGuard>
+        <MetricsPoller />
         <SidebarProvider>
           <div className="flex h-full w-full">
             <OperatorSidebar />

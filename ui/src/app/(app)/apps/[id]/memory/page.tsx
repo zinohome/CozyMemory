@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, memo, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { conversationsApi, type ConversationListResponse, type ConversationMemory } from "@/lib/api";
 import { toast } from "sonner";
@@ -46,6 +47,8 @@ const MemoryRow = memo(function MemoryRow({
 
 export default function MemoryLabPage() {
   const t = useT();
+  const params = useParams();
+  const appId = (params?.id as string | undefined) ?? "";
   const [userId, setUserId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
@@ -170,7 +173,7 @@ export default function MemoryLabPage() {
               icon={MessageSquare}
               title={t("empty.noUser.title")}
               description={t("empty.memory.desc")}
-              action={{ label: t("empty.openPlayground"), href: "/playground" }}
+              action={{ label: t("empty.openPlayground"), href: `/apps/${appId}/playground` }}
             />
           )}
         </div>
