@@ -565,6 +565,23 @@ export const en = {
   "users.pagination": "Page {page} of {pages} — {total} users",
   "users.none": "No external users for this app yet",
 
+  // ── Operator mode (Step 8) ──────────────────────────────────────────
+  "operator.sidebar.title": "Operator",
+  "operator.orgs": "Organizations",
+  "operator.users_mapping": "User Mapping (legacy)",
+  "operator.memory_raw": "Memory (global)",
+  "operator.profiles_raw": "Profiles (global)",
+  "operator.knowledge_raw": "Knowledge (global)",
+  "operator.health": "Health / Metrics",
+  "operator.backup": "Backup",
+  "operator.landing_desc":
+    "Enter your bootstrap API key to access global ops views.",
+  "operator.bootstrap_key": "Bootstrap Key",
+  "operator.bootstrap_key_hint":
+    "From your .env COZY_API_KEYS; stored in sessionStorage only — clears on browser close.",
+  "operator.enter": "Enter Operator Mode",
+  "operator.key_invalid": "Key rejected. Check your bootstrap value.",
+
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",
   "error.unauthorized": "Unauthorized. Check your API key in Settings.",

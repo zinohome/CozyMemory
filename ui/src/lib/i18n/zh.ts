@@ -560,6 +560,22 @@ export const zh: Record<TKey, string> = {
   "users.pagination": "第 {page} / {pages} 页，共 {total} 个用户",
   "users.none": "此 App 下还没有 external user",
 
+  // ── Operator mode (Step 8) ──────────────────────────────────────────
+  "operator.sidebar.title": "Operator",
+  "operator.orgs": "组织列表",
+  "operator.users_mapping": "用户映射（遗留）",
+  "operator.memory_raw": "对话记忆（全局）",
+  "operator.profiles_raw": "用户画像（全局）",
+  "operator.knowledge_raw": "知识库（全局）",
+  "operator.health": "运行状态",
+  "operator.backup": "备份",
+  "operator.landing_desc": "输入 bootstrap 密钥进入全局运维视图。",
+  "operator.bootstrap_key": "Bootstrap 密钥",
+  "operator.bootstrap_key_hint":
+    "来自 .env 的 COZY_API_KEYS；仅保存在当前会话，关闭浏览器即清除。",
+  "operator.enter": "进入 Operator 模式",
+  "operator.key_invalid": "密钥无效，请检查 bootstrap 配置。",
+
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "网络错误，请重试。",
   "error.unauthorized": "未授权。请在设置里检查 API Key。",

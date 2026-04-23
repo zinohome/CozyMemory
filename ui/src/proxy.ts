@@ -6,6 +6,7 @@ export function proxy(req: NextRequest) {
   const isPublic =
     p.startsWith("/login") ||
     p.startsWith("/register") ||
+    p.startsWith("/operator") ||
     p.startsWith("/_next") ||
     p.startsWith("/api") ||
     p === "/favicon.ico";
