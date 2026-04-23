@@ -201,9 +201,9 @@ Settings 的 "legacy bootstrap keys" 块（Step 7.8 加的）**搬到 `/operator
 - 老 global 数据批量迁到某 App 的 UI 工具（Operator 想做自己写 SQL）
 - 计费 / 配额 / 限流
 
-## 待决点（请 review）
+## 决策（已锁定）
 
-1. **登录后默认路径** —— 现在是 `/apps`；如果 Developer 只有一个 App，是否自动跳进去 `/apps/[id]/memory`？（建议：否，保持 `/apps` 作为明确落地页）
-2. **Operator 进入方式** —— 是从 Developer 顶栏点切换（Zustand 沿用 apiKey），还是独立 URL + 手动输 key？（spec 里选了手动输，更安全）
-3. **老 `/api/v1/users`、`/api/v1/backup` 后端路径** —— 删除还是保留 deprecated？（建议：保留 deprecated 6 个月，给客户迁移时间）
-4. **`/apps/[id]/knowledge`** —— Knowledge 的 dataset 本来是跨 user 的，是否按 App 隔离？（Step 6 没接入，这步要决定：方案 A 加 app_id 列到 datasets 表；方案 B 让 App 和 dataset 多对多映射）—— **如果现在不想处理 Knowledge 隔离，就先把页面移过去但依然用全局 API（留 FIXME），Step 9 再做**
+1. **登录后默认路径**：始终 `/apps`。即使只有 1 个 App 也先落在列表页，不自动跳工作台。
+2. **Operator 进入方式**：独立 `/operator` URL + 手动输 bootstrap key。不从 Developer 的 Zustand 沿用 apiKey —— 每次新 session 必须重输，避免 localStorage 长期持有高权限 key。
+3. **老后端路径**：立刻删除。搬 `/api/v1/users` → `/api/v1/operator/users-mapping`、`/api/v1/backup` → `/api/v1/operator/backup`；不留 deprecated shim。业务路径 `/conversations` `/profiles` `/context` **不动**（那是客户 app 的正式 API）。
+4. **Knowledge 隔离**：本期不做。`/apps/[id]/knowledge` 页面搬过去但仍调全局 `/api/v1/knowledge`（`apiFetch({scoped: false})`），留 FIXME，Step 9 单独开批次处理 App↔Dataset 关系。
