@@ -507,6 +507,19 @@ export const zh: Record<TKey, string> = {
   "auth.org_slug": "组织 slug",
   "auth.go_register": "还没账号？去注册",
   "auth.go_login": "已有账号？去登录",
+  "auth.logout": "退出登录",
+
+  // ── Apps (multi-tenant) ─────────────────────────────────────────────
+  "apps.title": "应用",
+  "apps.create": "新建 App",
+  "apps.create_first": "创建第一个 App",
+  "apps.create_submit": "创建",
+  "apps.created": "App 已创建",
+  "apps.name": "名称",
+  "apps.slug": "Slug",
+  "apps.slug_conflict": "Slug 已被占用",
+  "apps.none": "还没有 App",
+  "apps.none_create_cta": "去创建 App",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "网络错误，请重试。",

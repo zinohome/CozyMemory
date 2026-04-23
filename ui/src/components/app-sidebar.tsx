@@ -10,6 +10,7 @@ import {
   Sparkles,
   Brain,
   KeyRound,
+  LayoutGrid,
   MessagesSquare,
   Settings,
   Archive,
@@ -43,6 +44,7 @@ const MEMORY_ITEMS: NavItem[] = [
 ];
 
 const MANAGE_ITEMS: NavItem[] = [
+  { href: "/apps", labelKey: "apps.title", icon: LayoutGrid },
   { href: "/users", labelKey: "sidebar.item.users", icon: KeyRound },
   { href: "/backup", labelKey: "sidebar.item.backup", icon: Archive },
   { href: "/settings", labelKey: "sidebar.item.settings", icon: Settings },

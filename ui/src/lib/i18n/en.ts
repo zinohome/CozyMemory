@@ -509,6 +509,19 @@ export const en = {
   "auth.org_slug": "Organization slug",
   "auth.go_register": "Don't have an account? Sign up",
   "auth.go_login": "Already have an account? Log in",
+  "auth.logout": "Sign out",
+
+  // ── Apps (multi-tenant) ─────────────────────────────────────────────
+  "apps.title": "Apps",
+  "apps.create": "New App",
+  "apps.create_first": "Create your first App",
+  "apps.create_submit": "Create",
+  "apps.created": "App created",
+  "apps.name": "Name",
+  "apps.slug": "Slug",
+  "apps.slug_conflict": "Slug already taken",
+  "apps.none": "No apps yet",
+  "apps.none_create_cta": "Go create an App",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",
