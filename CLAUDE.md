@@ -21,7 +21,7 @@ uvicorn cozymemory.app:create_app --factory --host 0.0.0.0 --port 8000
 cozymemory-grpc
 
 # Run tests
-pytest tests/unit/ -v                           # Unit tests only
+pytest tests/unit/ -v                           # Unit tests only（用独立 cozymemory_test DB，不会清开发数据）
 pytest tests/integration/ -v                     # Integration tests (need engine backends)
 pytest tests/unit/ -v --cov=cozymemory           # With coverage
 pytest tests/unit/test_conversation_service.py -v  # Single test file

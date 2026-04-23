@@ -16,7 +16,7 @@ from cozymemory.db.models import AuditLog, Base, Developer
 
 DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://cozymemory_user:cozymemory_pass@localhost:5433/cozymemory",
+    "postgresql+asyncpg://cozymemory_user:cozymemory_pass@localhost:5433/cozymemory_test",
 )
 
 pytestmark = pytest.mark.skipif(

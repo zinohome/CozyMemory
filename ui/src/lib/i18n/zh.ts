@@ -602,6 +602,14 @@ export const zh: Record<TKey, string> = {
   "home.recent_apps": "最近的应用",
   "home.app_card.users": "位用户",
 
+  // ── Integration Quick Start ─────────────────────────────────────────
+  "quickstart.title": "集成快速开始",
+  "quickstart.subtitle": "复制这些代码片段到你的客户端 App。请用 Keys 页面创建的真实 API Key 替换占位符。",
+  "quickstart.manage_keys": "管理 Keys",
+  "quickstart.example.add_conv": "1) 写入一条对话记忆",
+  "quickstart.example.get_context": "2) LLM 调用前拉统一上下文",
+  "quickstart.footer_hint": "所有业务路由都走 X-Cozy-API-Key 鉴权。数据通过 uuid5(app_namespace, user_id) 按 App 隔离 —— 详情见文档。",
+
   // ── Operator Dashboard ──────────────────────────────────────────────
   "operator.dashboard_title": "运维总览",
   "operator.dashboard_subtitle": "跨组织平台统计与引擎健康状态。",

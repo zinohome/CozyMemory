@@ -18,7 +18,7 @@ from cozymemory.services.user_resolver import (
 
 DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://cozymemory_user:cozymemory_pass@localhost:5433/cozymemory",
+    "postgresql+asyncpg://cozymemory_user:cozymemory_pass@localhost:5433/cozymemory_test",
 )
 REDIS_URL = os.getenv("TEST_REDIS_URL", "redis://localhost:6379/14")
 

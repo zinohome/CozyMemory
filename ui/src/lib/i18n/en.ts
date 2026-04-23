@@ -608,6 +608,14 @@ export const en = {
   "home.recent_apps": "Recent apps",
   "home.app_card.users": "users",
 
+  // ── Integration Quick Start ─────────────────────────────────────────
+  "quickstart.title": "Integration Quick Start",
+  "quickstart.subtitle": "Copy-paste snippets to call CozyMemory from your app. Use your real API Key from the Keys page.",
+  "quickstart.manage_keys": "Manage Keys",
+  "quickstart.example.add_conv": "1) Write a conversation memory",
+  "quickstart.example.get_context": "2) Fetch unified context for an LLM call",
+  "quickstart.footer_hint": "All business routes accept X-Cozy-API-Key. Data is isolated per App via uuid5(app_namespace, user_id) — see docs for details.",
+
   // ── Operator Dashboard ──────────────────────────────────────────────
   "operator.dashboard_title": "Operator Overview",
   "operator.dashboard_subtitle": "Cross-org platform stats and engine health.",
