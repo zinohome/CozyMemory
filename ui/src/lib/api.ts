@@ -57,6 +57,26 @@ type ApiFetchInit = RequestInit & {
   scoped?: boolean;
 };
 
+// 统一的鉴权 header 构造：JWT 优先（多租户 dashboard 路径），否则走 legacy
+// X-Cozy-API-Key。scoped=true 的调用在 JWT 模式下还会附加 X-Cozy-App-Id。
+// 任何手写的 fetch（如 multipart 上传、原文下载）必须调用它，否则在 JWT-only
+// 模式下会没有鉴权 header 导致 401。
+export function buildAuthHeaders(scoped: boolean = true): Record<string, string> {
+  const jwt = getJwt();
+  const headers: Record<string, string> = {};
+  if (jwt) {
+    headers["Authorization"] = `Bearer ${jwt}`;
+    if (scoped) {
+      const appId = getCurrentAppId();
+      if (appId) headers["X-Cozy-App-Id"] = appId;
+    }
+  } else {
+    const apiKey = getApiKey();
+    if (apiKey) headers["X-Cozy-API-Key"] = apiKey;
+  }
+  return headers;
+}
+
 async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
   // Destructure custom `params` / `scoped` out so they are never forwarded to
   // fetch() — the fetch spec does not recognise them and some polyfills throw
@@ -70,21 +90,7 @@ async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
     }
   }
 
-  // Auth header preference: JWT (multi-tenant dashboard) > legacy X-Cozy-API-Key.
-  // When JWT is set and this is a scoped (tenant-data) call, also attach
-  // X-Cozy-App-Id so the backend middleware can pick the right app context.
-  const jwt = getJwt();
-  const authHeaders: Record<string, string> = {};
-  if (jwt) {
-    authHeaders["Authorization"] = `Bearer ${jwt}`;
-    if (scoped) {
-      const appId = getCurrentAppId();
-      if (appId) authHeaders["X-Cozy-App-Id"] = appId;
-    }
-  } else {
-    const apiKey = getApiKey();
-    if (apiKey) authHeaders["X-Cozy-API-Key"] = apiKey;
-  }
+  const authHeaders = buildAuthHeaders(scoped);
 
   const headers = new Headers({ "Content-Type": "application/json" });
   for (const [k, v] of Object.entries(authHeaders)) headers.set(k, v);
@@ -100,7 +106,7 @@ async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
   });
 
   // 401 + JWT was in flight => session expired; clear auth and redirect.
-  if (res.status === 401 && jwt) {
+  if (res.status === 401 && getJwt()) {
     useAppStore.getState().logout();
     if (typeof window !== "undefined") {
       window.location.assign("/login");
@@ -225,10 +231,9 @@ export const knowledgeApi = {
     const form = new FormData();
     form.append("dataset", dataset);
     for (const f of files) form.append("files", f, f.name);
-    const apiKey = getApiKey();
     const res = await fetch(`${BASE_URL}${API_PREFIX}/knowledge/add-files`, {
       method: "POST",
-      headers: apiKey ? { "X-Cozy-API-Key": apiKey } : {},
+      headers: buildAuthHeaders(true),
       body: form,
     });
     const data = await res.json();
@@ -243,10 +248,9 @@ export const knowledgeApi = {
   rawDataUrl: (datasetId: string, dataId: string) =>
     `${BASE_URL}${API_PREFIX}/knowledge/datasets/${datasetId}/data/${dataId}/raw`,
   fetchRawText: async (datasetId: string, dataId: string): Promise<string> => {
-    const apiKey = getApiKey();
     const res = await fetch(
       `${BASE_URL}${API_PREFIX}/knowledge/datasets/${datasetId}/data/${dataId}/raw`,
-      { headers: apiKey ? { "X-Cozy-API-Key": apiKey } : {} }
+      { headers: buildAuthHeaders(true) }
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.text();
