@@ -84,3 +84,48 @@ export function getJwt(): string {
 export function getCurrentAppId(): string {
   return useAppStore.getState().currentAppId;
 }
+
+// ── Operator mode (bootstrap key 独立 store，sessionStorage 存储，
+//    不走全局 persist 避免 key 永久留存 localStorage)
+interface OperatorState {
+  operatorKey: string;
+  setOperatorKey: (k: string) => void;
+  clearOperatorKey: () => void;
+}
+
+const OPERATOR_STORAGE_KEY = "cozymemory-operator-key";
+
+function readOperatorFromSession(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.sessionStorage.getItem(OPERATOR_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeOperatorToSession(v: string) {
+  if (typeof window === "undefined") return;
+  try {
+    if (v) window.sessionStorage.setItem(OPERATOR_STORAGE_KEY, v);
+    else window.sessionStorage.removeItem(OPERATOR_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export const useOperatorStore = create<OperatorState>()((set) => ({
+  operatorKey: readOperatorFromSession(),
+  setOperatorKey: (k) => {
+    writeOperatorToSession(k);
+    set({ operatorKey: k });
+  },
+  clearOperatorKey: () => {
+    writeOperatorToSession("");
+    set({ operatorKey: "" });
+  },
+}));
+
+export function getOperatorKey(): string {
+  return useOperatorStore.getState().operatorKey;
+}

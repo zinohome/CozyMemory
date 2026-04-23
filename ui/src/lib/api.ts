@@ -10,7 +10,14 @@
  */
 
 import type { components } from "./api-types";
-import { getApiKey, getJwt, getCurrentAppId, useAppStore } from "./store";
+import {
+  getApiKey,
+  getJwt,
+  getCurrentAppId,
+  useAppStore,
+  useOperatorStore,
+  getOperatorKey,
+} from "./store";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const API_PREFIX = "/api/v1";
@@ -130,6 +137,48 @@ export function dashboardFetch<T>(
   init?: Omit<ApiFetchInit, "scoped">
 ): Promise<T> {
   return apiFetch<T>(path, { ...(init ?? {}), scoped: false });
+}
+
+/**
+ * Operator 专用 fetch —— 走 X-Cozy-API-Key = operatorKey，永远不带 JWT / AppId。
+ * 只在 (operator)/* 页面里使用。401 时清 key 并跳 /operator landing。
+ */
+export async function operatorFetch<T>(
+  path: string,
+  init?: Omit<ApiFetchInit, "scoped">,
+): Promise<T> {
+  const operatorKey = getOperatorKey();
+  if (!operatorKey) {
+    throw new Error("operator key missing");
+  }
+
+  const { params, ...rest } = (init ?? {}) as ApiFetchInit;
+  const url = new URL(`${BASE_URL}${API_PREFIX}${path}`);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined) url.searchParams.set(k, String(v));
+    }
+  }
+
+  const headers = new Headers({ "Content-Type": "application/json" });
+  headers.set("X-Cozy-API-Key", operatorKey);
+  const extra = rest.headers;
+  if (extra) {
+    const extraHeaders = new Headers(extra as HeadersInit);
+    extraHeaders.forEach((v, k) => headers.set(k, v));
+  }
+
+  const res = await fetch(url.toString(), { ...rest, headers });
+  if (res.status === 401) {
+    useOperatorStore.getState().clearOperatorKey();
+    if (typeof window !== "undefined") window.location.assign("/operator");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = data as ApiError;
+    throw new Error(err?.detail ?? err?.error ?? `HTTP ${res.status}`);
+  }
+  return data as T;
 }
 
 // ── Health ─────────────────────────────────────────────────────────────────
