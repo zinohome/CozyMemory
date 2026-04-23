@@ -53,6 +53,20 @@ class AppContext:
             self._app = app
         return self._app
 
+    async def resolve_user(self, external_user_id: str) -> UUID:
+        """便利方法：external_user_id → internal UUID v5。
+
+        调用方（业务路由）拿到这个 UUID 后直接传给 Mem0/Memobase/Cognee。
+        底层 UserResolver 负责 uuid5 计算 + PG 索引 upsert + Redis 缓存。
+        """
+        # 局部 import 避开 cozymemory.auth ↔ services 循环引用
+        from ..api.deps import get_redis_client
+        from ..services.user_resolver import UserResolver
+
+        app = await self.get_app()
+        resolver = UserResolver(self._session, get_redis_client())
+        return await resolver.resolve(app, external_user_id)
+
 
 def get_app_context(
     request: Request,

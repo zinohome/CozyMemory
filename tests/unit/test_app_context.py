@@ -174,3 +174,35 @@ async def test_app_context_get_app_returns_record(client):
         assert app.slug == "testapp"
         # namespace_id 是 App 创建时自动生成的 UUID，用于 Step 5 的 uuid5 映射
         assert app.namespace_id is not None
+
+
+@pytest.mark.asyncio
+async def test_app_context_resolve_user_integration(client):
+    """AppContext.resolve_user 便利方法：拿到 uuid5 映射 + PG 索引落库"""
+    app_id, _ = await _setup_app_key(client)
+    from uuid import UUID, uuid5
+
+    from cozymemory.auth import AppContext
+    from cozymemory.db.engine import _session_factory, init_engine
+
+    if _session_factory is None:
+        init_engine()
+    assert _session_factory is not None
+
+    async with _session_factory() as session:
+        ctx = AppContext(
+            app_id=UUID(app_id),
+            api_key_id=UUID("00000000-0000-0000-0000-000000000001"),
+            _session=session,
+        )
+        # 首次调用
+        uid1 = await ctx.resolve_user("external_alice")
+        await session.commit()
+
+        # 应该是 uuid5(namespace_id, "external_alice")
+        app = await ctx.get_app()
+        assert uid1 == uuid5(app.namespace_id, "external_alice")
+
+        # 重新取：同 UUID
+        uid2 = await ctx.resolve_user("external_alice")
+        assert uid1 == uid2
