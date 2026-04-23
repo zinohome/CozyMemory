@@ -544,6 +544,17 @@ export const zh: Record<TKey, string> = {
   "keys.delete_confirm_desc": "外部使用此 key 的客户端会立即失效",
   "keys.manage_hint": "查看和管理 App 下的 API keys",
 
+  // ── External Users (Task 7) ─────────────────────────────────────────
+  "users.ext_title": "外部用户映射",
+  "users.external_id": "外部 user_id",
+  "users.internal_uuid": "内部 UUID",
+  "users.created_at": "创建时间",
+  "users.delete_gdpr": "GDPR 删除",
+  "users.delete_gdpr_desc":
+    "将删除用户索引（不可逆）；各引擎端数据需另行清理",
+  "users.pagination": "第 {page} / {pages} 页，共 {total} 个用户",
+  "users.none": "此 App 下还没有 external user",
+
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "网络错误，请重试。",
   "error.unauthorized": "未授权。请在设置里检查 API Key。",

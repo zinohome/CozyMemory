@@ -549,6 +549,17 @@ export const en = {
     "Clients using this key will stop working immediately",
   "keys.manage_hint": "View and manage API keys for this app",
 
+  // ── External Users (Task 7) ─────────────────────────────────────────
+  "users.ext_title": "External users",
+  "users.external_id": "External user_id",
+  "users.internal_uuid": "Internal UUID",
+  "users.created_at": "Created at",
+  "users.delete_gdpr": "GDPR delete",
+  "users.delete_gdpr_desc":
+    "Removes the user mapping (irreversible). Per-engine data must be cleaned up separately.",
+  "users.pagination": "Page {page} of {pages} — {total} users",
+  "users.none": "No external users for this app yet",
+
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",
   "error.unauthorized": "Unauthorized. Check your API key in Settings.",
