@@ -697,7 +697,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users": {
+    "/api/v1/operator/users-mapping": {
         parameters: {
             query?: never;
             header?: never;
@@ -710,7 +710,7 @@ export interface paths {
          *
          *     扫描 `cm:uid:*` 键空间，适用于用户管理和调试场景。
          */
-        get: operations["list_users_api_v1_users_get"];
+        get: operations["list_users_api_v1_operator_users_mapping_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -719,7 +719,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/{user_id}/uuid": {
+    "/api/v1/operator/users-mapping/{user_id}/uuid": {
         parameters: {
             query?: never;
             header?: never;
@@ -736,7 +736,7 @@ export interface paths {
          *     Memobase 要求 user_id 必须是 UUID v4，本接口供调试或预热映射使用。
          *     正常调用画像接口时映射会自动创建，无需手动调用。
          */
-        get: operations["get_uuid_api_v1_users__user_id__uuid_get"];
+        get: operations["get_uuid_api_v1_operator_users_mapping__user_id__uuid_get"];
         put?: never;
         post?: never;
         /**
@@ -750,14 +750,16 @@ export interface paths {
          *     若需彻底清除画像数据，请在删除映射前先调用
          *     `DELETE /api/v1/profiles/{user_id}/items/{profile_id}` 逐条删除，
          *     或通过 Memobase 直接操作。
+         *
+         *     挂载路径：`/api/v1/operator/users-mapping/{user_id}/uuid`（operator only）。
          */
-        delete: operations["delete_uuid_mapping_api_v1_users__user_id__uuid_delete"];
+        delete: operations["delete_uuid_mapping_api_v1_operator_users_mapping__user_id__uuid_delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/backup/export/{user_id}": {
+    "/api/v1/operator/backup/export/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -768,7 +770,7 @@ export interface paths {
          * 导出用户记忆为 JSON bundle
          * @description datasets: 可选逗号分隔的 Cognee dataset ID 列表，附加到 bundle 里。
          */
-        get: operations["export_user_api_v1_backup_export__user_id__get"];
+        get: operations["export_user_api_v1_operator_backup_export__user_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -777,7 +779,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/backup/import": {
+    "/api/v1/operator/backup/import": {
         parameters: {
             query?: never;
             header?: never;
@@ -787,7 +789,27 @@ export interface paths {
         get?: never;
         put?: never;
         /** 从 bundle 恢复用户记忆 */
-        post: operations["import_bundle_api_v1_backup_import_post"];
+        post: operations["import_bundle_api_v1_operator_backup_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/orgs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Orgs
+         * @description 跨 org 列表。counts 用 scalar subquery 避免 GROUP BY 复杂度。
+         */
+        get: operations["list_orgs_api_v1_operator_orgs_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2004,6 +2026,28 @@ export interface components {
              * @description 消息时间戳 (ISO 8601)
              */
             created_at?: string | null;
+        };
+        /** OrgListResponse */
+        OrgListResponse: {
+            /** Data */
+            data: components["schemas"]["OrgRow"][];
+            /** Total */
+            total: number;
+        };
+        /** OrgRow */
+        OrgRow: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Created At */
+            created_at: string;
+            /** Dev Count */
+            dev_count: number;
+            /** App Count */
+            app_count: number;
         };
         /**
          * ProfileAddItemRequest
@@ -3991,7 +4035,7 @@ export interface operations {
             };
         };
     };
-    list_users_api_v1_users_get: {
+    list_users_api_v1_operator_users_mapping_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4011,7 +4055,7 @@ export interface operations {
             };
         };
     };
-    get_uuid_api_v1_users__user_id__uuid_get: {
+    get_uuid_api_v1_operator_users_mapping__user_id__uuid_get: {
         parameters: {
             query?: {
                 /** @description 为 true 时：若映射不存在则自动创建（幂等）；为 false 时（默认）：映射不存在返回 404，不写入 Redis。 */
@@ -4054,7 +4098,7 @@ export interface operations {
             };
         };
     };
-    delete_uuid_mapping_api_v1_users__user_id__uuid_delete: {
+    delete_uuid_mapping_api_v1_operator_users_mapping__user_id__uuid_delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4085,7 +4129,7 @@ export interface operations {
             };
         };
     };
-    export_user_api_v1_backup_export__user_id__get: {
+    export_user_api_v1_operator_backup_export__user_id__get: {
         parameters: {
             query?: {
                 datasets?: string | null;
@@ -4118,7 +4162,7 @@ export interface operations {
             };
         };
     };
-    import_bundle_api_v1_backup_import_post: {
+    import_bundle_api_v1_operator_backup_import_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4147,6 +4191,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_orgs_api_v1_operator_orgs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgListResponse"];
                 };
             };
         };

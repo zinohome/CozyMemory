@@ -159,6 +159,26 @@ Next.js 16 / React 19 admin UI (App Router) using `@base-ui/react` + shadcn + Ta
 - Dev: `cd ui && npm run dev` (port 3000). Lint: `npm run lint`. Build: `npm run build`.
 - **API types are generated**: `ui/src/lib/api-types.ts` is produced by `npm run gen:api` (reads `http://localhost:8000/openapi.json`). Never edit it by hand. `ui/src/lib/api.ts` aliases all schema types from there; whenever backend Pydantic models change, re-run `npm run gen:api` (backend must be up) and fix the resulting TypeScript errors — they flag contract drift.
 
+### Role model（Step 8 后）
+
+CozyMemory 有两类使用者，对应两条 UI 入口 / 两种鉴权：
+
+- **Developer**（JWT 登录）：自助注册，管理自己 org 下的 App / Key / External Users；所有业务数据访问强制按 App scope。UI 入口 `/login` → `/apps` → `/apps/[id]/*` 工作台（含 memory / profiles / knowledge / context / playground 子页）。
+- **Operator**（bootstrap key，env `COZY_API_KEYS`）：平台 ops / admin，跨 org 只读或维护全局数据。UI 入口 `/operator`（手动输 key，`sessionStorage` 保存，关闭浏览器即清除）；子页 orgs / users-mapping / memory-raw / profiles-raw / knowledge-raw / health / backup / settings。
+
+中间件（`src/cozymemory/app.py` 的 `require_api_key`）按 header 分流：
+- `X-Cozy-API-Key` = bootstrap → 全放行（包括 `/operator/*`）；`scope_user_id` 走 passthrough
+- `X-Cozy-API-Key` = App Key（PG 动态 key）→ 只能走业务路由，自动注入 `request.state.app_id`；`scope_user_id` 走 uuid5
+- `Authorization: Bearer <JWT>` → `/auth/*` `/dashboard/*` 放行；业务路由（`/conversations` `/profiles` `/context` `/knowledge`）**必须**同时带 `X-Cozy-App-Id`，否则 401；`/operator/*` → 401
+- 两者都无 → 401
+
+`/api/v1/operator/*` 命名空间（Step 8 新增）：
+- `users-mapping`（老 Mem0 UUID v4 映射；Step 8 前叫 `/api/v1/users`）
+- `backup`（Step 8 前叫 `/api/v1/backup`）
+- `orgs`（Step 8 新增，跨 org 总览）
+
+前端 fetch 三条路：`apiFetch` 走 JWT + 可选 AppId（Developer 业务调用）；`dashboardFetch` 走 JWT 无 AppId（Developer 管理调用）；`operatorFetch` 走 `operatorKey`（Operator 专用，`sessionStorage`）。
+
 ## Engine API Quirks
 
 These are non-obvious behaviors discovered during integration testing. Check here before touching client code.
