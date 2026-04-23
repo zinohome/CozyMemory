@@ -32,7 +32,7 @@ describe("AppSwitcher", () => {
   });
 
   it("空 apps 显示 create CTA", async () => {
-    vi.mocked(dashboardFetch).mockResolvedValueOnce([]);
+    vi.mocked(dashboardFetch).mockResolvedValueOnce({ success: true, data: [], total: 0 });
     render(wrap(<AppSwitcher />));
     await waitFor(() => {
       expect(screen.getByText(/create|创建/i)).toBeInTheDocument();
@@ -40,10 +40,14 @@ describe("AppSwitcher", () => {
   });
 
   it("有 apps 且无持久化 currentAppId → 选第一个", async () => {
-    vi.mocked(dashboardFetch).mockResolvedValueOnce([
-      { id: "a1", name: "App A", slug: "aa", namespace_id: "n", created_at: "2026-01-01" },
-      { id: "a2", name: "App B", slug: "bb", namespace_id: "m", created_at: "2026-01-02" },
-    ]);
+    vi.mocked(dashboardFetch).mockResolvedValueOnce({
+      success: true,
+      data: [
+        { id: "a1", name: "App A", slug: "aa", namespace_id: "n", created_at: "2026-01-01" },
+        { id: "a2", name: "App B", slug: "bb", namespace_id: "m", created_at: "2026-01-02" },
+      ],
+      total: 2,
+    });
     render(wrap(<AppSwitcher />));
     await waitFor(() => {
       expect(useAppStore.getState().currentAppId).toBe("a1");
@@ -52,10 +56,14 @@ describe("AppSwitcher", () => {
 
   it("持久化 currentAppId 仍在列表 → 保留", async () => {
     useAppStore.setState({ jwt: "j", currentAppId: "a2", currentAppSlug: "bb" });
-    vi.mocked(dashboardFetch).mockResolvedValueOnce([
-      { id: "a1", name: "App A", slug: "aa", namespace_id: "n", created_at: "x" },
-      { id: "a2", name: "App B", slug: "bb", namespace_id: "m", created_at: "y" },
-    ]);
+    vi.mocked(dashboardFetch).mockResolvedValueOnce({
+      success: true,
+      data: [
+        { id: "a1", name: "App A", slug: "aa", namespace_id: "n", created_at: "x" },
+        { id: "a2", name: "App B", slug: "bb", namespace_id: "m", created_at: "y" },
+      ],
+      total: 2,
+    });
     render(wrap(<AppSwitcher />));
     await waitFor(() => {
       expect(useAppStore.getState().currentAppId).toBe("a2");

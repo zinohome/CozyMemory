@@ -11,10 +11,19 @@ export interface AppRow {
   created_at: string;
 }
 
+interface AppListEnvelope {
+  success: boolean;
+  data: AppRow[];
+  total: number;
+}
+
 export function useApps() {
   return useQuery<AppRow[]>({
     queryKey: ["apps"],
-    queryFn: () => dashboardFetch<AppRow[]>("/dashboard/apps"),
+    queryFn: async () => {
+      const r = await dashboardFetch<AppListEnvelope>("/dashboard/apps");
+      return r.data;
+    },
   });
 }
 
