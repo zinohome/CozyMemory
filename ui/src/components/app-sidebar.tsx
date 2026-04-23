@@ -3,17 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  MessageSquare,
-  User,
-  BookOpen,
-  Sparkles,
   Brain,
-  KeyRound,
   LayoutGrid,
-  MessagesSquare,
   Settings,
-  Archive,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -21,7 +13,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -34,19 +25,8 @@ import type { TKey } from "@/lib/i18n/en";
 
 type NavItem = { href: string; labelKey: TKey; icon: LucideIcon };
 
-const MEMORY_ITEMS: NavItem[] = [
-  { href: "/dashboard", labelKey: "sidebar.item.dashboard", icon: LayoutDashboard },
-  { href: "/memory", labelKey: "sidebar.item.memory", icon: MessageSquare },
-  { href: "/profiles", labelKey: "sidebar.item.profiles", icon: User },
-  { href: "/knowledge", labelKey: "sidebar.item.knowledge", icon: BookOpen },
-  { href: "/context", labelKey: "sidebar.item.context", icon: Sparkles },
-  { href: "/playground", labelKey: "sidebar.item.playground", icon: MessagesSquare },
-];
-
-const MANAGE_ITEMS: NavItem[] = [
+const NAV_ITEMS: NavItem[] = [
   { href: "/apps", labelKey: "apps.title", icon: LayoutGrid },
-  { href: "/users", labelKey: "sidebar.item.users", icon: KeyRound },
-  { href: "/backup", labelKey: "sidebar.item.backup", icon: Archive },
   { href: "/settings", labelKey: "sidebar.item.settings", icon: Settings },
 ];
 
@@ -65,26 +45,8 @@ export function AppSidebar() {
 
       <SidebarContent className="pt-1">
         <SidebarGroup>
-          <SidebarGroupLabel>{t("sidebar.group.memory")}</SidebarGroupLabel>
           <SidebarMenu>
-            {MEMORY_ITEMS.map(({ href, labelKey, icon: Icon }) => {
-              const active = pathname === href || pathname.startsWith(`${href}/`);
-              return (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton render={<Link href={href} />} isActive={active}>
-                    <Icon className="h-4 w-4" />
-                    <span>{t(labelKey)}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>{t("sidebar.group.management")}</SidebarGroupLabel>
-          <SidebarMenu>
-            {MANAGE_ITEMS.map(({ href, labelKey, icon: Icon }) => {
+            {NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <SidebarMenuItem key={href}>
