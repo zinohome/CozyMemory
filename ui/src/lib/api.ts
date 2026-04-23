@@ -336,3 +336,207 @@ export const contextApi = {
   fetch: (body: ContextRequest) =>
     apiFetch<ContextResponse>("/context", { method: "POST", body: JSON.stringify(body) }),
 };
+
+// ── Operator API namespace ────────────────────────────────────────────────
+// All operator pages go through these — they send X-Cozy-API-Key=operatorKey
+// and never carry JWT or X-Cozy-App-Id. Backend treats bootstrap as admin
+// passthrough (no uuid5 scoping), so callers see global Mem0/Memobase state.
+
+export interface OperatorOrgRow {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  dev_count: number;
+  app_count: number;
+}
+export interface OperatorOrgListResponse {
+  data: OperatorOrgRow[];
+  total: number;
+}
+
+export interface OperatorBackupImportResult {
+  success: boolean;
+  user_id: string;
+  conversations_imported: number;
+  conversations_skipped: number;
+  profiles_imported: number;
+  profiles_skipped: number;
+  datasets_imported?: number;
+  documents_imported?: number;
+  datasets_skipped?: number;
+  errors: { kind: string; id: string; reason: string }[];
+}
+
+export const operatorApi = {
+  // orgs (new endpoint from Task 3)
+  orgs: () => operatorFetch<OperatorOrgListResponse>("/operator/orgs"),
+
+  // user mapping (relocated to /operator/users-mapping in Task 2)
+  listUsers: () => operatorFetch<UserListResponse>("/operator/users-mapping"),
+  getUserUuid: (userId: string, create = false) =>
+    operatorFetch<UserMappingResponse>(
+      `/operator/users-mapping/${userId}/uuid`,
+      { params: { create } },
+    ),
+  deleteUserMapping: (userId: string) =>
+    operatorFetch<{ success: boolean; message: string; warning: string }>(
+      `/operator/users-mapping/${userId}/uuid`,
+      { method: "DELETE" },
+    ),
+
+  // Global business data browsers — backend passthrough for bootstrap key
+  // (no uuid5 scoping)
+  listConversations: (
+    userId: string,
+    params?: { agent_id?: string; session_id?: string },
+  ) =>
+    operatorFetch<ConversationListResponse>("/conversations", {
+      params: { user_id: userId, ...params },
+    }),
+  searchConversations: (body: ConversationSearchRequest) =>
+    operatorFetch<ConversationListResponse>("/conversations/search", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  deleteConversation: (id: string) =>
+    operatorFetch<{ success: boolean; message: string }>(
+      `/conversations/${id}`,
+      { method: "DELETE" },
+    ),
+  deleteAllConversations: (userId: string) =>
+    operatorFetch<{ success: boolean; message: string }>("/conversations", {
+      method: "DELETE",
+      params: { user_id: userId },
+    }),
+
+  getProfile: (userId: string) =>
+    operatorFetch<ProfileResponse>(`/profiles/${userId}`),
+  getProfileContext: (userId: string, maxTokenSize?: number) =>
+    operatorFetch<ProfileContextResponse>(`/profiles/${userId}/context`, {
+      method: "POST",
+      body: JSON.stringify({ max_token_size: maxTokenSize ?? 500 }),
+    }),
+  addProfileItem: (
+    userId: string,
+    body: { topic: string; sub_topic: string; content: string },
+  ) =>
+    operatorFetch<S["ProfileAddItemResponse"]>(
+      `/profiles/${userId}/items`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  deleteProfileItem: (userId: string, profileId: string) =>
+    operatorFetch<S["ProfileDeleteItemResponse"]>(
+      `/profiles/${userId}/items/${profileId}`,
+      { method: "DELETE" },
+    ),
+
+  // Knowledge (Cognee) — global view
+  listDatasets: () =>
+    operatorFetch<S["KnowledgeDatasetListResponse"]>("/knowledge/datasets"),
+  createDataset: (name: string) =>
+    operatorFetch<S["KnowledgeDatasetListResponse"]>(
+      `/knowledge/datasets?name=${encodeURIComponent(name)}`,
+      { method: "POST" },
+    ),
+  deleteDataset: (datasetId: string) =>
+    operatorFetch<{ success: boolean; message: string }>(
+      `/knowledge/datasets/${datasetId}`,
+      { method: "DELETE" },
+    ),
+  addKnowledge: (data: string, dataset: string) =>
+    operatorFetch<S["KnowledgeAddResponse"]>("/knowledge/add", {
+      method: "POST",
+      body: JSON.stringify({ data, dataset }),
+    }),
+  // multipart upload — can't use operatorFetch (JSON only)
+  addKnowledgeFiles: async (dataset: string, files: File[]) => {
+    const operatorKey = getOperatorKey();
+    if (!operatorKey) throw new Error("operator key missing");
+    const form = new FormData();
+    form.append("dataset", dataset);
+    for (const f of files) form.append("files", f, f.name);
+    const res = await fetch(`${BASE_URL}${API_PREFIX}/knowledge/add-files`, {
+      method: "POST",
+      headers: { "X-Cozy-API-Key": operatorKey },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = data as ApiError;
+      throw new Error(err.detail ?? err.error ?? `HTTP ${res.status}`);
+    }
+    return data as S["KnowledgeAddResponse"];
+  },
+  listDatasetData: (datasetId: string) =>
+    operatorFetch<DatasetDataListResponse>(
+      `/knowledge/datasets/${datasetId}/data`,
+    ),
+  rawDataUrl: (datasetId: string, dataId: string) =>
+    `${BASE_URL}${API_PREFIX}/knowledge/datasets/${datasetId}/data/${dataId}/raw`,
+  fetchRawText: async (datasetId: string, dataId: string): Promise<string> => {
+    const operatorKey = getOperatorKey();
+    if (!operatorKey) throw new Error("operator key missing");
+    const res = await fetch(
+      `${BASE_URL}${API_PREFIX}/knowledge/datasets/${datasetId}/data/${dataId}/raw`,
+      { headers: { "X-Cozy-API-Key": operatorKey } },
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  },
+  deleteKnowledgeData: (datasetId: string, dataId: string) =>
+    operatorFetch<{ success: boolean; message: string }>(
+      `/knowledge/datasets/${datasetId}/data/${dataId}`,
+      { method: "DELETE" },
+    ),
+  cognify: (datasets?: string[], runInBackground = true) =>
+    operatorFetch<S["KnowledgeCognifyResponse"]>("/knowledge/cognify", {
+      method: "POST",
+      body: JSON.stringify({ datasets, run_in_background: runInBackground }),
+    }),
+  getCognifyStatus: (jobId: string) =>
+    operatorFetch<CognifyStatusResponse>(
+      `/knowledge/cognify/status/${jobId}`,
+    ),
+  searchKnowledge: (body: S["KnowledgeSearchRequest"]) =>
+    operatorFetch<KnowledgeSearchResponse>("/knowledge/search", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getGraph: (datasetId: string) =>
+    operatorFetch<DatasetGraphResponse>(
+      `/knowledge/datasets/${datasetId}/graph`,
+    ),
+
+  // Health — same /health endpoint, different auth header
+  health: () => operatorFetch<HealthResponse>("/health"),
+
+  // Backup (mounted at /api/v1/operator/backup)
+  exportUser: async (
+    userId: string,
+    datasetIds?: string[],
+  ): Promise<unknown> => {
+    const operatorKey = getOperatorKey();
+    if (!operatorKey) throw new Error("operator key missing");
+    const qs =
+      datasetIds && datasetIds.length > 0
+        ? `?datasets=${datasetIds.join(",")}`
+        : "";
+    const resp = await fetch(
+      `${BASE_URL}${API_PREFIX}/operator/backup/export/${encodeURIComponent(userId)}${qs}`,
+      { headers: { "X-Cozy-API-Key": operatorKey } },
+    );
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(
+        body.detail?.detail ?? body.detail ?? body.error ?? `HTTP ${resp.status}`,
+      );
+    }
+    return resp.json();
+  },
+  importBackup: (body: { bundle: unknown; target_user_id: string | null }) =>
+    operatorFetch<OperatorBackupImportResult>("/operator/backup/import", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+};
