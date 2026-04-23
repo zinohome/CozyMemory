@@ -41,8 +41,23 @@ export function RegisterForm() {
       setJwt(r.access_token);
       document.cookie = "cm_auth=1; Path=/; SameSite=Lax";
       router.replace("/apps");
-    } catch {
-      toast.error(t("auth.register_failed"));
+    } catch (err) {
+      // 后端 422 的 err.message 是 JSON.stringify 的 detail 数组；尝试
+      // 解析出第一条字段级错误给用户具体提示。
+      const raw = err instanceof Error ? err.message : String(err);
+      let shown = t("auth.register_failed");
+      try {
+        const m = raw.match(/\[.*\]/);
+        if (m) {
+          const arr = JSON.parse(m[0]) as Array<{ loc?: string[]; msg?: string }>;
+          if (arr[0]?.loc && arr[0]?.msg) {
+            shown = `${arr[0].loc.slice(-1)[0]}: ${arr[0].msg}`;
+          }
+        }
+      } catch {
+        /* 降级回通用文案 */
+      }
+      toast.error(shown);
     } finally {
       setLoading(false);
     }
@@ -60,6 +75,7 @@ export function RegisterForm() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -70,16 +86,23 @@ export function RegisterForm() {
             <Input
               id="password"
               type="password"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={72}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("auth.password_hint")}
+            </p>
           </div>
           <div>
             <Label htmlFor="org_name">{t("auth.org_name")}</Label>
             <Input
               id="org_name"
               type="text"
+              autoComplete="organization"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               required
@@ -90,10 +113,16 @@ export function RegisterForm() {
             <Input
               id="org_slug"
               type="text"
+              pattern="^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+              minLength={2}
+              maxLength={64}
               value={orgSlug}
               onChange={(e) => setOrgSlug(e.target.value)}
               required
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("auth.org_slug_hint")}
+            </p>
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {t("auth.register_submit")}

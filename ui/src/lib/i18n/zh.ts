@@ -503,6 +503,8 @@ export const zh: Record<TKey, string> = {
   "auth.login_failed": "登录失败，请检查邮箱/密码",
   "auth.email": "邮箱",
   "auth.password": "密码",
+  "auth.password_hint": "至少 8 个字符。",
+  "auth.org_slug_hint": "小写字母、数字、短横线，首尾必须是字母或数字（最少 2 字符）。",
   "auth.register": "注册",
   "auth.register_submit": "注册",
   "auth.register_failed": "注册失败",

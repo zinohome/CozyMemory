@@ -505,6 +505,8 @@ export const en = {
   "auth.login_failed": "Login failed, please check your credentials",
   "auth.email": "Email",
   "auth.password": "Password",
+  "auth.password_hint": "At least 8 characters.",
+  "auth.org_slug_hint": "Lowercase letters, digits and hyphens. Must start and end with a letter/digit (min 2).",
   "auth.register": "Sign up",
   "auth.register_submit": "Create account",
   "auth.register_failed": "Sign up failed",
