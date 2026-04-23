@@ -304,15 +304,15 @@ async def test_plaintext_verifies_against_pg(monkeypatch, client):
 
     _s.COZY_API_KEYS = "bootstrap-never-matches"
 
-    # 带着明文 key 去访问受保护路由 /api/v1/users
+    # 带着明文 key 去访问受保护路由 /api/v1/operator/users-mapping
     resp_ok = await client.get(
-        "/api/v1/users", headers={"X-Cozy-API-Key": plaintext}
+        "/api/v1/operator/users-mapping", headers={"X-Cozy-API-Key": plaintext}
     )
     assert resp_ok.status_code != 401, resp_ok.text
 
     # 错误 key
     resp_bad = await client.get(
-        "/api/v1/users", headers={"X-Cozy-API-Key": "cozy_live_totally-wrong"}
+        "/api/v1/operator/users-mapping", headers={"X-Cozy-API-Key": "cozy_live_totally-wrong"}
     )
     assert resp_bad.status_code == 401
 
@@ -341,7 +341,7 @@ async def test_disabled_key_rejected(monkeypatch, client):
 
     # 禁用后不能通过
     resp = await client.get(
-        "/api/v1/users", headers={"X-Cozy-API-Key": plaintext}
+        "/api/v1/operator/users-mapping", headers={"X-Cozy-API-Key": plaintext}
     )
     assert resp.status_code == 401
 

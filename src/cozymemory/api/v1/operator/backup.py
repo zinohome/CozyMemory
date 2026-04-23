@@ -1,17 +1,19 @@
-"""备份/恢复路由
+"""备份/恢复路由（operator 命名空间）
 
-- GET  /api/v1/backup/export/{user_id}  → MemoryBundle JSON
-- POST /api/v1/backup/import            → 接受 bundle，返回计数
+- GET  /api/v1/operator/backup/export/{user_id}  → MemoryBundle JSON
+- POST /api/v1/operator/backup/import            → 接受 bundle，返回计数
+
+挂载于 `/api/v1/operator/backup`，仅 bootstrap key 可访问。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from ...clients.base import EngineError
-from ...models.backup import BackupImportRequest, BackupImportResponse, MemoryBundle
-from ...services.backup import BackupService
-from ..deps import get_backup_service
+from ....clients.base import EngineError
+from ....models.backup import BackupImportRequest, BackupImportResponse, MemoryBundle
+from ....services.backup import BackupService
+from ...deps import get_backup_service
 
-router = APIRouter(prefix="/backup", tags=["backup"])
+router = APIRouter(prefix="/backup", tags=["operator-backup"])
 
 
 @router.get(

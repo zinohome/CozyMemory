@@ -1,4 +1,4 @@
-"""/api/v1/users 路由测试 — user_id ↔ UUID 映射管理。"""
+"""/api/v1/operator/users-mapping 路由测试 — user_id ↔ UUID 映射管理。"""
 
 from unittest.mock import AsyncMock, MagicMock
 
@@ -34,7 +34,7 @@ async def client(mock_service, monkeypatch):
 @pytest.mark.asyncio
 async def test_list_users(client, mock_service):
     mock_service.list_users = AsyncMock(return_value=["alice", "bob"])
-    resp = await client.get("/api/v1/users")
+    resp = await client.get("/api/v1/operator/users-mapping")
     assert resp.status_code == 200
     body = resp.json()
     assert body["total"] == 2
@@ -44,7 +44,7 @@ async def test_list_users(client, mock_service):
 @pytest.mark.asyncio
 async def test_list_users_empty(client, mock_service):
     mock_service.list_users = AsyncMock(return_value=[])
-    resp = await client.get("/api/v1/users")
+    resp = await client.get("/api/v1/operator/users-mapping")
     assert resp.json()["total"] == 0
 
 
@@ -54,7 +54,7 @@ async def test_list_users_empty(client, mock_service):
 @pytest.mark.asyncio
 async def test_get_uuid_found(client, mock_service):
     mock_service.get_uuid = AsyncMock(return_value="uuid-v4-here")
-    resp = await client.get("/api/v1/users/alice/uuid")
+    resp = await client.get("/api/v1/operator/users-mapping/alice/uuid")
     assert resp.status_code == 200
     body = resp.json()
     assert body["uuid"] == "uuid-v4-here"
@@ -65,7 +65,7 @@ async def test_get_uuid_found(client, mock_service):
 @pytest.mark.asyncio
 async def test_get_uuid_missing_returns_404(client, mock_service):
     mock_service.get_uuid = AsyncMock(return_value=None)
-    resp = await client.get("/api/v1/users/ghost/uuid")
+    resp = await client.get("/api/v1/operator/users-mapping/ghost/uuid")
     assert resp.status_code == 404
     assert resp.json()["error"] == "NotFoundError"
 
@@ -77,7 +77,7 @@ async def test_get_uuid_missing_returns_404(client, mock_service):
 async def test_get_uuid_create_true_new_mapping(client, mock_service):
     mock_service.get_uuid = AsyncMock(return_value=None)  # 不存在
     mock_service.get_or_create_uuid = AsyncMock(return_value="new-uuid")
-    resp = await client.get("/api/v1/users/alice/uuid?create=true")
+    resp = await client.get("/api/v1/operator/users-mapping/alice/uuid?create=true")
     assert resp.status_code == 200
     body = resp.json()
     assert body["uuid"] == "new-uuid"
@@ -88,7 +88,7 @@ async def test_get_uuid_create_true_new_mapping(client, mock_service):
 async def test_get_uuid_create_true_existing_mapping(client, mock_service):
     mock_service.get_uuid = AsyncMock(return_value="already-there")
     mock_service.get_or_create_uuid = AsyncMock(return_value="already-there")
-    resp = await client.get("/api/v1/users/alice/uuid?create=true")
+    resp = await client.get("/api/v1/operator/users-mapping/alice/uuid?create=true")
     body = resp.json()
     assert body["uuid"] == "already-there"
     # 已存在时 created=False
@@ -101,7 +101,7 @@ async def test_get_uuid_create_true_existing_mapping(client, mock_service):
 @pytest.mark.asyncio
 async def test_delete_mapping_existed(client, mock_service):
     mock_service.delete_mapping = AsyncMock(return_value=True)
-    resp = await client.delete("/api/v1/users/alice/uuid")
+    resp = await client.delete("/api/v1/operator/users-mapping/alice/uuid")
     assert resp.status_code == 200
     body = resp.json()
     assert body["success"] is True
@@ -112,7 +112,7 @@ async def test_delete_mapping_existed(client, mock_service):
 @pytest.mark.asyncio
 async def test_delete_mapping_not_existed(client, mock_service):
     mock_service.delete_mapping = AsyncMock(return_value=False)
-    resp = await client.delete("/api/v1/users/ghost/uuid")
+    resp = await client.delete("/api/v1/operator/users-mapping/ghost/uuid")
     assert resp.status_code == 200
     body = resp.json()
     assert body["success"] is True

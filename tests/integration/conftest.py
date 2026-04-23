@@ -128,7 +128,7 @@ def _cleanup_test_user_mappings():
 
     来源：
       - UUID v4：从 _registered_test_user_ids（unique_user_id fixture 登记）
-      - 字符串 id：从 /api/v1/users 扫出并按 _TEST_USER_ID_RE 匹配
+      - 字符串 id：从 /api/v1/operator/users-mapping 扫出并按 _TEST_USER_ID_RE 匹配
     """
     yield
     if not server_is_up():
@@ -136,7 +136,7 @@ def _cleanup_test_user_mappings():
 
     to_delete: set[str] = set(_registered_test_user_ids)
     try:
-        r = httpx.get(f"{COZY_TEST_URL}/api/v1/users", timeout=10, headers=_COMMON_HEADERS)
+        r = httpx.get(f"{COZY_TEST_URL}/api/v1/operator/users-mapping", timeout=10, headers=_COMMON_HEADERS)
         if r.status_code == 200:
             for uid in r.json().get("data", []):
                 if _TEST_USER_ID_RE.match(uid):
@@ -146,6 +146,6 @@ def _cleanup_test_user_mappings():
 
     for uid in to_delete:
         try:
-            httpx.delete(f"{COZY_TEST_URL}/api/v1/users/{uid}/uuid", timeout=10, headers=_COMMON_HEADERS)
+            httpx.delete(f"{COZY_TEST_URL}/api/v1/operator/users-mapping/{uid}/uuid", timeout=10, headers=_COMMON_HEADERS)
         except Exception:
             pass

@@ -1,7 +1,9 @@
-"""用户 ID 映射 REST API 端点
+"""用户 ID 映射 REST API 端点（operator 命名空间）
 
 提供 user_id ↔ UUID 的查询与管理接口，
 供调试和跨系统 ID 对齐使用。
+
+挂载于 `/api/v1/operator/users-mapping`，仅 bootstrap key 可访问。
 """
 
 from __future__ import annotations
@@ -10,11 +12,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ...api.deps import get_user_mapping_service
-from ...models.common import ErrorResponse
-from ...services.user_mapping import UserMappingService
+from ....api.deps import get_user_mapping_service
+from ....models.common import ErrorResponse
+from ....services.user_mapping import UserMappingService
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users-mapping", tags=["operator-users-mapping"])
 
 
 class UserMappingResponse(BaseModel):
@@ -116,6 +118,8 @@ async def delete_uuid_mapping(
     若需彻底清除画像数据，请在删除映射前先调用
     `DELETE /api/v1/profiles/{user_id}/items/{profile_id}` 逐条删除，
     或通过 Memobase 直接操作。
+
+    挂载路径：`/api/v1/operator/users-mapping/{user_id}/uuid`（operator only）。
     """
     existed = await service.delete_mapping(user_id)
     if existed:

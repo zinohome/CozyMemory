@@ -10,7 +10,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from cozymemory.api.deps import get_conversation_service
+from cozymemory.api.deps import get_conversation_service, get_user_mapping_service
 from cozymemory.app import create_app
 from cozymemory.db.models import Base
 from cozymemory.models.conversation import ConversationMemoryListResponse
@@ -48,7 +48,14 @@ def mock_conv():
 
 
 @pytest.fixture
-async def client(mock_conv):
+def mock_user_mapping():
+    svc = MagicMock()
+    svc.list_users = AsyncMock(return_value=[])
+    return svc
+
+
+@pytest.fixture
+async def client(mock_conv, mock_user_mapping):
     from cozymemory.config import settings as _s
     _s.COZY_API_KEYS = BOOTSTRAP_KEY
     _s.DATABASE_URL = DATABASE_URL
@@ -57,6 +64,7 @@ async def client(mock_conv):
     db_engine._session_factory = None
     app = create_app()
     app.dependency_overrides[get_conversation_service] = lambda: mock_conv
+    app.dependency_overrides[get_user_mapping_service] = lambda: mock_user_mapping
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
     app.dependency_overrides.clear()
@@ -96,17 +104,13 @@ async def test_bearer_without_appid_on_dashboard_allowed(client):
 
 @pytest.mark.asyncio
 async def test_jwt_cannot_access_operator_routes(client):
-    """Developer JWT 调 /operator/* → 401（operator 只认 bootstrap）。
-    此测试在 Task 2 搬完 /users → /operator/users-mapping 后才真正生效；
-    目前 /operator/users-mapping 路由不存在，会 404。这里允许 404 或 401。
-    Task 2 会收紧成 assert r.status_code == 401.
-    """
+    """Developer JWT 调 /operator/* → 401（operator 只认 bootstrap）。"""
     token = await _register(client)
     r = await client.get(
         "/api/v1/operator/users-mapping",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r.status_code in (401, 404)
+    assert r.status_code == 401
 
 
 @pytest.mark.asyncio
