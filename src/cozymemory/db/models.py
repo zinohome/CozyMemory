@@ -19,8 +19,10 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -297,6 +299,39 @@ class AppDataset(Base):
         ForeignKey("apps.id", ondelete="CASCADE"),
         nullable=False,
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+# ─────────────────────── App API Usage ───────────────────────
+
+
+class APIUsage(Base):
+    """每次业务路由调用的用量记录（per-App）。
+
+    仅在 request.state.app_id 存在时写入。批量查询按 (app_id, created_at) 索引。
+    路径统一归一化后存储（例如 /api/v1/conversations/{uuid} → 'conversations.item'）。
+    """
+
+    __tablename__ = "api_usage"
+    __table_args__ = (
+        Index("ix_api_usage_app_time", "app_id", "created_at"),
+        Index("ix_api_usage_route", "route"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    app_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("apps.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    route: Mapped[str] = mapped_column(String(100), nullable=False)  # normalized key
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_ms: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

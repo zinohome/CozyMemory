@@ -649,6 +649,14 @@ export const en = {
   "quickstart.example.get_context": "2) Fetch unified context for an LLM call",
   "quickstart.footer_hint": "All business routes accept X-Cozy-API-Key. Data is isolated per App via uuid5(app_namespace, user_id) — see docs for details.",
 
+  "usage.title": "Usage (last 7 days)",
+  "usage.total": "Total calls",
+  "usage.success": "Success",
+  "usage.errors": "Errors",
+  "usage.avg_latency": "Avg latency",
+  "usage.daily": "Daily volume",
+  "usage.per_route": "By route",
+
   // ── Operator Dashboard ──────────────────────────────────────────────
   "operator.dashboard_title": "Operator Overview",
   "operator.dashboard_subtitle": "Cross-org platform stats and engine health.",

@@ -264,6 +264,73 @@ def create_app() -> FastAPI:
 
         return await call_next(request)
 
+    # Step 8.16: per-App API 用量记录。仅业务路由；bootstrap key 或无 app_id
+    # 场景直接 passthrough。失败永远不阻塞业务响应。
+    _USAGE_TRACKED_PREFIXES = (
+        "/api/v1/conversations",
+        "/api/v1/profiles",
+        "/api/v1/context",
+        "/api/v1/knowledge",
+    )
+
+    def _normalize_route(path: str) -> str:
+        p = path.removeprefix("/api/v1/")
+        parts = p.split("/", 2)
+        if not parts[0]:
+            return "unknown"
+        base = parts[0]
+        if len(parts) == 1:
+            return base
+        rest = parts[1]
+        if rest in (
+            "search",
+            "datasets",
+            "add",
+            "add-files",
+            "cognify",
+            "insert",
+            "flush",
+        ):
+            return f"{base}.{rest}"
+        return f"{base}.item"
+
+    @app.middleware("http")
+    async def record_api_usage(request: Request, call_next: Any) -> Response:
+        path = request.url.path
+        tracked = any(path.startswith(p) for p in _USAGE_TRACKED_PREFIXES)
+        if not tracked:
+            return await call_next(request)
+        start = time.perf_counter()
+        response = await call_next(request)
+        try:
+            app_id_raw = getattr(request.state, "app_id", None)
+            if not app_id_raw:
+                return response  # bootstrap key or no scope → skip
+            from uuid import UUID as _UUID
+
+            from .db import engine as _db_engine
+            from .db.models import APIUsage
+
+            if _db_engine._session_factory is None:
+                _db_engine.init_engine()
+            session_factory = _db_engine._session_factory
+            assert session_factory is not None
+            duration_ms = (time.perf_counter() - start) * 1000
+            async with session_factory() as s:
+                s.add(
+                    APIUsage(
+                        app_id=_UUID(str(app_id_raw)),
+                        route=_normalize_route(path),
+                        method=request.method,
+                        status_code=response.status_code,
+                        duration_ms=duration_ms,
+                    )
+                )
+                await s.commit()
+        except Exception:
+            pass  # usage logging 永远不能阻塞业务响应
+        return response
+
     # 请求日志中间件：绑定 request_id / method / path 到 structlog contextvars
     @app.middleware("http")
     async def log_requests(request: Request, call_next: Any) -> Response:

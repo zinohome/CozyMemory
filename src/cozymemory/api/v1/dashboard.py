@@ -317,6 +317,84 @@ async def update_organization(
 
 
 @router.get(
+    "/apps/{app_id}/usage",
+    summary="返回当前 App 最近 N 天的 API 调用统计",
+)
+async def get_app_usage(
+    app_id: UUID,
+    days: int = 7,
+    dev: Developer = Depends(get_current_developer),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    from datetime import datetime as _dt
+    from datetime import timedelta
+    from datetime import timezone as _tz
+
+    from sqlalchemy import Date, and_, case, cast
+
+    from ...db.models import APIUsage
+
+    await _get_own_app(app_id, dev, session)  # 404 if cross-org
+    since = _dt.now(_tz.utc) - timedelta(days=max(1, min(days, 90)))
+
+    # aggregates
+    agg = (
+        await session.execute(
+            select(
+                func.count(APIUsage.id).label("total"),
+                func.avg(APIUsage.duration_ms).label("avg_latency"),
+                func.sum(case((APIUsage.status_code < 400, 1), else_=0)).label(
+                    "success"
+                ),
+                func.sum(case((APIUsage.status_code >= 400, 1), else_=0)).label(
+                    "errors"
+                ),
+            ).where(and_(APIUsage.app_id == app_id, APIUsage.created_at >= since))
+        )
+    ).one()
+    total = int(agg.total or 0)
+    avg_latency = float(agg.avg_latency or 0.0)
+    success = int(agg.success or 0)
+    errors = int(agg.errors or 0)
+
+    # per-route breakdown
+    per_route_rows = (
+        await session.execute(
+            select(APIUsage.route, func.count(APIUsage.id).label("count"))
+            .where(and_(APIUsage.app_id == app_id, APIUsage.created_at >= since))
+            .group_by(APIUsage.route)
+            .order_by(func.count(APIUsage.id).desc())
+        )
+    ).all()
+    per_route = [{"route": r.route, "count": int(r.count)} for r in per_route_rows]
+
+    # daily bucket
+    day_rows = (
+        await session.execute(
+            select(
+                cast(APIUsage.created_at, Date).label("day"),
+                func.count(APIUsage.id).label("count"),
+            )
+            .where(and_(APIUsage.app_id == app_id, APIUsage.created_at >= since))
+            .group_by("day")
+            .order_by("day")
+        )
+    ).all()
+    daily = [{"date": str(r.day), "count": int(r.count)} for r in day_rows]
+
+    return {
+        "total": total,
+        "success": success,
+        "errors": errors,
+        "avg_latency_ms": avg_latency,
+        "per_route": per_route,
+        "daily": daily,
+        "since": since.isoformat(),
+        "days": days,
+    }
+
+
+@router.get(
     "/organization/developers",
     response_model=MemberListResponse,
     summary="列当前 org 下所有 Developer",

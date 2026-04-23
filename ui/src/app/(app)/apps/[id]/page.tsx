@@ -5,6 +5,7 @@ import Link from "next/link";
 import { KeyRound, Users } from "lucide-react";
 
 import { IntegrationQuickstart } from "@/components/integration-quickstart";
+import { UsageCard } from "@/components/usage-card";
 import {
   Card,
   CardContent,
@@ -62,6 +63,7 @@ export default function AppDetail({
       </div>
 
       <IntegrationQuickstart appId={id} appSlug={app.slug} />
+      <UsageCard appId={id} />
     </div>
   );
 }

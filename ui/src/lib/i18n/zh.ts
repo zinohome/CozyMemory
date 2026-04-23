@@ -643,6 +643,14 @@ export const zh: Record<TKey, string> = {
   "quickstart.example.get_context": "2) LLM 调用前拉统一上下文",
   "quickstart.footer_hint": "所有业务路由都走 X-Cozy-API-Key 鉴权。数据通过 uuid5(app_namespace, user_id) 按 App 隔离 —— 详情见文档。",
 
+  "usage.title": "用量（最近 7 天）",
+  "usage.total": "总调用数",
+  "usage.success": "成功",
+  "usage.errors": "错误",
+  "usage.avg_latency": "平均延迟",
+  "usage.daily": "每日趋势",
+  "usage.per_route": "按路由",
+
   // ── Operator Dashboard ──────────────────────────────────────────────
   "operator.dashboard_title": "运维总览",
   "operator.dashboard_subtitle": "跨组织平台统计与引擎健康状态。",

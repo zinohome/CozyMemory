@@ -32,6 +32,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("dataset_id"),
     )
     op.create_index("ix_app_datasets_app", "app_datasets", ["app_id"])
+    op.execute("GRANT ALL ON app_datasets TO cozymemory_user")
 
 
 def downgrade() -> None:
