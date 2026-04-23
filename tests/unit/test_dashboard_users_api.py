@@ -122,3 +122,19 @@ async def test_users_count_matches(client):
     r = await c.get(f"/api/v1/dashboard/apps/{app_id}/users",
         headers={"Authorization": f"Bearer {token}"})
     assert r.json()["total"] == 3
+
+
+@pytest.mark.asyncio
+async def test_list_users_without_auth_rejected(client):
+    c, _ = client
+    token, app_id = await _bootstrap(c)
+    r = await c.get(f"/api/v1/dashboard/apps/{app_id}/users")
+    assert r.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_delete_user_without_auth_rejected(client):
+    c, _ = client
+    token, app_id = await _bootstrap(c)
+    r = await c.delete(f"/api/v1/dashboard/apps/{app_id}/users/alice")
+    assert r.status_code == 401

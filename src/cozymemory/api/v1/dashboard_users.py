@@ -35,10 +35,10 @@ class ExtUserListResponse(BaseModel):
 
 
 async def _assert_app_owned(session: AsyncSession, app_id: UUID, dev: Developer) -> App:
-    row = (
-        await session.execute(select(App).where(App.id == app_id))
-    ).scalar_one_or_none()
-    if row is None or row.org_id != dev.org_id:
+    row = (await session.execute(
+        select(App).where(App.id == app_id, App.org_id == dev.org_id)
+    )).scalar_one_or_none()
+    if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="app not found")
     return row
 
