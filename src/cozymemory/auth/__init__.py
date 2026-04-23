@@ -8,7 +8,12 @@
 业务 API Key 让外部 app 调用。
 """
 
-from .app_context import AppContext, get_app_context, require_app_context
+from .app_context import (
+    AppContext,
+    get_app_context,
+    require_app_context,
+    scope_user_id,
+)
 from .deps import get_current_developer, require_role
 from .jwt import create_access_token, decode_access_token
 from .password import hash_password, verify_password
@@ -23,4 +28,5 @@ __all__ = [
     "AppContext",
     "get_app_context",
     "require_app_context",
+    "scope_user_id",
 ]

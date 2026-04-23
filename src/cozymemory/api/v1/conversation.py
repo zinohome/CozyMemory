@@ -1,6 +1,9 @@
 """会话记忆 REST API 端点
 
 对应引擎：Mem0
+
+batch 17 Phase 2 Step 6 起：所有涉及 user_id 的路由走 scope_user_id，
+App Key 调用 → 解成 internal UUID；bootstrap key → 保留原 user_id 透传。
 """
 
 from __future__ import annotations
@@ -10,7 +13,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from ...api.deps import get_conversation_service
-from ...auth import AppContext, get_app_context
+from ...auth import AppContext, get_app_context, scope_user_id
 from ...clients.base import EngineError
 from ...models.common import ErrorResponse
 from ...models.conversation import (
@@ -50,10 +53,12 @@ async def list_conversations(
     user_id: str,
     limit: int = 100,
     service: ConversationService = Depends(get_conversation_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ConversationMemoryListResponse | JSONResponse:
     """获取指定用户的全部记忆条目，按创建时间倒序。"""
+    scoped_uid = await scope_user_id(app_ctx, user_id)
     try:
-        return await service.get_all(user_id=user_id, limit=limit)
+        return await service.get_all(user_id=scoped_uid, limit=limit)
     except EngineError as e:
         return _engine_error_response(e)
 
@@ -73,23 +78,19 @@ async def add_conversation(
 
     `infer=true`（默认）：LLM 分析对话提取事实，如"用户喜欢篮球"。
     `infer=false`：原样存储消息内容，不做提取。
-
-    注：batch 17 Phase 2 Step 4 起，如果调用方用的是 App API Key，请求会
-    携带 App 上下文（app_id）。目前只做日志记录，不做数据隔离；Step 5
-    引入 uuid5 映射后 Step 6 会把 `request.user_id` 转成内部 UUID，
-    实现真正的 per-App 隔离。
     """
+    scoped_uid = await scope_user_id(app_ctx, request.user_id)
     if app_ctx:
         logger.info(
             "conversation.add.app_scope",
             app_id=str(app_ctx.app_id),
-            api_key_id=str(app_ctx.api_key_id),
             external_user_id=request.user_id,
+            internal_uuid=scoped_uid,
         )
     try:
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
         return await service.add(
-            user_id=request.user_id,
+            user_id=scoped_uid,
             messages=messages,
             metadata=request.metadata,
             infer=request.infer,
@@ -109,11 +110,13 @@ async def add_conversation(
 async def search_conversations(
     request: ConversationMemorySearch,
     service: ConversationService = Depends(get_conversation_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ConversationMemoryListResponse | JSONResponse:
     """用自然语言语义搜索用户记忆。支持 `threshold` 过滤低相关结果。"""
+    scoped_uid = await scope_user_id(app_ctx, request.user_id)
     try:
         return await service.search(
-            user_id=request.user_id,
+            user_id=scoped_uid,
             query=request.query,
             limit=request.limit,
             threshold=request.threshold,
@@ -135,7 +138,13 @@ async def get_conversation(
     memory_id: str,
     service: ConversationService = Depends(get_conversation_service),
 ) -> ConversationMemory | JSONResponse:
-    """按 ID 获取单条记忆。记忆不存在返回 404。"""
+    """按 ID 获取单条记忆。记忆不存在返回 404。
+
+    注：memory_id 是 Mem0 内部 UUID（全局唯一），不需要做 App 范围化。
+    但 App 维度越权问题：当前代码没阻挡 App A 用 memory_id 读 App B 的记忆，
+    因为 memory 本身没有 app 标签。Step 后续可考虑用 service 层查出记忆后
+    校验 user_id 是否属于当前 app。
+    """
     try:
         result = await service.get(memory_id)
         if result is None:
@@ -176,9 +185,11 @@ async def delete_conversation(
 async def delete_all_conversations(
     user_id: str,
     service: ConversationService = Depends(get_conversation_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ConversationMemoryListResponse | JSONResponse:
     """删除指定用户的全部记忆条目。"""
+    scoped_uid = await scope_user_id(app_ctx, user_id)
     try:
-        return await service.delete_all(user_id)
+        return await service.delete_all(scoped_uid)
     except EngineError as e:
         return _engine_error_response(e)

@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from ...api.deps import get_context_service
+from ...auth import AppContext, get_app_context, scope_user_id
 from ...models.context import ContextRequest, ContextResponse
 from ...services.context import ContextService
 
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/context", tags=["context"])
 async def get_unified_context(
     request: ContextRequest,
     service: ContextService = Depends(get_context_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ContextResponse:
     """一次请求并发调用 Mem0、Memobase、Cognee，返回合并后的统一上下文。
 
@@ -33,4 +35,7 @@ async def get_unified_context(
     - 有值 → Mem0 语义搜索 + Cognee 知识图谱检索
     - 为 null → Mem0 返回全量记忆（按时间倒序），Cognee 自动跳过
     """
-    return await service.get_context(request)
+    # 复制一份把 user_id 换成 internal UUID（App Key）或保持原值（bootstrap）
+    scoped_uid = await scope_user_id(app_ctx, request.user_id)
+    scoped_request = request.model_copy(update={"user_id": scoped_uid})
+    return await service.get_context(scoped_request)

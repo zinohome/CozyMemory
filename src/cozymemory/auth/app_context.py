@@ -100,3 +100,20 @@ def require_app_context(
             detail="this endpoint requires an App API key (not a bootstrap key)",
         )
     return ctx
+
+
+async def scope_user_id(app_ctx: AppContext | None, user_id: str) -> str:
+    """业务路由通用 helper，把 external_user_id 按鉴权来源做范围化：
+
+    - 有 app_ctx（调用方用 App Key）→ uuid5 解析为内部 UUID 字符串
+      传给三引擎（Mem0/Memobase/Cognee）时作为 user_id，实现 per-App 数据隔离
+    - 无 app_ctx（bootstrap key，admin 视角）→ 直接返原始 user_id
+      保留 "admin 看所有数据" 的既有行为，向后兼容 UI / 迁移期调用
+
+    所有业务路由（conversations / profiles / context / backup）从
+    batch 17 Phase 2 Step 6 起统一走这个函数，行为一致。
+    """
+    if app_ctx is None:
+        return user_id
+    internal_uuid = await app_ctx.resolve_user(user_id)
+    return str(internal_uuid)
