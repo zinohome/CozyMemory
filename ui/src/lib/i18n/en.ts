@@ -480,6 +480,9 @@ export const en = {
   "settings.client.probe.okWithKey": "200 OK — key accepted",
   "settings.client.probe.okNoAuth": "200 OK — server has no auth enabled",
   "settings.client.probe.http": "HTTP {code}",
+  "settings.legacy_bootstrap_title": "Legacy Bootstrap Keys",
+  "settings.legacy_bootstrap_desc":
+    "Only used for bootstrap (no Developer account yet). Day-to-day, manage keys per App under Apps → Keys.",
 
   // ── Hotkeys help ────────────────────────────────────────────────────
   "hotkeys.title": "Keyboard shortcuts",

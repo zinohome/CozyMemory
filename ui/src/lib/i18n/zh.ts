@@ -478,6 +478,9 @@ export const zh: Record<TKey, string> = {
   "settings.client.probe.okWithKey": "200 OK——key 被接受",
   "settings.client.probe.okNoAuth": "200 OK——服务端没开鉴权",
   "settings.client.probe.http": "HTTP {code}",
+  "settings.legacy_bootstrap_title": "旧的 Bootstrap 密钥",
+  "settings.legacy_bootstrap_desc":
+    "仅在自举场景（还没有 Developer 账户）下使用。日常请在各 App 的 Keys 页管理。",
 
   // ── Hotkeys help ────────────────────────────────────────────────────
   "hotkeys.title": "键盘快捷键",

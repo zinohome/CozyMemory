@@ -15,7 +15,7 @@ import { healthApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServerApiKeysPanel } from "@/components/server-api-keys-panel";
 import { KeyRound, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -132,8 +132,20 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Server-side API Keys ── */}
-      <ServerApiKeysPanel />
+      {/* ── Legacy Bootstrap Keys (pre multi-tenant) ── */}
+      <Card className="opacity-80">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">
+            {t("settings.legacy_bootstrap_title")}
+          </CardTitle>
+          <CardDescription>
+            {t("settings.legacy_bootstrap_desc")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ServerApiKeysPanel />
+        </CardContent>
+      </Card>
     </div>
   );
 }
