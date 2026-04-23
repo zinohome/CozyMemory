@@ -27,6 +27,195 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 注册 — 同时创建 Organization 和首个 Developer(owner)
+         * @description 自注册流程：一次创建 Org + owner Developer，返回 token。
+         *
+         *     约束：
+         *       - email 全局唯一（developers.email UNIQUE）
+         *       - org_slug 全局唯一（organizations.slug UNIQUE）
+         *       - 首个 Developer 自动 role=owner
+         */
+        post: operations["register_api_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 登录 — 邮箱 + 密码换 JWT
+         * @description 验证邮箱 + 密码，成功返回 JWT。
+         *
+         *     失败统一返回 401 invalid credentials（不区分"邮箱不存在" vs "密码错"，
+         *     防枚举）。
+         */
+        post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 返回当前 JWT 对应的 Developer 信息 */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列出当前开发者 Org 下的所有 App */
+        get: operations["list_apps_api_v1_dashboard_apps_get"];
+        put?: never;
+        /** 创建 App（owner/admin） */
+        post: operations["create_app_api_v1_dashboard_apps_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps/{app_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取 App 详情 */
+        get: operations["get_app_api_v1_dashboard_apps__app_id__get"];
+        put?: never;
+        post?: never;
+        /** 删除 App 及其全部 API Key / ExternalUser（owner 唯一） */
+        delete: operations["delete_app_api_v1_dashboard_apps__app_id__delete"];
+        options?: never;
+        head?: never;
+        /** 修改 App 的 name / description（owner/admin） */
+        patch: operations["update_app_api_v1_dashboard_apps__app_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps/{app_id}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列出该 App 的 API Key */
+        get: operations["list_keys_api_v1_dashboard_apps__app_id__keys_get"];
+        put?: never;
+        /** 创建 API Key — 明文只此一次返回 */
+        post: operations["create_key_api_v1_dashboard_apps__app_id__keys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps/{app_id}/keys/{key_id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 轮换 API Key — 旧明文立即失效，新明文此次返回 */
+        post: operations["rotate_key_api_v1_dashboard_apps__app_id__keys__key_id__rotate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps/{app_id}/keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 删除 API Key（owner 唯一） */
+        delete: operations["delete_key_api_v1_dashboard_apps__app_id__keys__key_id__delete"];
+        options?: never;
+        head?: never;
+        /** 启用/禁用 + 改名（owner/admin） */
+        patch: operations["update_key_api_v1_dashboard_apps__app_id__keys__key_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps/{app_id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_v1_dashboard_apps__app_id__users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/apps/{app_id}/users/{external_user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete User */
+        delete: operations["delete_user_api_v1_dashboard_apps__app_id__users__external_user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/conversations": {
         parameters: {
             query?: never;
@@ -88,6 +277,11 @@ export interface paths {
         /**
          * 获取单条记忆
          * @description 按 ID 获取单条记忆。记忆不存在返回 404。
+         *
+         *     注：memory_id 是 Mem0 内部 UUID（全局唯一），不需要做 App 范围化。
+         *     但 App 维度越权问题：当前代码没阻挡 App A 用 memory_id 读 App B 的记忆，
+         *     因为 memory 本身没有 app 标签。Step 后续可考虑用 service 层查出记忆后
+         *     校验 user_id 是否属于当前 app。
          */
         get: operations["get_conversation_api_v1_conversations__memory_id__get"];
         put?: never;
@@ -600,99 +794,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/api-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Keys */
-        get: operations["list_keys_api_v1_admin_api_keys_get"];
-        put?: never;
-        /** Create Key */
-        post: operations["create_key_api_v1_admin_api_keys_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/api-keys/{key_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Key */
-        delete: operations["delete_key_api_v1_admin_api_keys__key_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Key */
-        patch: operations["update_key_api_v1_admin_api_keys__key_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/admin/api-keys/{key_id}/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Rotate Key */
-        post: operations["rotate_key_api_v1_admin_api_keys__key_id__rotate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/api-keys/{key_id}/logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 查看该 key 最近使用记录 */
-        get: operations["get_key_logs_api_v1_admin_api_keys__key_id__logs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ApiKeyCreateRequest */
-        ApiKeyCreateRequest: {
-            /**
-             * Name
-             * @description 人可读命名
-             */
+        /**
+         * ApiKeyCreate
+         * @example {
+         *       "environment": "live",
+         *       "name": "production-backend"
+         *     }
+         */
+        ApiKeyCreate: {
+            /** Name */
             name: string;
+            /**
+             * Environment
+             * @description live=生产 test=沙箱（可做配额/QPS 区分）
+             * @default live
+             * @enum {string}
+             */
+            environment: "live" | "test";
         };
         /**
          * ApiKeyCreateResponse
-         * @description 创建/轮换响应 — 仅此刻返回明文 key，用户必须立即保存
+         * @description create / rotate 响应。明文 key 只此一次返回，丢失只能 rotate 重发。
          */
         ApiKeyCreateResponse: {
-            record: components["schemas"]["ApiKeyRecord"];
+            record: components["schemas"]["ApiKeyInfo"];
             /**
              * Key
-             * @description 明文 key（仅此次返回，之后只存 hash）
+             * @description 明文 API Key，保存好，不会再显示
              */
             key: string;
+        };
+        /**
+         * ApiKeyInfo
+         * @description 不包含明文 key，只给 list / get / update 用。
+         */
+        ApiKeyInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * App Id
+             * Format: uuid
+             */
+            app_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Prefix
+             * @description 展示用前缀，如 cozy_live_abc12345
+             */
+            prefix: string;
+            /** Environment */
+            environment: string;
+            /** Disabled */
+            disabled: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Expires At */
+            expires_at: string | null;
         };
         /** ApiKeyListResponse */
         ApiKeyListResponse: {
@@ -702,7 +872,7 @@ export interface components {
              */
             success: boolean;
             /** Data */
-            data: components["schemas"]["ApiKeyRecord"][];
+            data?: components["schemas"]["ApiKeyInfo"][];
             /**
              * Total
              * @default 0
@@ -710,31 +880,78 @@ export interface components {
             total: number;
         };
         /**
-         * ApiKeyLogEntry
-         * @description 单次 API key 使用记录
+         * ApiKeyUpdate
+         * @example {
+         *       "disabled": true
+         *     }
          */
-        ApiKeyLogEntry: {
+        ApiKeyUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Disabled */
+            disabled?: boolean | null;
+        };
+        /**
+         * AppCreate
+         * @example {
+         *       "description": "抖音用户记忆服务",
+         *       "name": "Douyin Memory",
+         *       "slug": "douyin-memory"
+         *     }
+         */
+        AppCreate: {
+            /** Name */
+            name: string;
             /**
-             * Ts
+             * Slug
+             * @description URL 友好，小写字母 + 数字 + 短横线；同 org 内唯一
+             */
+            slug: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+        };
+        /** AppInfo */
+        AppInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /**
+             * Namespace Id
+             * Format: uuid
+             * @description 用于 uuid5 的 namespace，永不变
+             */
+            namespace_id: string;
+            /** Description */
+            description: string;
+            /**
+             * Created At
              * Format: date-time
              */
-            ts: string;
-            /** Method */
-            method: string;
-            /** Path */
-            path: string;
-            /** Status */
-            status: number;
+            created_at: string;
         };
-        /** ApiKeyLogListResponse */
-        ApiKeyLogListResponse: {
+        /** AppListResponse */
+        AppListResponse: {
             /**
              * Success
              * @default true
              */
             success: boolean;
             /** Data */
-            data: components["schemas"]["ApiKeyLogEntry"][];
+            data?: components["schemas"]["AppInfo"][];
             /**
              * Total
              * @default 0
@@ -742,49 +959,17 @@ export interface components {
             total: number;
         };
         /**
-         * ApiKeyRecord
-         * @description 服务端存储的 API key 元数据（不含明文和 hash）
+         * AppUpdate
+         * @description 只允许改 name / description。slug 和 namespace_id 不变（影响用户 UUID 映射）。
+         * @example {
+         *       "name": "New Name"
+         *     }
          */
-        ApiKeyRecord: {
-            /**
-             * Id
-             * @description key ID（UUID）
-             */
-            id: string;
-            /**
-             * Name
-             * @description 人可读命名
-             */
-            name: string;
-            /**
-             * Prefix
-             * @description key 前缀，供识别，例如 cozy_prod_a1b2c3
-             */
-            prefix: string;
-            /**
-             * Created At
-             * Format: date-time
-             * @description 创建时间
-             */
-            created_at: string;
-            /**
-             * Last Used At
-             * @description 最近一次成功鉴权时间
-             */
-            last_used_at?: string | null;
-            /**
-             * Disabled
-             * @description 禁用后不再通过鉴权
-             * @default false
-             */
-            disabled: boolean;
-        };
-        /** ApiKeyUpdateRequest */
-        ApiKeyUpdateRequest: {
+        AppUpdate: {
             /** Name */
             name?: string | null;
-            /** Disabled */
-            disabled?: boolean | null;
+            /** Description */
+            description?: string | null;
         };
         /**
          * BackupImportRequest
@@ -1355,6 +1540,36 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * DeveloperInfo
+         * @description 返回给前端的开发者信息（不含密码）
+         */
+        DeveloperInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /** Org Name */
+            org_name: string;
+            /** Org Slug */
+            org_slug: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Login At */
+            last_login_at: string | null;
+        };
+        /**
          * EngineStatus
          * @description 引擎健康状态
          */
@@ -1411,6 +1626,22 @@ export interface components {
              * @description 出错的引擎名称
              */
             engine?: string | null;
+        };
+        /** ExtUserItem */
+        ExtUserItem: {
+            /** External User Id */
+            external_user_id: string;
+            /** Internal Uuid */
+            internal_uuid: string;
+            /** Created At */
+            created_at: string;
+        };
+        /** ExtUserListResponse */
+        ExtUserListResponse: {
+            /** Data */
+            data: components["schemas"]["ExtUserItem"][];
+            /** Total */
+            total: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1698,6 +1929,22 @@ export interface components {
             } | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * LoginRequest
+         * @example {
+         *       "email": "alice@bytedance.com",
+         *       "password": "SuperSecret123"
+         *     }
+         */
+        LoginRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
         };
         /**
          * MemoryBundle
@@ -2015,6 +2262,61 @@ export interface components {
              */
             updated_at?: string | null;
         };
+        /**
+         * RegisterRequest
+         * @description 注册：同时创建 Organization + Developer(owner)
+         * @example {
+         *       "email": "alice@bytedance.com",
+         *       "name": "Alice",
+         *       "org_name": "ByteDance",
+         *       "org_slug": "bytedance",
+         *       "password": "SuperSecret123"
+         *     }
+         */
+        RegisterRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Password
+             * @description bcrypt 最长 72 字节
+             */
+            password: string;
+            /** Org Name */
+            org_name: string;
+            /**
+             * Org Slug
+             * @description URL 友好，小写字母 + 数字 + 短横线
+             */
+            org_slug: string;
+            /**
+             * Name
+             * @description 开发者显示名（可选）
+             * @default
+             */
+            name: string;
+        };
+        /**
+         * TokenResponse
+         * @description 登录 / 注册成功的响应。
+         */
+        TokenResponse: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Expires In
+             * @description 秒
+             */
+            expires_in: number;
+            developer: components["schemas"]["DeveloperInfo"];
+        };
         /** UserListResponse */
         UserListResponse: {
             /**
@@ -2112,6 +2414,472 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    register_api_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeveloperInfo"];
+                };
+            };
+        };
+    };
+    list_apps_api_v1_dashboard_apps_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppListResponse"];
+                };
+            };
+        };
+    };
+    create_app_api_v1_dashboard_apps_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_app_api_v1_dashboard_apps__app_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_app_api_v1_dashboard_apps__app_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_app_api_v1_dashboard_apps__app_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keys_api_v1_dashboard_apps__app_id__keys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_key_api_v1_dashboard_apps__app_id__keys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_key_api_v1_dashboard_apps__app_id__keys__key_id__rotate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_key_api_v1_dashboard_apps__app_id__keys__key_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_key_api_v1_dashboard_apps__app_id__keys__key_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_dashboard_apps__app_id__users_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtUserListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_api_v1_dashboard_apps__app_id__users__external_user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+                external_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3370,191 +4138,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BackupImportResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_keys_api_v1_admin_api_keys_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyListResponse"];
-                };
-            };
-        };
-    };
-    create_key_api_v1_admin_api_keys_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApiKeyCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_key_api_v1_admin_api_keys__key_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_key_api_v1_admin_api_keys__key_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApiKeyUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyRecord"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    rotate_key_api_v1_admin_api_keys__key_id__rotate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_key_logs_api_v1_admin_api_keys__key_id__logs_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                key_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyLogListResponse"];
                 };
             };
             /** @description Validation Error */
