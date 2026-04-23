@@ -11,6 +11,7 @@ from .engine import close_engine, get_session, init_engine
 from .models import (
     ApiKey,
     App,
+    AppDataset,
     AuditLog,
     Base,
     Developer,
@@ -26,6 +27,7 @@ __all__ = [
     "ApiKey",
     "ExternalUser",
     "AuditLog",
+    "AppDataset",
     "init_engine",
     "close_engine",
     "get_session",

@@ -270,3 +270,33 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+# ─────────────────────── App ↔ Cognee Dataset 归属 ───────────────────────
+
+
+class AppDataset(Base):
+    """App 名下的 Cognee dataset 归属索引。
+
+    一个 dataset 只属于一个 App（one-to-one）。首次创建时在此登记；listing
+    时按 app_id 过滤；cross-App 的 dataset 访问统一 404（防枚举）。
+
+    legacy 数据（没有 app_id 的老 dataset）只对 Operator 可见。
+    """
+
+    __tablename__ = "app_datasets"
+    __table_args__ = (
+        Index("ix_app_datasets_app", "app_id"),
+    )
+
+    dataset_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True
+    )
+    app_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("apps.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

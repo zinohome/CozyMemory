@@ -1,9 +1,5 @@
 "use client";
 
-// FIXME(Step 9): knowledgeApi.* 调用仍是全局的（跨 App 共享 dataset）。
-// 真 per-App 隔离要等 Step 9 的 App↔Dataset 表 + 路由改造。
-// 现阶段：所有 App 看到一样的 dataset 列表，这是已知问题。
-
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { knowledgeApi, type KnowledgeDataset } from "@/lib/api";
