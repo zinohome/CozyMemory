@@ -10,7 +10,7 @@
  */
 
 import type { components } from "./api-types";
-import { getApiKey } from "./store";
+import { getApiKey, getJwt, getCurrentAppId, useAppStore } from "./store";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const API_PREFIX = "/api/v1";
@@ -52,13 +52,16 @@ export type ApiError = S["ErrorResponse"];
 
 // ── Core fetch helper ──────────────────────────────────────────────────────
 
-async function apiFetch<T>(
-  path: string,
-  init?: RequestInit & { params?: Record<string, string | number | boolean | undefined> }
-): Promise<T> {
-  // Destructure custom `params` out so it is never forwarded to fetch() — the
-  // fetch spec does not recognise it and some polyfills throw on unknown keys.
-  const { params, ...fetchInit } = init ?? {};
+type ApiFetchInit = RequestInit & {
+  params?: Record<string, string | number | boolean | undefined>;
+  scoped?: boolean;
+};
+
+async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
+  // Destructure custom `params` / `scoped` out so they are never forwarded to
+  // fetch() — the fetch spec does not recognise them and some polyfills throw
+  // on unknown keys.
+  const { params, scoped = true, ...fetchInit } = init ?? {};
 
   const url = new URL(`${BASE_URL}${API_PREFIX}${path}`);
   if (params) {
@@ -67,26 +70,60 @@ async function apiFetch<T>(
     }
   }
 
-  // 全局 API key 自动注入，用户可在 Settings 页配置；未配置时后端若也关闭
-  // 鉴权则正常放行
-  const apiKey = getApiKey();
-  const authHeaders: Record<string, string> = apiKey ? { "X-Cozy-API-Key": apiKey } : {};
+  // Auth header preference: JWT (multi-tenant dashboard) > legacy X-Cozy-API-Key.
+  // When JWT is set and this is a scoped (tenant-data) call, also attach
+  // X-Cozy-App-Id so the backend middleware can pick the right app context.
+  const jwt = getJwt();
+  const authHeaders: Record<string, string> = {};
+  if (jwt) {
+    authHeaders["Authorization"] = `Bearer ${jwt}`;
+    if (scoped) {
+      const appId = getCurrentAppId();
+      if (appId) authHeaders["X-Cozy-App-Id"] = appId;
+    }
+  } else {
+    const apiKey = getApiKey();
+    if (apiKey) authHeaders["X-Cozy-API-Key"] = apiKey;
+  }
+
+  const headers = new Headers({ "Content-Type": "application/json" });
+  for (const [k, v] of Object.entries(authHeaders)) headers.set(k, v);
+  const extra = fetchInit?.headers;
+  if (extra) {
+    const extraHeaders = new Headers(extra as HeadersInit);
+    extraHeaders.forEach((v, k) => headers.set(k, v));
+  }
 
   const res = await fetch(url.toString(), {
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders,
-      ...(fetchInit?.headers ?? {}),
-    },
     ...fetchInit,
+    headers,
   });
 
-  const data = await res.json();
+  // 401 + JWT was in flight => session expired; clear auth and redirect.
+  if (res.status === 401 && jwt) {
+    useAppStore.getState().logout();
+    if (typeof window !== "undefined") {
+      window.location.assign("/login");
+    }
+  }
+
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = data as ApiError;
-    throw new Error(err.detail ?? err.error ?? `HTTP ${res.status}`);
+    throw new Error(err?.detail ?? err?.error ?? `HTTP ${res.status}`);
   }
   return data as T;
+}
+
+/**
+ * Thin wrapper for dashboard-scope routes (/auth/*, /dashboard/*) that do
+ * NOT require an X-Cozy-App-Id header — the JWT alone identifies the user.
+ */
+export function dashboardFetch<T>(
+  path: string,
+  init?: Omit<ApiFetchInit, "scoped">
+): Promise<T> {
+  return apiFetch<T>(path, { ...(init ?? {}), scoped: false });
 }
 
 // ── Health ─────────────────────────────────────────────────────────────────

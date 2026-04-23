@@ -19,6 +19,15 @@ interface AppState {
   apiKey: string;
   setApiKey: (key: string) => void;
 
+  // Multi-tenant dashboard auth state
+  jwt: string;
+  setJwt: (t: string) => void;
+  currentAppId: string;
+  setCurrentAppId: (id: string) => void;
+  currentAppSlug: string;
+  setCurrentAppSlug: (s: string) => void;
+  logout: () => void;
+
   // Playground system prompt — 空字符串 = 用默认
   playgroundSystemPrompt: string;
   setPlaygroundSystemPrompt: (p: string) => void;
@@ -45,6 +54,14 @@ export const useAppStore = create<AppState>()(
       apiKey: "",
       setApiKey: (key) => set({ apiKey: key }),
 
+      jwt: "",
+      setJwt: (t) => set({ jwt: t }),
+      currentAppId: "",
+      setCurrentAppId: (id) => set({ currentAppId: id }),
+      currentAppSlug: "",
+      setCurrentAppSlug: (s) => set({ currentAppSlug: s }),
+      logout: () => set({ jwt: "", currentAppId: "", currentAppSlug: "" }),
+
       playgroundSystemPrompt: "",
       setPlaygroundSystemPrompt: (p) => set({ playgroundSystemPrompt: p }),
 
@@ -58,4 +75,12 @@ export const useAppStore = create<AppState>()(
 // 非 Hook 访问（api.ts 里的 apiFetch 不能调 Hook）
 export function getApiKey(): string {
   return useAppStore.getState().apiKey;
+}
+
+export function getJwt(): string {
+  return useAppStore.getState().jwt;
+}
+
+export function getCurrentAppId(): string {
+  return useAppStore.getState().currentAppId;
 }
