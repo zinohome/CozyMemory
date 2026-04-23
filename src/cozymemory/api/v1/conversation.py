@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
+import structlog
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from ...api.deps import get_conversation_service
+from ...auth import AppContext, get_app_context
 from ...clients.base import EngineError
 from ...models.common import ErrorResponse
 from ...models.conversation import (
@@ -18,6 +20,8 @@ from ...models.conversation import (
     ConversationMemorySearch,
 )
 from ...services.conversation import ConversationService
+
+logger = structlog.get_logger()
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -63,12 +67,25 @@ async def list_conversations(
 async def add_conversation(
     request: ConversationMemoryCreate,
     service: ConversationService = Depends(get_conversation_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ConversationMemoryListResponse | JSONResponse:
     """添加对话消息，Mem0 自动使用 LLM 提取事实性记忆并向量化存储。
 
     `infer=true`（默认）：LLM 分析对话提取事实，如"用户喜欢篮球"。
     `infer=false`：原样存储消息内容，不做提取。
+
+    注：batch 17 Phase 2 Step 4 起，如果调用方用的是 App API Key，请求会
+    携带 App 上下文（app_id）。目前只做日志记录，不做数据隔离；Step 5
+    引入 uuid5 映射后 Step 6 会把 `request.user_id` 转成内部 UUID，
+    实现真正的 per-App 隔离。
     """
+    if app_ctx:
+        logger.info(
+            "conversation.add.app_scope",
+            app_id=str(app_ctx.app_id),
+            api_key_id=str(app_ctx.api_key_id),
+            external_user_id=request.user_id,
+        )
     try:
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
         return await service.add(
