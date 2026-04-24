@@ -39,7 +39,7 @@ export function RegisterForm() {
         },
       );
       setJwt(r.access_token);
-      document.cookie = "cm_auth=1; Path=/; SameSite=Lax";
+      document.cookie = "cm_auth=1; Path=/; SameSite=Lax; Secure";
       router.replace("/home");
     } catch (err) {
       // 后端 422 的 err.message 是 JSON.stringify 的 detail 数组；尝试

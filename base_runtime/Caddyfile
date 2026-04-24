@@ -66,6 +66,13 @@
 	reverse_proxy grafana:3000
 }
 
+# gRPC TLS 终止 (:50051) — Caddy 自签 TLS，内部 h2c 转发到 cozymemory-api
+# 客户端连接加密，避免 API Key metadata 在网络上明文传输
+:50051 {
+	reverse_proxy h2c://cozymemory-api:50051
+	tls internal
+}
+
 # LLM API 代理 (:9090) — 内部专用，剥除 oneapi.naivehero.top 的重复 Server 响应头
 # aiohttp 3.13+ 对重复响应头严格校验，通过此代理解决
 :9090 {

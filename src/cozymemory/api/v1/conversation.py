@@ -11,10 +11,12 @@ from __future__ import annotations
 import structlog
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 
 from ...api.deps import get_conversation_service
 from ...auth import AppContext, get_app_context, scope_user_id
 from ...clients.base import EngineError
+from ...db.models import ExternalUser
 from ...models.common import ErrorResponse
 from ...models.conversation import (
     ConversationMemory,
@@ -27,6 +29,24 @@ from ...services.conversation import ConversationService
 logger = structlog.get_logger()
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
+
+
+async def _user_belongs_to_app(app_ctx: AppContext, mem0_user_id: str) -> bool:
+    """检查 Mem0 memory 的 user_id（internal uuid）是否属于当前 App。"""
+    from uuid import UUID as _UUID
+
+    try:
+        uid = _UUID(mem0_user_id)
+    except (ValueError, TypeError):
+        return False
+    session = app_ctx._session
+    result = await session.execute(
+        select(ExternalUser.internal_uuid).where(
+            ExternalUser.app_id == app_ctx.app_id,
+            ExternalUser.internal_uuid == uid,
+        )
+    )
+    return result.scalar_one_or_none() is not None
 
 
 def _engine_error_response(exc: EngineError) -> JSONResponse:
@@ -137,17 +157,19 @@ async def search_conversations(
 async def get_conversation(
     memory_id: str,
     service: ConversationService = Depends(get_conversation_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ConversationMemory | JSONResponse:
-    """按 ID 获取单条记忆。记忆不存在返回 404。
-
-    注：memory_id 是 Mem0 内部 UUID（全局唯一），不需要做 App 范围化。
-    但 App 维度越权问题：当前代码没阻挡 App A 用 memory_id 读 App B 的记忆，
-    因为 memory 本身没有 app 标签。Step 后续可考虑用 service 层查出记忆后
-    校验 user_id 是否属于当前 app。
-    """
+    """按 ID 获取单条记忆。记忆不存在返回 404。"""
     try:
         result = await service.get(memory_id)
         if result is None:
+            return JSONResponse(
+                status_code=404,
+                content=ErrorResponse(
+                    success=False, error="NotFoundError", detail="记忆不存在"
+                ).model_dump(),
+            )
+        if app_ctx and not await _user_belongs_to_app(app_ctx, result.user_id):
             return JSONResponse(
                 status_code=404,
                 content=ErrorResponse(
@@ -162,15 +184,25 @@ async def get_conversation(
 @router.delete(
     "/{memory_id}",
     response_model=ConversationMemoryListResponse,
-    responses={502: {"model": ErrorResponse}},
+    responses={404: {"model": ErrorResponse}, 502: {"model": ErrorResponse}},
     summary="删除单条记忆",
 )
 async def delete_conversation(
     memory_id: str,
     service: ConversationService = Depends(get_conversation_service),
+    app_ctx: AppContext | None = Depends(get_app_context),
 ) -> ConversationMemoryListResponse | JSONResponse:
     """按 ID 删除单条记忆。"""
     try:
+        if app_ctx:
+            existing = await service.get(memory_id)
+            if existing is None or not await _user_belongs_to_app(app_ctx, existing.user_id):
+                return JSONResponse(
+                    status_code=404,
+                    content=ErrorResponse(
+                        success=False, error="NotFoundError", detail="记忆不存在"
+                    ).model_dump(),
+                )
         return await service.delete(memory_id)
     except EngineError as e:
         return _engine_error_response(e)

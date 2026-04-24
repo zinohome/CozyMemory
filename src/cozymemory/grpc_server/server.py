@@ -126,6 +126,30 @@ async def _resolve_dataset_name_to_id(service: Any, name: str) -> str | None:
     return None
 
 
+async def _memory_user_belongs_to_app(app_id: UUID, mem0_user_id: str) -> bool:
+    """检查 Mem0 memory 的 user_id 是否属于指定 App（gRPC 侧）。"""
+    try:
+        uid = UUID(str(mem0_user_id))
+    except (ValueError, TypeError):
+        return False
+    from sqlalchemy import select as _select
+
+    from ..db import engine as _db_engine
+    from ..db.models import ExternalUser
+
+    if _db_engine._session_factory is None:
+        _db_engine.init_engine()
+    assert _db_engine._session_factory is not None
+    async with _db_engine._session_factory() as s:
+        result = await s.execute(
+            _select(ExternalUser.internal_uuid).where(
+                ExternalUser.app_id == app_id,
+                ExternalUser.internal_uuid == uid,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+
 class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer):
     """会话记忆 gRPC 服务实现"""
 
@@ -200,6 +224,11 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("记忆不存在")
                 return conversation_pb2.ConversationMemory()
+            app_id = await _current_app_id()
+            if app_id is not None and not await _memory_user_belongs_to_app(app_id, result.user_id):
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details("记忆不存在")
+                return conversation_pb2.ConversationMemory()
             return conversation_pb2.ConversationMemory(
                 id=result.id,
                 user_id=result.user_id,
@@ -212,6 +241,13 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
     async def DeleteConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         try:
             svc = self._svc
+            app_id = await _current_app_id()
+            if app_id is not None:
+                existing = await svc.get(request.memory_id)
+                if existing is None or not await _memory_user_belongs_to_app(app_id, existing.user_id):
+                    context.set_code(grpc.StatusCode.NOT_FOUND)
+                    context.set_details("记忆不存在")
+                    return conversation_pb2.DeleteResponse()
             result = await svc.delete(request.memory_id)
             return conversation_pb2.DeleteResponse(success=result.success, message=result.message)
         except EngineError as exc:
@@ -623,6 +659,9 @@ class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
 
 async def serve_grpc() -> None:
     """启动 gRPC 服务器"""
+    from grpc_health.v1 import health
+    from grpc_health.v1 import health_pb2_grpc as health_grpc
+
     # 触发 redis 单例预热（scope_user_id_grpc / user_resolver 会用到）
     _ = get_redis_client
     server = grpc.aio.server(interceptors=[AuthUsageInterceptor()])
@@ -634,6 +673,10 @@ async def serve_grpc() -> None:
     profile_pb2_grpc.add_ProfileServiceServicer_to_server(ProfileGrpcServicer(), server)
     knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeGrpcServicer(), server)
     context_pb2_grpc.add_ContextServiceServicer_to_server(ContextGrpcServicer(), server)
+
+    # gRPC 标准 Health Check — K8s/Caddy 探活用
+    health_servicer = health.aio.HealthServicer()
+    health_grpc.add_HealthServicer_to_server(health_servicer, server)
 
     server.add_insecure_port(f"[::]:{settings.GRPC_PORT}")
     await server.start()

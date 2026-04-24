@@ -316,6 +316,14 @@ def create_app() -> FastAPI:
             session_factory = _db_engine._session_factory
             assert session_factory is not None
             duration_ms = (time.perf_counter() - start) * 1000
+            from .metrics import app_request_total
+
+            app_request_total.labels(
+                app_id=str(app_id_raw),
+                route=_normalize_route(path),
+                method=request.method,
+                status=str(response.status_code),
+            ).inc()
             async with session_factory() as s:
                 s.add(
                     APIUsage(

@@ -296,8 +296,7 @@ services:
     image: cozymemory:latest
     container_name: cozymemory
     restart: unless-stopped
-    ports:
-      - "50051:50051"
+    # gRPC 不再直接暴露；Caddy 在 :50051 做 TLS 终止后反代
     environment:
       APP_ENV: production
       DEBUG: "false"
@@ -422,6 +421,7 @@ services:
       - "8019:8019"
       - "8088:8088"
       - "3001:3001"
+      - "50051:50051"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./nav:/srv/nav:ro

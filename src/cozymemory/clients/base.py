@@ -136,6 +136,8 @@ class BaseClient:
                 f"{self._circuit_open_until - time.monotonic():.0f}s",
             )
 
+        from ..metrics import engine_request_duration, engine_request_errors
+
         url = f"{self.api_url}{path}"
         merged_headers = {**self._get_headers(), **(headers or {})}
 
@@ -146,6 +148,7 @@ class BaseClient:
 
         for attempt in range(self.max_retries):
             try:
+                _t0 = time.monotonic()
                 response = await self._client.request(
                     method=method,
                     url=url,
@@ -155,6 +158,9 @@ class BaseClient:
                     data=data,
                     files=files,
                 )
+                engine_request_duration.labels(
+                    engine=self.engine_name, method=method, path=path,
+                ).observe(time.monotonic() - _t0)
 
                 if response.status_code >= 400:
                     if response.status_code == 429 and attempt < self.max_retries - 1:
@@ -202,6 +208,7 @@ class BaseClient:
                 raise
 
             except httpx.TimeoutException as e:
+                engine_request_errors.labels(engine=self.engine_name, error_type="timeout").inc()
                 last_exception = e
                 if attempt < self.max_retries - 1:
                     logger.warning(
@@ -216,6 +223,7 @@ class BaseClient:
                     continue
 
             except httpx.RequestError as e:
+                engine_request_errors.labels(engine=self.engine_name, error_type="network").inc()
                 last_exception = e
                 if attempt < self.max_retries - 1:
                     logger.warning(
