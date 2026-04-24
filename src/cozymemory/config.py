@@ -3,6 +3,8 @@
 使用 pydantic-settings 从环境变量和 .env 文件加载配置。
 """
 
+from importlib.metadata import version as _pkg_version
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,7 +20,7 @@ class Settings(BaseSettings):
 
     # 应用配置
     APP_NAME: str = "CozyMemory"
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = _pkg_version("cozymemory")
     APP_ENV: str = "development"
     DEBUG: bool = False
 

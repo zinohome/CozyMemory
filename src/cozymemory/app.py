@@ -24,6 +24,8 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期管理"""
     configure_logging(env=settings.APP_ENV, level=settings.LOG_LEVEL)
+    from cozymemory.telemetry import setup_telemetry
+    setup_telemetry()
     if settings.APP_ENV == "production" and settings.JWT_SECRET == "change-me-in-production":
         raise RuntimeError(
             "JWT_SECRET must be changed from default in production. "

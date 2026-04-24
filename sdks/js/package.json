@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": ["cozymemory", "memory", "llm", "ai"],
-  "license": "Apache-2.0",
+  "license": "MIT",
   "devDependencies": {
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"

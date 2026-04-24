@@ -31,12 +31,18 @@ jobs:
       - name: Ruff lint
         run: ruff check src/ tests/
 
+      - name: Security audit (pip-audit)
+        run: |
+          pip install pip-audit
+          pip-audit --strict --desc on 2>&1 || true
+
       - name: Unit tests + coverage
         run: |
           pytest tests/unit/ \
             --cov=cozymemory \
             --cov-report=term \
             --cov-report=xml \
+            --cov-fail-under=70 \
             --tb=short
 
       - name: Upload coverage artifact
@@ -164,6 +170,15 @@ jobs:
           docker compose -f "$COMPOSE_FILE" up -d --force-recreate cozymemory-api cozymemory-ui
           sleep 10
           echo "Rollback applied. Deployment marked failed."
+
+      - name: Integration tests (post-deploy smoke)
+        if: success()
+        run: |
+          pip install -e ".[dev]" > /dev/null 2>&1
+          COZY_TEST_URL=http://localhost:8000 \
+          COZY_GRPC_HOST=localhost \
+          COZY_GRPC_PORT=50151 \
+          pytest tests/integration/ -v --tb=short
 
       - name: Cleanup old SHA-tagged images (keep last 5)
         if: success()

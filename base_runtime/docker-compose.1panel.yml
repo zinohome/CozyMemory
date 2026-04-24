@@ -4,6 +4,12 @@
 # 数据存储：/data/CozyMemory/
 # 网络：1panel-network（1Panel 预建外部网络）
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
 services:
 
   # ==========================================
@@ -17,15 +23,22 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required (see .env.example)}
       PGDATA: /var/lib/postgresql/data/pgdata
+      COGNEE_DB_USER: ${COGNEE_DB_USER:-cognee_user}
+      COGNEE_DB_PASSWORD: ${COGNEE_DB_PASSWORD:?COGNEE_DB_PASSWORD required}
+      MEMOBASE_DB_USER: ${MEMOBASE_DB_USER:-memobase}
+      MEMOBASE_DB_PASSWORD: ${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}
+      COZYMEMORY_DB_USER: ${COZYMEMORY_DB_USER:-cozymemory_user}
+      COZYMEMORY_DB_PASSWORD: ${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}
     # 暴露到 host 5433（避开 5432 的另一个 cozyenginev2 老 PG 冲突），
     # 供本地 alembic / 单元测试连接；容器间仍通过 cozy_postgres:5432
     ports:
       - "5433:5432"
     volumes:
       - /data/CozyMemory/postgres:/var/lib/postgresql/data
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./sql/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 
@@ -38,6 +51,7 @@ services:
       - /data/CozyMemory/redis:/data
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 
@@ -49,6 +63,7 @@ services:
       - /data/CozyMemory/qdrant:/qdrant/storage
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 
@@ -64,6 +79,7 @@ services:
       - /data/CozyMemory/minio:/data
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 
@@ -82,6 +98,7 @@ services:
       - /data/CozyMemory/neo4j/plugins:/plugins
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -116,15 +133,15 @@ services:
       - EMBEDDING_ENDPOINT=http://caddy:9090/v1
       - EMBEDDING_MODEL=text-embedding-3-large
       - EMBEDDING_DIMENSIONS=3072
-      - DATABASE_URL=postgresql://cognee_user:cognee_password@postgres:5432/cognee_db
+      - DATABASE_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@postgres:5432/cognee_db
       - DB_PROVIDER=postgres
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=cognee_db
-      - DB_USERNAME=cognee_user
-      - DB_PASSWORD=cognee_password
+      - DB_USERNAME=${COGNEE_DB_USER:-cognee_user}
+      - DB_PASSWORD=${COGNEE_DB_PASSWORD}
       - VECTOR_DB_PROVIDER=pgvector
-      - VECTOR_DB_URL=postgresql://cognee_user:cognee_password@postgres:5432/cognee_db
+      - VECTOR_DB_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@postgres:5432/cognee_db
       - GRAPH_DATABASE_PROVIDER=neo4j
       - GRAPH_DATABASE_NAME=neo4j
       - GRAPH_DATABASE_URL=bolt://neo4j:7687
@@ -136,13 +153,13 @@ services:
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - S3_BUCKET_NAME=cognee-storage
       - S3_USE_SSL=false
-      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
       - EXTRAS=api,postgres,neo4j
       - TELEMETRY_DISABLED=1
       - ENABLE_BACKEND_ACCESS_CONTROL=false
       - REQUIRE_AUTHENTICATION=false
       - DEFAULT_USER_EMAIL=admin@cognee.com
-      - DEFAULT_USER_PASSWORD=passw0rd
+      - DEFAULT_USER_PASSWORD=${COGNEE_ADMIN_PASSWORD:-passw0rd}
       - TIKTOKEN_CACHE_DIR=/root/.tiktoken
     depends_on:
       - postgres
@@ -155,6 +172,7 @@ services:
       - /data/CozyMemory/tiktoken:/root/.tiktoken
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -179,6 +197,7 @@ services:
       - cognee
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -205,7 +224,7 @@ services:
       QDRANT_URL: http://qdrant:6333
       QDRANT_COLLECTION_NAME: memories
       HISTORY_DB_PATH: /app/history/history.db
-      CORS_ORIGINS: "*"
+      CORS_ORIGINS: "${CORS_ALLOWED_ORIGINS:-*}"
       # patch未生效时回退：使用 cozy_postgres 做向量存储（pgvector）
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
@@ -216,6 +235,7 @@ services:
       - /data/CozyMemory/mem0/logs:/app/logs
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -237,6 +257,7 @@ services:
       - mem0-api
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -255,7 +276,7 @@ services:
     container_name: cozy_memobase_api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://memobase:memobase123@postgres:5432/memobase
+      DATABASE_URL: postgresql://${MEMOBASE_DB_USER:-memobase}:${MEMOBASE_DB_PASSWORD}@postgres:5432/memobase
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       ACCESS_TOKEN: ${MEMOBASE_ACCESS_TOKEN:?MEMOBASE_ACCESS_TOKEN required}
       PROJECT_ID: default
@@ -279,6 +300,7 @@ services:
       - /data/CozyMemory/memobase:/app/data
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -313,13 +335,13 @@ services:
       COGNEE_API_KEY: ""
       COGNEE_ENABLED: "true"
       COGNEE_USER_EMAIL: admin@cognee.com
-      COGNEE_USER_PASSWORD: passw0rd
+      COGNEE_USER_PASSWORD: ${COGNEE_ADMIN_PASSWORD:-passw0rd}
       # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
       REDIS_USER_MAPPING_TTL: "0"
       # PostgreSQL 平台账号库（Organization / Developer / App / ApiKey）
       # 容器内通过 service name 解析；host 端口 5433 供本机 alembic
-      DATABASE_URL: "postgresql+asyncpg://cozymemory_user:cozymemory_pass@postgres:5432/cozymemory"
+      DATABASE_URL: "postgresql+asyncpg://${COZYMEMORY_DB_USER:-cozymemory_user}:${COZYMEMORY_DB_PASSWORD}@postgres:5432/cozymemory"
       # JWT（Dashboard 登录）— 生产必须改
       JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
@@ -331,6 +353,7 @@ services:
       - redis
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -359,6 +382,7 @@ services:
       - cozymemory-api
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
     deploy:
@@ -380,6 +404,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - /data/CozyMemory/prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -388,6 +413,7 @@ services:
       - '--web.enable-lifecycle'
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 
@@ -407,6 +433,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 
@@ -439,6 +466,7 @@ services:
       - grafana
     networks:
       - 1panel-network
+    logging: *default-logging
     labels:
       createdBy: "Apps"
 

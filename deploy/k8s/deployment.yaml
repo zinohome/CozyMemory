@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cozymemory-api
+  namespace: cozymemory
+  labels:
+    app: cozymemory-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cozymemory-api
+  template:
+    metadata:
+      labels:
+        app: cozymemory-api
+    spec:
+      containers:
+        - name: cozymemory
+          image: cozymemory:latest
+          ports:
+            - name: http
+              containerPort: 8000
+            - name: grpc
+              containerPort: 50051
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: MEM0_API_URL
+              value: "http://mem0-api:8000"
+            - name: MEM0_ENABLED
+              value: "true"
+            - name: MEMOBASE_API_URL
+              value: "http://memobase-api:8000"
+            - name: MEMOBASE_ENABLED
+              value: "true"
+            - name: COGNEE_API_URL
+              value: "http://cognee:8000"
+            - name: COGNEE_ENABLED
+              value: "true"
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@redis:6379/2"
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://cozymemory_user:$(POSTGRES_PASSWORD)@postgres:5432/cozymemory"
+          envFrom:
+            - secretRef:
+                name: cozymemory-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5

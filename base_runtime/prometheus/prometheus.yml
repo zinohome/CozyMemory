@@ -9,6 +9,9 @@ global:
   external_labels:
     deployment: cozymemory-prod
 
+rule_files:
+  - alerts.yml
+
 scrape_configs:
   # CozyMemory FastAPI /metrics
   - job_name: cozymemory-api

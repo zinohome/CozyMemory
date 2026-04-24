@@ -5,7 +5,11 @@ Thin, typed client for the [CozyMemory](../..) unified memory REST API
 
 ## Install
 
-From source (until published on PyPI):
+```bash
+pip install cozymemory
+```
+
+From source:
 
 ```bash
 pip install -e path/to/CozyMemory/sdks/python
@@ -55,18 +59,61 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## Resources
+## API Reference
 
-| Attribute | Methods |
-|---|---|
-| `client.conversations` | `add`, `list`, `search`, `get`, `delete`, `delete_all` |
-| `client.profiles` | `insert`, `flush`, `get`, `get_context`, `add_item`, `delete_item` |
-| `client.knowledge` | `list_datasets`, `create_dataset`, `delete_dataset`, `add`, `cognify`, `search` |
-| `client.context` | `get_unified` |
-| `client.health()` | Liveness check (no auth). |
+### Client
 
-The async client mirrors the same attribute tree; call the methods with
-`await`.
+```python
+CozyMemoryClient(api_key: str, base_url: str = "http://localhost:8000")
+CozyMemoryAsyncClient(api_key: str, base_url: str = "http://localhost:8000")
+```
+
+Both support context manager (`with` / `async with`) for connection lifecycle.
+
+### `client.conversations`
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `add` | `user_id: str, messages: list[dict]` | Add conversation, extract memories |
+| `list` | `user_id: str` | List all memories for a user |
+| `search` | `user_id: str, query: str, limit: int = 10` | Semantic search over memories |
+| `get` | `memory_id: str` | Get a single memory |
+| `delete` | `memory_id: str` | Delete a single memory |
+| `delete_all` | `user_id: str` | Delete all memories for a user |
+
+### `client.profiles`
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `insert` | `user_id: str, messages: list[dict], sync: bool = False` | Insert conversation into Memobase buffer |
+| `flush` | `user_id: str` | Trigger buffer processing |
+| `get` | `user_id: str` | Get structured user profile |
+| `get_context` | `user_id: str, max_token_size: int \| None = None` | Get LLM-ready context prompt |
+| `add_item` | `user_id: str, topic: str, sub_topic: str, content: str` | Manually add a profile topic |
+| `delete_item` | `user_id: str, profile_id: str` | Delete a profile topic |
+
+### `client.knowledge`
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `list_datasets` | _(none)_ | List all datasets |
+| `create_dataset` | `name: str` | Create a new dataset |
+| `delete_dataset` | `dataset_id: str` | Delete a dataset |
+| `add` | `data: str, dataset: str` | Add document to knowledge base |
+| `cognify` | `datasets: list[str] \| None = None, run_in_background: bool = False` | Trigger knowledge graph build |
+| `search` | `query: str, dataset: str \| None = None, search_type: str \| None = None, top_k: int \| None = None` | Search knowledge graph |
+
+`search_type` valid values: `"CHUNKS"`, `"SUMMARIES"`, `"RAG_COMPLETION"`, `"GRAPH_COMPLETION"`.
+
+### `client.context`
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `get_unified` | `user_id: str, query: str \| None = None` | Concurrently fetch all 3 memory types |
+
+### `client.health()`
+
+Liveness check — no authentication required. Returns the health status dict.
 
 ## Error handling
 
@@ -76,15 +123,20 @@ from cozymemory import APIError, AuthError, CozyMemoryError
 try:
     c.conversations.add(user_id="alice", messages=[...])
 except AuthError:
-    # 401 — check X-Cozy-API-Key
+    # 401 — invalid or missing X-Cozy-API-Key
     ...
 except APIError as e:
-    # Any other non-2xx. e.status_code / e.detail / e.body
-    ...
+    print(e.status_code, e.detail, e.body)
 except CozyMemoryError:
-    # Base class
+    # Base class for all SDK errors
     ...
 ```
+
+| Exception | When |
+|-----------|------|
+| `AuthError` | 401 Unauthorized — API key invalid or missing |
+| `APIError` | Any other non-2xx response (has `.status_code`, `.detail`, `.body`) |
+| `CozyMemoryError` | Base class; network errors, timeouts |
 
 ## Auth
 
@@ -93,4 +145,4 @@ They are sent via `X-Cozy-API-Key` automatically.
 
 ## License
 
-Apache-2.0. See the main repo for details.
+MIT. See the main repo for details.
