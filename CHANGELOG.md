@@ -5,85 +5,100 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-04-24
 
-### Added — 中文 UI + 使用文档（batch 7）
-- `docs/usage-cn.md`：338 行中文使用说明（快速开始 3 步 / 三引擎架构图
-  / 9 页作用+字段+典型流程+常见坑 / FAQ / 快捷键表）
-- i18n 基建：`ui/src/lib/i18n/{index,en,zh}.tsx` 轻量 Context + useT
-  hook + 扁平字典 + `{name}` 插值；缺 key 开发态 warn
-- 语言状态：Zustand store 新增 `locale`（默认 `zh`，持久化 localStorage）
-- Sidebar footer 加 `<LanguageToggle />`，和 ThemeToggle 并列；一键切换
-- 9 页全部迁移：Dashboard / Memory Lab / User Profiles / Users /
-  Knowledge Base / Context Studio / Playground / Backup / Settings
-- 共享组件：EmptyState 3 站点 / ContextInspector 右侧面板
-- 字典 ~200 keys（sidebar / common / empty / 9 页 / hotkeys / errors）
-- ServerApiKeysPanel + Hotkeys help Dialog 暂留英文（后续补完）
+多租户 SaaS 化 + 安全审计 + 发布就绪。
 
-### Fixed — A11y + Perf audit (batch 6)
-- axe-core 扫 9 页，修全部 **critical / serious** 问题，post-rebuild 0
-  violations：
-  - Sidebar 加 `role="navigation" aria-label="Main"`（region landmark）
-  - Dashboard h3 章节标题 → h2（heading-order）
-  - 所有 `SelectTrigger` 补 `aria-label`（user-selector / context /
-    knowledge / playground，button-name critical）
-  - Memory search、Playground Send/Stop icon-only 按钮补 aria-label
-  - Users 表 `<th>` `text-muted-foreground` → `text-foreground`；amber
-    警告文本 600/400 → 700/300（color-contrast serious）
-- 性能：`MemoryRow` / `ProfileItemRow` 包 `React.memo` + 稳定
-  `handleDelete` via `useCallback`，长列表下无关状态变化不再触发行 re-render
-- 审计报告落盘：`docs/superpowers/audits/2026-04-21-batch-6-a11y-perf.md`
+### Added — 多租户 SaaS 架构（Phase 2）
+- **账号体系**：Organization → Developer → App → ApiKey 四级模型（PostgreSQL + Alembic）
+- **双角色模型**：Developer（JWT 登录，管理自己 org 下的 App/Key）+ Operator（bootstrap key，跨 org 运维）
+- **JWT 鉴权**：开发者注册/登录 API，Bearer token + `X-Cozy-App-Id` 联合鉴权
+- **App Key 动态管理**：从 Redis 迁移到 PostgreSQL，关联到 App，支持 CRUD + 审计日志
+- **数据隔离**：`uuid5(app_namespace, external_user_id)` 透明映射，业务路由强制 per-App scope
+- **Knowledge per-App 归属**：`app_datasets` 关联表 + Alembic 迁移
+- **per-App API 用量统计**：`api_usage` 表 + 滑动窗口聚合
+- **External Users 管理**：分页列表 + GDPR 删除（级联清理 Mem0/Memobase/Redis 映射）
+- **gRPC 多租户**：鉴权拦截器 + App 隔离 + 用量计数
 
-### Added — UX polish batch 5
-- 新增复用组件 `components/empty-state.tsx`（icon + title + description
-  + 可选 CTA link/onClick）替换 Memory Lab / User Profiles / Playground
-  三页的灰色单行空态提示，帮新用户发现下一步动作
-- Dark mode 审核：Dashboard / Knowledge / Playground 三页实测无 bug，
-  CSS 变量（`bg-background` / `text-foreground`）已完整覆盖 — 无需改动
+### Added — Developer Dashboard UI（Next.js 16）
+- **(auth) 路由**：`/login` → `/register` → `/apps` 登录注册流程，AuthGuard 守卫
+- **Apps 管理**：列表 + 创建 + 详情 + AppSwitcher + UserMenu
+- **App 工作台**：`/apps/[id]/*` 含 memory / profiles / knowledge / context / playground 子页
+- **Keys 管理**：App 详情页内 Key CRUD + `ApiKeyCreatedDialog` 一次性展示
+- **External Users 页**：分页 + GDPR 删除
+- **UX 重构**：统一 sidebar + 角色专属 home 页 + 可拖拽宽度
 
-### Fixed — Responsive breakpoint sweep (batch 4)
-- 375px 视口下 /knowledge 水平溢出 20px：长 dataset 名 `truncate` +
-  多处 flex 容器加 `min-w-0`，消除溢出
-- Dashboard stats cards 特殊的 `col-span-2` 布局改为标准三段响应式
-  （mobile 堆叠 / tablet 2 列 / desktop 3 列）
-- Engine Health card title 加 `truncate` + badge 加 `shrink-0` 防挤压
-- AppLayout `flex-1 p-6` → `flex-1 p-4 sm:p-6 min-w-0`，mobile 减少
-  padding + 允许 grid 正确收缩
+### Added — Operator 管理 UI
+- **独立入口**：`/operator`（手动输 key，`sessionStorage` 保存）
+- **Operator 子页**：orgs / users-mapping / memory-raw / profiles-raw / knowledge-raw / backup / health / settings
+- **operatorFetch**：`sessionStorage` 中的 key 自动附加到请求
 
-### Added — UI enhancement batch 3
-- Playground 会话持久化（`lib/playground-sessions-store.ts`）：
-  Zustand persist 存最多 20 会话到 localStorage，页面顶部加会话下拉、
-  New chat、Delete session；title 从首条 user message 自动截取
-- Sparkline hover tooltip：`components/sparkline.tsx` 接受
-  `timestamps[]` + `formatValue` prop，鼠标悬停显示值和相对时间
-  （如 "22ms · 30s ago"）+ 虚线导引 + 点高亮。Dashboard 5 条 sparkline
-  启用
-- 键盘快捷键（`lib/use-hotkeys.ts`、`components/hotkeys-provider.tsx`）：
-  Gmail 风格 `g x` 序列导航 9 条路由，`?` 打开帮助 Dialog；聚焦
-  input/textarea 时自动禁用
+### Added — UI 增强（batch 1–7）
+- `ConfirmDialog` 替换浏览器原生 `confirm()`
+- 全站 toast 通知（sonner），约 20 处错误/成功路径
+- 乐观删除（Memory Lab / User Profiles / Knowledge Base）
+- Playground 会话持久化（Zustand persist，最多 20 会话）
+- Sparkline hover tooltip（值 + 相对时间 + 虚线导引）
+- 键盘快捷键（Gmail 风格 `g x` 序列导航 + `?` 帮助 Dialog）
+- `EmptyState` 复用组件，帮新用户发现下一步动作
+- i18n 基建 + 全站中文翻译（~200 keys）+ `<LanguageToggle />`
+- `docs/usage-cn.md` 338 行中文使用说明
+- Knowledge 文件上传 + Documents tab（preview/download/delete）
 
-### Added — UI enhancement batch 2
-- Next.js App Router 错误边界：`app/error.tsx`（路由段兜底）+
-  `app/global-error.tsx`（根级兜底），开发环境显示错误细节
-- Server API Keys 面板抽出为独立组件 `components/server-api-keys-panel.tsx`，
-  Settings 页从 577 行瘦到 136 行
-- Context inspector 抽出为独立组件 `components/context-inspector.tsx`，
-  Playground 页从 547 行瘦到 467 行
-- Backup 的 export/import 迁移到 TanStack Query `useMutation`，
-  自动 isPending/onError 钩子
-- icon-only 按钮补齐 aria-label（Knowledge 的 delete/refresh/create、
-  Memory/Profile/Users 的 trash、user-selector pick），满足屏幕阅读器
-  和 a11y 审计
+### Added — 可观测性
+- Prometheus + Grafana 可观测性基础（batch 16）
+- 自定义指标：`cozy_engine_up` / `cozy_engine_latency_ms` / `cozy_engine_request_duration_seconds` / `cozy_engine_request_errors_total` / `cozy_app_requests_total`
+- Prometheus 告警规则：EngineDown / HighLatency / HighErrorRate / APIDown
+- OpenTelemetry 可选接入（`pip install .[otel]`，`OTEL_ENABLED=true` 启用）
 
-### Added — UI enhancement batch 1
-- `ConfirmDialog` component（Radix Dialog）替换浏览器原生 `confirm()`；
-  Settings 里的 rotate/delete key 以及 Knowledge Base 的删除 dataset
-  现在弹自定义对话框
-- 全站 toast 通知（sonner）：Settings、Backup、Memory Lab、User Profiles、
-  Knowledge Base、Playground 约 20 处错误/成功路径替换为顶部右侧 toast
-- 乐观删除：Memory Lab 记忆、User Profiles topic、Knowledge Base
-  dataset 的删除在 UI 上立即生效，失败回滚 + toast 提示
-- Knowledge Base 数据集名称过滤框，按输入实时缩减列表
+### Added — SDK
+- **Python SDK** (`cozymemory` on PyPI)：sync + async client，4 resource classes，完整 API 参考文档
+- **JS/TS SDK** (`@cozymemory/sdk` on npm)：native fetch，全类型导出，ESM-only
+- SDK 发布 CI/CD（`publish-sdks.yml`，`sdk-v*` tag 触发）
+
+### Added — CI/CD
+- GitHub Actions：lint + unit tests + coverage（`--cov-fail-under=70`）
+- `pip-audit` 安全扫描
+- Self-hosted deploy job：build → tag → force-recreate → health check → rollback on failure
+- 部署后自动集成测试（REST + gRPC）
+- SHA-tagged image 保留（最近 5 个）
+
+### Added — 部署 & 运维
+- K8s 部署示例（`deploy/k8s/`：Deployment + Service + Secret）
+- Docker 日志配置（`json-file` 50m×5，全 15 服务统一）
+- Database migration 操作指南（`docs/migration-guide.md`）
+
+### Fixed — 安全审计（15 项）
+- **Critical**：`memory_id` GET/DELETE 加 App 归属校验（REST + gRPC），防跨租户读取
+- **Critical**：gRPC TLS 终止（Caddy `localhost:50051` + `tls internal`）
+- **High**：gRPC health service（`grpc.health.v1.Health`）
+- **High**：Prometheus 指标按引擎/App 维度拆分
+- **Medium**：JWT_SECRET 生产启动校验（默认值 → RuntimeError）
+- **Medium**：Redis 滑动窗口速率限制（per-App，`RATE_LIMIT_PER_MINUTE`）
+- **Medium**：`/metrics` 端点对外返回 404（Caddy 内网直抓）
+- **Medium**：UI cookie 加 `Secure` 标志
+- **Medium**：UI 加 CSP / X-Content-Type-Options / X-Frame-Options 响应头
+- **Low**：JS SDK 全类型化（消除 `<unknown>`）
+- **Low**：SDK CHANGELOG + `.env.example` 同步
+
+### Fixed — UI 修复
+- A11y：axe-core 扫描 9 页，修复全部 critical/serious 问题
+- 性能：`MemoryRow` / `ProfileItemRow` 包 `React.memo` + `useCallback`
+- 响应式：375px 视口溢出修复，Dashboard stats cards 标准三段布局
+- AuthGuard Zustand persist hydration 竞态修复
+
+### Changed — 发布就绪
+- 版本号统一为 `importlib.metadata` 单一来源（消除 4 处不一致）
+- Docker-compose 硬编码密码全部模板化到 `.env`（`init.sql` → `init.sh`）
+- License 从 MIT 改为 AGPL-3.0-or-later
+- CORS `CORS_ALLOWED_ORIGINS` 变量化（默认 `*`，生产可限制）
+- 依赖版本加上限（20 个 Python 依赖）
+
+### Infrastructure
+- Python 3.11+，FastAPI，httpx，pydantic v2，structlog，SQLAlchemy 2.0，Alembic
+- Next.js 16，React 19，TanStack Query v5，Zustand，@base-ui/react + shadcn + Tailwind v4
+- PostgreSQL + pgvector / Redis / Qdrant / Neo4j + APOC + GDS / MinIO / Caddy
+- 524 单元测试 + 69 集成测试（50 REST + 19 gRPC），全通过
 
 ## [0.1.0] - 2026-04-21
 
@@ -95,55 +110,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 透明 user_id → UUID v4 映射（Redis 持久化），屏蔽 Memobase 的 UUID 强约束
 
 ### Added — 管理 UI（Next.js 16 / React 19）
-- **Dashboard**：三引擎健康 + 用户/数据集计数 + 10m/1h/6h 可切换的延迟/增长 sparkline（客户端环形缓冲 + localStorage 持久化）
+- **Dashboard**：三引擎健康 + 用户/数据集计数 + 10m/1h/6h 可切换的延迟/增长 sparkline
 - **Memory Lab**：Mem0 记忆浏览/搜索/删除
 - **User Profiles**：Memobase 画像读取 + LLM context prompt + topic 增删
-- **Knowledge Base**：Cognee 数据集 CRUD + add + cognify + 图检索 + 交互式力导向图可视化（按类型过滤 + 节点点击详情）
+- **Knowledge Base**：Cognee 数据集 CRUD + add + cognify + 图检索 + 交互式力导向图可视化
 - **Context Studio**：跨引擎并发上下文查看 + 错误降级
-- **Playground**：SSE 流式聊天，自动调 /context 增强 system prompt，对话写回 Mem0；可自定义 system prompt / model / temperature / max_tokens
+- **Playground**：SSE 流式聊天，自动调 /context 增强 system prompt
 - **Users**：Redis user_id ↔ UUID 映射 CRUD
-- **Backup**：每用户 JSON 备份/恢复（Mem0 + Memobase + 可选 Cognee 数据集）
-- **Settings**：Client API key 持久化 + 服务端动态 key CRUD + 审计日志查看
+- **Backup**：每用户 JSON 备份/恢复
+- **Settings**：API key 管理 + 审计日志
 
 ### Added — 鉴权 / 安全
-- 两层 API Key 模型：bootstrap key（env，管理员）+ dynamic key（Redis，可 CRUD）
-- `X-Cozy-API-Key` header 鉴权，`/health`、`/docs`、`/openapi.json` 免鉴权
-- API key 使用审计日志（Redis LPUSH + LTRIM，保留最近 200 条 per key）
-- 所有敏感配置模板化到 `.env`，`.env.example` 提供填充指引
-
-### Added — 可观测性
-- 客户端轮询器 `MetricsPoller` 10s 采集，跨导航持续累积
-- SVG 零依赖 sparkline（null 值断开避免与零延迟混淆）
-- 窗口过滤器 10m/1h/6h 切换
+- 两层 API Key 模型：bootstrap key + dynamic key
+- `X-Cozy-API-Key` header 鉴权
 
 ### Added — 运维
 - `base_runtime/build.sh all` 一键构建 7 个自定义镜像
-- `docker-compose.1panel.yml` 部署 14 个容器（4 基础设施 + 3 引擎 + 3 引擎 UI + CozyMemory API + UI + Caddy）
-- 集成测试 session 级 teardown，自动清理 grpc-/test- 前缀的 dataset 和 user 映射
-- UI 层 `ui/src/lib/api-types.ts` 由 `npm run gen:api` 自动从后端 `/openapi.json` 生成，防契约漂移
+- `docker-compose.1panel.yml` 部署 14 个容器
+- 329 单元测试 + 50 REST 集成测试
 
-### Fixed — 首轮部署发现的契约错位
-- UI `engines` 从 array 改 dict，`EngineStatus.name` 代替 `engine`
-- `ConversationMemory.content` 代替 `memory`
-- `ProfileResponse` / `ProfileContextResponse` 添加 `data` 包装层
-- `memory_scope` 从 `short_term/long_term/both` 改 `short/long/both`
-- `ContextRequest` 字段 `enable_*` 改 `include_*`、`top_k` 改 `knowledge_top_k`、`timeout_ms` 改 `engine_timeout`
-- Memobase `add_profile` 自动创建不存在的 user（复用 insert 里的 FK-retry 模式）
-- Cognee frontend：Dockerfile 修 Linux 大小写敏感导致的 `Logo/` → `logo/` 目录引用失败
-- Cognee frontend：Caddy `header_up Host localhost:3000` 解决 Next.js 16 跨源警告阻塞 HMR
-- Cognee frontend：注入 `NEXT_PUBLIC_LOCAL_API_URL` 让浏览器 fetch 指向真实 server IP
-- Mem0 server：`filters={}` 包裹 entity identifiers，适配 mem0ai 库 API
+### Fixed — 首轮部署契约错位
+- UI `engines` 从 array 改 dict
+- Memobase `add_profile` 自动创建不存在的 user
+- Cognee frontend Caddy `header_up Host localhost:3000` 解决 Next.js 16 跨源警告
 
-### Known issues
-- 知识图谱备份恢复依赖 Cognee 重新 cognify，生成的实体/边与源可能略有差异（DocumentChunk 文本保真，图结构非）
-- gRPC 集成测试（`test_grpc_integration.py`）未纳入 CI 流程
-- 无 CI workflow，测试需手动运行
-- `projects/Cozy*` 非真正 git submodule，patch 应用通过 `build.sh` 构建上下文完成
-
-### Infrastructure
-- Python 3.11+，FastAPI，httpx，pydantic v2，structlog
-- Next.js 16，React 19，TanStack Query v5，Zustand，@base-ui/react + shadcn + Tailwind v4
-- PostgreSQL + pgvector / Redis / Qdrant / Neo4j + APOC + GDS / MinIO / Caddy
-- 329 单元测试 + 50 REST 集成测试，全通过
-
+[0.2.0]: https://github.com/zinohome/CozyMemory/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/zinohome/CozyMemory/releases/tag/v0.1.0

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 (2026-04-24)
+
+- Full API reference documentation in README
+- License changed to AGPL-3.0-or-later
+- PyPI publish workflow (`sdk-v*` tag trigger)
+
 ## 0.1.0 (2026-04-24)
 
 Initial release.

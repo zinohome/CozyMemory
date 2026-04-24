@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cozymemory"
-version = "0.1.0"
+version = "0.2.0"
 description = "CozyMemory Python SDK — unified AI memory platform client"
 readme = "README.md"
 requires-python = ">=3.10"

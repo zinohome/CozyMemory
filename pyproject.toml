@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cozymemory"
-version = "0.1.0"
+version = "0.2.0"
 description = "统一 AI 记忆服务平台 - 整合 Mem0, Memobase, Cognee 三大引擎"
 readme = "README.md"
 license = {text = "AGPL-3.0-or-later"}
@@ -19,7 +19,7 @@ dependencies = [
     "grpcio>=1.80.0,<2.0",
     "grpcio-tools>=1.80.0,<2.0",
     "grpcio-health-checking>=1.80.0,<2.0",
-    "protobuf>=4.25.0,<6.0",
+    "protobuf>=4.25.0,<8.0",
     "structlog>=24.0,<26.0",
     "redis>=5.0,<6.0",
     "prometheus-fastapi-instrumentator>=7.0,<8.0",
