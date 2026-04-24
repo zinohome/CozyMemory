@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
 
+    # 速率限制（per-App，sliding window）
+    RATE_LIMIT_PER_MINUTE: int = 600  # 0 = 不限制
+    RATE_LIMIT_BURST: int = 100  # 允许的突发量
+
     # API Key 鉴权
     # 逗号分隔的多个 key，留空 = 鉴权关闭（开发模式）
     # 客户端通过 X-Cozy-API-Key header 传递；health/docs/openapi 不鉴权。

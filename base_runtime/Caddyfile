@@ -58,6 +58,9 @@
 
 # CozyMemory UI (:8088)
 :8088 {
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' *; img-src 'self' data:; font-src 'self' data:"
+	header X-Content-Type-Options "nosniff"
+	header X-Frame-Options "DENY"
 	reverse_proxy cozymemory-ui:3000
 }
 

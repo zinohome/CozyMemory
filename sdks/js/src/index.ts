@@ -3,10 +3,12 @@ import { Context } from "./resources/context.js";
 import { Conversations } from "./resources/conversations.js";
 import { Knowledge } from "./resources/knowledge.js";
 import { Profiles } from "./resources/profiles.js";
+import type { HealthResponse } from "./types.js";
 
 export { APIError, AuthError, CozyMemoryError } from "./errors.js";
 export type { Message } from "./resources/conversations.js";
 export type { HTTPOptions } from "./http.js";
+export type * from "./types.js";
 
 export class CozyMemory {
   public conversations: Conversations;
@@ -24,6 +26,6 @@ export class CozyMemory {
   }
 
   health() {
-    return this.http.get<unknown>("/api/v1/health");
+    return this.http.get<HealthResponse>("/api/v1/health");
   }
 }

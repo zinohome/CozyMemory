@@ -1,30 +1,38 @@
 import type { HTTP } from "../http.js";
+import type {
+  AddKnowledgeResponse,
+  CognifyResponse,
+  DatasetInfo,
+  DatasetListResponse,
+  DeleteResponse,
+  KnowledgeSearchResponse,
+} from "../types.js";
 
 export class Knowledge {
   constructor(private http: HTTP) {}
 
   listDatasets() {
-    return this.http.get<unknown>("/api/v1/knowledge/datasets");
+    return this.http.get<DatasetListResponse>("/api/v1/knowledge/datasets");
   }
 
   createDataset(name: string) {
-    return this.http.post<unknown>("/api/v1/knowledge/datasets", undefined, {
+    return this.http.post<DatasetInfo>("/api/v1/knowledge/datasets", undefined, {
       name,
     });
   }
 
   deleteDataset(datasetId: string) {
-    return this.http.delete<unknown>(`/api/v1/knowledge/datasets/${datasetId}`);
+    return this.http.delete<DeleteResponse>(`/api/v1/knowledge/datasets/${datasetId}`);
   }
 
   add(data: string, dataset: string) {
-    return this.http.post<unknown>("/api/v1/knowledge/add", { data, dataset });
+    return this.http.post<AddKnowledgeResponse>("/api/v1/knowledge/add", { data, dataset });
   }
 
   cognify(datasets?: string[], runInBackground = false) {
     const body: Record<string, unknown> = { run_in_background: runInBackground };
     if (datasets !== undefined) body.datasets = datasets;
-    return this.http.post<unknown>("/api/v1/knowledge/cognify", body);
+    return this.http.post<CognifyResponse>("/api/v1/knowledge/cognify", body);
   }
 
   search(
@@ -35,6 +43,6 @@ export class Knowledge {
     if (opts.dataset !== undefined) body.dataset = opts.dataset;
     if (opts.searchType !== undefined) body.search_type = opts.searchType;
     if (opts.topK !== undefined) body.top_k = opts.topK;
-    return this.http.post<unknown>("/api/v1/knowledge/search", body);
+    return this.http.post<KnowledgeSearchResponse>("/api/v1/knowledge/search", body);
   }
 }

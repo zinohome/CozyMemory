@@ -24,6 +24,11 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期管理"""
     configure_logging(env=settings.APP_ENV, level=settings.LOG_LEVEL)
+    if settings.APP_ENV == "production" and settings.JWT_SECRET == "change-me-in-production":
+        raise RuntimeError(
+            "JWT_SECRET must be changed from default in production. "
+            "Set JWT_SECRET environment variable to a strong random value."
+        )
     logger.info(
         "cozymemory.startup",
         version=settings.APP_VERSION,
@@ -165,6 +170,28 @@ def create_app() -> FastAPI:
         "/api/v1/knowledge",
     )
 
+    async def _check_rate_limit(app_id: str) -> bool:
+        """Redis sliding window rate limiter. Returns True if blocked."""
+        try:
+            from .api.deps import get_redis_client
+
+            rc = get_redis_client()
+            if rc is None:
+                return False
+            key = f"rl:{app_id}"
+            now = time.time()
+            window = 60
+            pipe = rc.pipeline()
+            pipe.zremrangebyscore(key, 0, now - window)
+            pipe.zadd(key, {str(now): now})
+            pipe.zcard(key)
+            pipe.expire(key, window + 1)
+            results = await pipe.execute()
+            count = results[2]
+            return count > settings.RATE_LIMIT_PER_MINUTE
+        except Exception:
+            return False  # rate limiter failure never blocks requests
+
     @app.middleware("http")
     async def require_api_key(request: Request, call_next: Any) -> Response:
         if not settings.auth_enabled:
@@ -254,13 +281,31 @@ def create_app() -> FastAPI:
                 content=ErrorResponse(
                     success=False,
                     error="Unauthorized",
-                    detail="Missing or invalid X-Cozy-API-Key / Bearer token; business routes require X-Cozy-App-Id when using Bearer",
+                    detail=(
+                        "Missing or invalid X-Cozy-API-Key / Bearer token; "
+                        "business routes require X-Cozy-App-Id when using Bearer"
+                    ),
                 ).model_dump(),
                 headers={
                     "Access-Control-Allow-Origin": origin or "*",
                     "Vary": "Origin",
                 },
             )
+
+        # 速率限制（per-App sliding window，仅对 App Key 生效）
+        app_id_for_rl = getattr(request.state, "app_id", None)
+        if app_id_for_rl and settings.RATE_LIMIT_PER_MINUTE > 0:
+            rl_blocked = await _check_rate_limit(str(app_id_for_rl))
+            if rl_blocked:
+                return JSONResponse(
+                    status_code=429,
+                    content=ErrorResponse(
+                        success=False,
+                        error="RateLimitExceeded",
+                        detail=f"Rate limit exceeded: {settings.RATE_LIMIT_PER_MINUTE} requests/minute",
+                    ).model_dump(),
+                    headers={"Retry-After": "60"},
+                )
 
         return await call_next(request)
 

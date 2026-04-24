@@ -1,6 +1,6 @@
 # CozyMemory Base Runtime
 # 1Panel 专用 Docker Compose 编排文件
-# 部署前替换：YOUR_SERVER_IP → 实际服务器 IP
+# 部署前：复制 .env.example → .env 并填写实际值
 # 数据存储：/data/CozyMemory/
 # 网络：1panel-network（1Panel 预建外部网络）
 
