@@ -3,7 +3,7 @@
 [![CI](https://github.com/zinohome/CozyMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/zinohome/CozyMemory/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 **统一 AI 记忆服务平台** — 单一 API 整合三大记忆引擎，开箱即用的管理 UI 和 Playground。
 
@@ -15,7 +15,7 @@
 | [**Memobase**](https://github.com/memodb-io/memobase) | 用户画像 | 结构化存储偏好/背景，生成 LLM context prompt |
 | [**Cognee**](https://github.com/topoteretes/cognee) | 知识图谱 | 文档 → 实体/关系图 → 图检索 |
 
-CozyMemory 把这三者整合为一个 REST + gRPC API，前置 Next.js 管理 UI，并自带鉴权、审计、备份、观测。
+CozyMemory 把这三者整合为一个 REST + gRPC API，前置 Next.js 管理 UI，并自带多租户鉴权、审计、备份、观测。
 
 ---
 
@@ -24,16 +24,17 @@ CozyMemory 把这三者整合为一个 REST + gRPC API，前置 Next.js 管理 U
 ### 一键部署（Docker Compose）
 
 ```bash
-git clone --recurse-submodules https://github.com/zinohome/CozyMemory.git
+git clone https://github.com/zinohome/CozyMemory.git
 cd CozyMemory
 
-# 替换 docker-compose 里的 YOUR_SERVER_IP 和 LLM_API_KEY
-vi base_runtime/docker-compose.1panel.yml
+# 配置环境变量
+cp base_runtime/.env.example base_runtime/.env
+vi base_runtime/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
 
 # 构建 7 个自定义镜像（约 25-30 分钟）
 sudo ./base_runtime/build.sh all
 
-# 启动全部 14 个容器
+# 启动全部 15 个容器
 sudo docker compose -f base_runtime/docker-compose.1panel.yml up -d
 
 # 等待 ~60 秒，验证
@@ -41,24 +42,25 @@ curl http://localhost:8000/api/v1/health
 ```
 
 访问：
-- **管理 UI**：http://localhost:8088
+- **管理 UI**：http://localhost:8088（Developer 登录 → `/login`；Operator → `/operator`）
 - **API Swagger**：http://localhost:8000/docs
-- **单独子 UI**：8080 (Cognee) / 8081 (Mem0) / 8019 (Memobase)
+- **Grafana 监控**：http://localhost:3001
+- **子引擎 UI**：8080 (Cognee) / 8081 (Mem0)
 
 ### 环境要求
 
 - Linux (x86_64 / arm64) + Docker 24+
 - 内存 8GB+，磁盘 20GB+
-- 外部 LLM（OpenAI 兼容 API，默认走 `caddy:9090` 代理到 `oneapi.naivehero.top`）
+- 外部 LLM（OpenAI 兼容 API）
 
 ---
 
 ## 架构
 
 ```
-┌───────────────────────────────────────────────────────────────────┐
-│  Caddy :80/:8000/:8080/:8081/:8019/:8088  统一反向代理 + LLM 代理 :9090 │
-└───────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Caddy :80/:8000/:8080/:8081/:8019/:8088/:50051  反向代理 + LLM :9090 │
+└──────────────────────────────────────────────────────────────────────┘
          ↓                     ↓                    ↓
 ┌────────────────┐   ┌──────────────────┐   ┌──────────────────┐
 │ CozyMemory UI  │ ← │  CozyMemory API  │ → │ Mem0 / Memobase  │
@@ -70,23 +72,32 @@ curl http://localhost:8000/api/v1/health
              ↓                                 ↓
         ┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐
         │Postgres│   │ Redis  │   │ Qdrant │   │ Neo4j  │
-        │pgvector│   │ 用户id │   │ mem0   │   │ cognee │
-        └────────┘   │ 映射   │   │ 向量   │   │ 图谱   │
+        │pgvector│   │ 映射+  │   │ mem0   │   │ cognee │
+        └────────┘   │ 限流   │   │ 向量   │   │ 图谱   │
                      └────────┘   └────────┘   └────────┘
-                                        ↓
-                                   ┌────────┐
-                                   │ MinIO  │
-                                   │ S3 兼容 │
-                                   └────────┘
 ```
 
-所有 14 个容器通过 `1panel-network` 连通；对外只暴露 6 个端口（80/8000/8080/8081/8019/8088）。
+---
+
+## 鉴权（双角色模型）
+
+| 角色 | 入口 | 凭证 | 权限 |
+|------|------|------|------|
+| **Developer** | `/login` → `/apps` | JWT（注册/登录）| 管理自己 org 下的 App / Key / External Users；业务数据按 App 隔离 |
+| **Operator** | `/operator` | Bootstrap key（env `COZY_API_KEYS`）| 跨 org 只读维护、全局设置 |
+
+中间件按 header 分流：
+- `X-Cozy-API-Key` = bootstrap key → 全放行
+- `X-Cozy-API-Key` = App Key → 仅业务路由，自动注入 `app_id`
+- `Authorization: Bearer <JWT>` → Developer Dashboard + 业务路由（需同时带 `X-Cozy-App-Id`）
+
+`/health`、`/docs`、`/openapi.json` 免鉴权。
 
 ---
 
 ## REST API 速览
 
-全部 `/api/v1/*` 端点，统一响应 `{success, data, message}`。完整 schema 见 `/openapi.json` 或 `/docs`。
+全部 `/api/v1/*` 端点，统一响应 `{success, data, message}`。完整 schema 见 `/docs`。
 
 ### 健康 / 上下文
 ```bash
@@ -117,66 +128,79 @@ GET    /knowledge/datasets            # 数据集列表
 POST   /knowledge/add                 # 添加文档
 POST   /knowledge/cognify             # 构建图谱（异步）
 POST   /knowledge/search              # 图检索
-GET    /knowledge/datasets/{id}/graph # 图数据（nodes+edges）
 ```
 
-### 备份 / 管理
+### Developer Dashboard
 ```bash
-GET    /backup/export/{user_id}?datasets=...  # 导出 JSON bundle
-POST   /backup/import                         # 恢复
-GET    /admin/api-keys                        # 列 key（需 bootstrap key）
-POST   /admin/api-keys                        # 创建
-POST   /admin/api-keys/{id}/rotate            # 轮换
-GET    /admin/api-keys/{id}/logs              # 审计日志
+POST /auth/register                   # 开发者注册
+POST /auth/login                      # JWT 登录
+GET  /dashboard/apps                  # App 列表
+POST /dashboard/apps                  # 创建 App
+POST /dashboard/apps/{id}/keys        # 创建 App Key
+```
+
+### Operator 管理
+```bash
+GET /operator/orgs                    # 跨 org 总览
+GET /operator/users-mapping           # Mem0 UUID 映射
+GET /operator/backup/export/{user_id} # 备份导出
 ```
 
 ---
 
 ## SDKs
 
-客户端 SDK，REST API 的薄封装。拿到 `cozy_live_...` key 即可上手。
+| SDK | 安装 | 文档 |
+|-----|------|------|
+| **Python** | `pip install cozymemory` | [sdks/python/README.md](sdks/python/README.md) |
+| **JS/TS** | `npm install @cozymemory/sdk` | [sdks/js/README.md](sdks/js/README.md) |
 
-- **Python**：`sdks/python/`（包名 `cozymemory`）— 同时提供 `CozyMemoryClient`（同步）和 `CozyMemoryAsyncClient`（异步 httpx）。
-- **TypeScript / JS**：`sdks/js/`（包名 `@cozymemory/sdk`）— 基于原生 `fetch`，Node 18+ / 浏览器通用，ESM。
+```python
+from cozymemory import CozyMemoryClient
 
-每个 SDK 有 `README.md` + `examples/quickstart.*` 可直接参考。
+with CozyMemoryClient(api_key="cozy_live_xxx", base_url="http://localhost:8000") as c:
+    c.conversations.add("alice", [{"role": "user", "content": "I love hiking"}])
+    ctx = c.context.get_unified("alice", query="outdoor activity")
+```
 
 ---
 
 ## UI 功能一览
 
-访问 http://localhost:8088，首次要在 **Settings** 里填 bootstrap API key。
+### Developer 视角（JWT 登录）
 
 | 页面 | 功能 |
 |------|------|
-| **Dashboard** | 三引擎健康 + 用户/数据集计数 + 10m/1h/6h 可切换的延迟/增长 sparkline 趋势图 |
-| **Memory Lab** | 浏览/搜索/删除单用户 Mem0 记忆 |
-| **User Profiles** | 读画像、看 LLM context prompt、手动增删 topic |
-| **Knowledge Base** | 数据集 CRUD + add + cognify + 图检索 + 交互式力导向图可视化（按节点类型过滤 + 点击查看属性） |
-| **Context Studio** | 跨三引擎并发拉 context，带错误降级 |
-| **Playground** | 聊天 UI，自动调 /context 增强 system prompt，SSE 流式 LLM 回复，自定义 system prompt/model/temperature/max_tokens，对话写回 Mem0 |
-| **Users** | Redis user_id ↔ UUID 映射管理 |
-| **Backup** | 每用户 JSON 备份/恢复（Mem0 记忆 + Memobase topics + 可选 Cognee 数据集） |
-| **Settings** | Client API key + 服务端动态 key CRUD（创建/重命名/轮换/禁用/删除） + 审计日志查看 |
+| **Apps** | App 列表 + 创建 |
+| **App 工作台** | Memory / Profiles / Knowledge / Context / Playground 子页 |
+| **Keys** | App Key CRUD + 一次性展示 |
+| **External Users** | 分页列表 + GDPR 删除 |
+
+### Operator 视角（Bootstrap key）
+
+| 页面 | 功能 |
+|------|------|
+| **Dashboard** | 三引擎健康 + 延迟/增长 sparkline |
+| **Orgs** | 跨 org 总览 |
+| **Memory / Profiles / Knowledge** | 全局裸数据浏览 |
+| **Backup** | 每用户 JSON 备份/恢复 |
+| **Health** | 引擎详细状态 |
+| **Settings** | Bootstrap key 管理 + 审计日志 |
+
+### 通用能力
+- i18n 中英切换 + 键盘快捷键（`?` 查看）
+- 乐观删除 + toast 通知 + 暗色模式
+- Knowledge 交互式力导向图可视化
+- Playground SSE 流式聊天 + 会话持久化
 
 ---
 
-## 配置
+## 可观测性
 
-### 必改（`base_runtime/docker-compose.1panel.yml`）
-- `YOUR_SERVER_IP` → 服务器实际 IP（影响浏览器端和跨容器通信）
-- `LLM_API_KEY` → OpenAI 兼容 key（cognee 和 mem0-api、cozymemory 各有一份）
-- `COZY_API_KEYS` → 逗号分隔的 bootstrap key（留空 = 关闭鉴权）
-
-### 可选
-- `MEMOBASE_LLM_BASE_URL` / `MEMOBASE_EMBEDDING_BASE_URL` — Memobase 自己的 LLM
-- PostgreSQL / Redis / MinIO / Neo4j 密码和 volume 路径
-
-### 鉴权（两层模型）
-1. **Bootstrap key**（env `COZY_API_KEYS`）— 管理员凭证，唯一能访问 `/api/v1/admin/*`
-2. **Dynamic key**（Redis 存储）— 用户在 Settings 页创建的日常凭证，仅调业务接口
-
-所有请求 header：`X-Cozy-API-Key: <key>`。`/api/v1/health` 和 `/docs` 豁免鉴权。
+- **Prometheus**：`/metrics` 端点暴露引擎延迟/错误/用量指标
+- **Grafana**：http://localhost:3001 预置 dashboard
+- **告警规则**：EngineDown / HighLatency / HighErrorRate / APIDown
+- **OpenTelemetry**：`pip install cozymemory[otel]` + `OTEL_ENABLED=true`
 
 ---
 
@@ -187,40 +211,28 @@ GET    /admin/api-keys/{id}/logs              # 审计日志
 pip install -e ".[dev]"
 uvicorn cozymemory.app:create_app --factory --host 0.0.0.0 --port 8000
 
-# 单元测试
-pytest tests/unit/ -v                     # 329 tests，无后端依赖
-
-# 集成测试（需运行中的 base_runtime）
-COZY_TEST_URL=http://localhost:8000 COZY_TEST_API_KEY=cozy-dev-key-001 \
-  pytest tests/integration/ -v            # 50 tests
+# 测试
+pytest tests/unit/ -v                                    # 524 单元测试
+COZY_TEST_URL=http://localhost:8000 pytest tests/integration/ -v  # 69 集成测试
 
 # Lint / 类型
 ruff check src/ tests/
 mypy src/cozymemory --ignore-missing-imports
-
-# 生成 gRPC stub
-./scripts/generate_grpc.sh
 ```
 
 ### 前端（`ui/`）
 ```bash
-cd ui
-npm install
-npm run dev                # port 3000
-
-# 从后端 openapi 自动生成 TS 类型（改后端 Pydantic 后跑）
-npm run gen:api            # 读 http://localhost:8000/openapi.json
-
-# 类型检查
-npx tsc --noEmit
+cd ui && npm install && npm run dev    # port 3000
+npm run gen:api                        # 从后端 openapi.json 生成 TS 类型
+npx tsc --noEmit                       # 类型检查
 ```
 
-### 重建单个镜像
+### 重建镜像
 ```bash
-sudo ./base_runtime/build.sh cozymemory-ui    # 只重建 UI
-sudo ./base_runtime/build.sh cognee           # 只重建 Cognee
+sudo ./base_runtime/build.sh cozymemory      # 只重建 API
+sudo ./base_runtime/build.sh cozymemory-ui   # 只重建 UI
 sudo docker compose -f base_runtime/docker-compose.1panel.yml \
-  up -d --force-recreate cozymemory-ui
+  up -d --force-recreate cozymemory-api cozymemory-ui
 ```
 
 ---
@@ -234,88 +246,43 @@ CozyMemory/
 │   ├── clients/             # Mem0/Memobase/Cognee HTTP 客户端
 │   ├── services/            # 业务逻辑层
 │   ├── grpc_server/         # gRPC 实现
-│   └── models/              # Pydantic 模型
+│   ├── models/              # Pydantic 模型
+│   ├── auth.py              # JWT + 角色鉴权
+│   ├── db.py                # SQLAlchemy 模型（Org/Developer/App/Key）
+│   ├── metrics.py           # Prometheus 自定义指标
+│   └── telemetry.py         # OpenTelemetry 可选接入
 ├── ui/                      # Next.js 16 管理界面
-│   └── src/
-│       ├── app/(app)/       # 9 个页面
-│       ├── components/      # shadcn + 自定义组件
-│       └── lib/
-│           ├── api.ts       # 手写 API 客户端包装
-│           └── api-types.ts # 自动生成，勿手改
+├── sdks/
+│   ├── python/              # Python SDK (cozymemory)
+│   └── js/                  # JS/TS SDK (@cozymemory/sdk)
 ├── base_runtime/            # Docker 部署
 │   ├── docker-compose.1panel.yml
-│   ├── build.sh             # 一键构建 7 镜像
-│   └── Caddyfile
-├── projects/                # 上游项目 submodules + patch
-│   ├── CozyCognee/          # Cognee + 前端 patch
-│   ├── CozyMem0/            # Mem0 + 前端 patch
-│   └── CozyMemobase/        # Memobase patch
+│   ├── build.sh
+│   ├── Caddyfile
+│   └── prometheus/          # Prometheus 配置 + 告警规则
+├── deploy/k8s/              # Kubernetes 部署示例
+├── alembic/                 # 数据库迁移
+├── proto/                   # gRPC protobuf 定义
 ├── tests/
-│   ├── unit/                # 329 个单元测试
-│   └── integration/         # 50 个集成测试
-├── proto/                   # gRPC 定义
-└── CLAUDE.md                # 给 AI 协作的深度笔记
-```
-
----
-
-## 子项目
-
-三个 `Cozy*` 子项目是对应上游的 fork，应用了必要的 patch：
-- **CozyCognee** — Cognee 主体 + frontend Linux 大小写兼容性、Next.js 16 cross-origin 修复
-- **CozyMem0** — 修 mem0ai 的 `filters={}` entity 参数传递
-- **CozyMemobase** — 部署源码，给 Memobase 加 `wait_process` 支持
-
-它们独立维护，修了会同步 push 到自己的 repo。
-
----
-
-## 故障排查
-
-| 症状 | 原因 | 解决 |
-|------|------|------|
-| Cognee `/search` 返回 `NoDataError` | 数据集没 cognify | 先 `POST /knowledge/cognify` 等 30-120s |
-| Memobase `/profiles/{user_id}` 返回 422 | user_id 不是 UUID v4 | CozyMemory 服务层自动做字符串→UUID 映射，直接传任意字符串即可 |
-| UI 页面全 401 | 浏览器没配 client key | Settings → Client API Key 里填 bootstrap key |
-| Cognee health 慢（1-4s） | 要扫全库 datasets | 正常现象，非故障 |
-| Dashboard Engine Health 空白 | `engines` dict key 是小写 `mem0` 非 `Mem0` | UI 已处理，升级最新版 |
-
----
-
-## 测试 / 交付验证
-
-从零部署的完整验证流程：
-
-```bash
-# 1. 停止 + 删镜像 + 清缓存
-sudo docker compose -f base_runtime/docker-compose.1panel.yml down
-sudo docker rmi cozymemory cozymemory-ui cognee:0.4.1 cognee-frontend:local-0.4.1 \
-                mem0-api mem0-webui memobase-server
-sudo docker builder prune -af
-
-# 2. 重建 + 启动
-sudo ./base_runtime/build.sh all
-sudo docker compose -f base_runtime/docker-compose.1panel.yml up -d
-
-# 3. 验证
-curl http://localhost:8000/api/v1/health           # 三引擎 healthy
-pytest tests/unit/ -q                               # 329 passed
-COZY_TEST_URL=http://localhost:8000 pytest tests/integration/ -q \
-  --ignore=tests/integration/test_grpc_integration.py   # 50 passed
+│   ├── unit/                # 524 单元测试
+│   └── integration/         # 69 集成测试（50 REST + 19 gRPC）
+├── docs/                    # 参考文档
+└── CLAUDE.md                # AI 协作深度笔记
 ```
 
 ---
 
 ## 文档
 
-- **[CLAUDE.md](CLAUDE.md)** — 架构、约定、API 怪癖、给 AI 协作的深度笔记
-- **[docs/](docs/)** — api-reference、architecture、data-models、deployment、sdk-clients
-- **[base_runtime/](base_runtime/)** — 部署配置与 build 脚本
+- **[CLAUDE.md](CLAUDE.md)** — 架构、约定、API 怪癖
+- **[CHANGELOG.md](CHANGELOG.md)** — 版本历史
+- **[docs/usage-cn.md](docs/usage-cn.md)** — 中文使用说明
+- **[docs/migration-guide.md](docs/migration-guide.md)** — 数据库迁移操作指南
+- **[docs/](docs/)** — API 参考、架构、数据模型、部署、SDK 文档
 - **Swagger UI**：http://localhost:8000/docs
-- **子项目仓库**：[CozyCognee](https://github.com/zinohome/CozyCognee)、[CozyMem0](https://github.com/zinohome/CozyMem0)、[CozyMemobase](https://github.com/zinohome/CozyMemobase)
 
 ---
 
 ## 许可
 
-MIT
+[AGPL-3.0-or-later](LICENSE)
