@@ -145,4 +145,4 @@ They are sent via `X-Cozy-API-Key` automatically.
 
 ## License
 
-MIT. See the main repo for details.
+AGPL-3.0-or-later. See the main repo for details.

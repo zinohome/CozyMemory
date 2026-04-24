@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": ["cozymemory", "memory", "llm", "ai"],
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"

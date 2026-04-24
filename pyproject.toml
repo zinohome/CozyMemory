@@ -7,7 +7,7 @@ name = "cozymemory"
 version = "0.1.0"
 description = "统一 AI 记忆服务平台 - 整合 Mem0, Memobase, Cognee 三大引擎"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "AGPL-3.0-or-later"}
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110.0,<1.0",

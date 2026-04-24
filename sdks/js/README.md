@@ -146,4 +146,4 @@ SDK sends them via the `X-Cozy-API-Key` header automatically.
 
 ## License
 
-MIT. See the main repo for details.
+AGPL-3.0-or-later. See the main repo for details.
