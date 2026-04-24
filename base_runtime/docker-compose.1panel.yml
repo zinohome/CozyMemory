@@ -296,7 +296,8 @@ services:
     image: cozymemory:latest
     container_name: cozymemory
     restart: unless-stopped
-    # gRPC 不再直接暴露；Caddy 在 :50051 做 TLS 终止后反代
+    ports:
+      - "50151:50051"  # 本机调试/测试直连；外部客户端走 Caddy:50051 (TLS)
     environment:
       APP_ENV: production
       DEBUG: "false"

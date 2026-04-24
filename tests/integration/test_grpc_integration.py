@@ -31,6 +31,8 @@ from cozymemory.grpc_server import (
 GRPC_HOST = os.getenv("COZY_GRPC_HOST", "localhost")
 GRPC_PORT = int(os.getenv("COZY_GRPC_PORT", "50051"))
 GRPC_TARGET = f"{GRPC_HOST}:{GRPC_PORT}"
+GRPC_API_KEY = os.getenv("COZY_TEST_API_KEY", "cozy-dev-key-001")
+_GRPC_METADATA = [("x-cozy-api-key", GRPC_API_KEY)] if GRPC_API_KEY else []
 
 
 def _grpc_reachable() -> bool:
@@ -85,7 +87,7 @@ async def test_grpc_add_conversation(grpc_channel):
         messages=[conversation_pb2.Message(role="user", content="我喜欢踢足球，这是 gRPC 测试")],
         infer=True,
     )
-    response = await stub.AddConversation(request, timeout=30)
+    response = await stub.AddConversation(request, timeout=30, metadata=_GRPC_METADATA)
     assert response.success is True
 
 
@@ -95,7 +97,7 @@ async def test_grpc_list_conversations(grpc_channel):
     """ConversationService.ListConversations 返回记忆列表"""
     stub = conversation_pb2_grpc.ConversationServiceStub(grpc_channel)
     request = conversation_pb2.ListConversationsRequest(user_id=CONV_USER, limit=10)
-    response = await stub.ListConversations(request, timeout=30)
+    response = await stub.ListConversations(request, timeout=30, metadata=_GRPC_METADATA)
     assert response.success is True
     assert isinstance(list(response.data), list)
 
@@ -110,7 +112,7 @@ async def test_grpc_search_conversations(grpc_channel):
         query="运动爱好",
         limit=5,
     )
-    response = await stub.SearchConversations(request, timeout=30)
+    response = await stub.SearchConversations(request, timeout=30, metadata=_GRPC_METADATA)
     assert response.success is True
 
 
@@ -129,6 +131,7 @@ async def test_grpc_add_get_delete_conversation(grpc_channel):
             infer=True,
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert add_resp.success is True
     memories = list(add_resp.data)
@@ -141,6 +144,7 @@ async def test_grpc_add_get_delete_conversation(grpc_channel):
     get_resp = await stub.GetConversation(
         conversation_pb2.GetConversationRequest(memory_id=memory_id),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert get_resp.id == memory_id
 
@@ -148,6 +152,7 @@ async def test_grpc_add_get_delete_conversation(grpc_channel):
     del_resp = await stub.DeleteConversation(
         conversation_pb2.DeleteConversationRequest(memory_id=memory_id),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert del_resp.success is True
 
@@ -160,6 +165,7 @@ async def test_grpc_delete_all_conversations(grpc_channel):
     response = await stub.DeleteAllConversations(
         conversation_pb2.DeleteAllConversationsRequest(user_id=CONV_USER),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
 
@@ -182,6 +188,7 @@ async def test_grpc_insert_profile(grpc_channel):
             sync=True,
         ),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
     assert response.user_id == user_id
@@ -201,11 +208,13 @@ async def test_grpc_flush_profile(grpc_channel):
             sync=False,
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     # Flush
     response = await stub.FlushProfile(
         profile_pb2.FlushProfileRequest(user_id=user_id, sync=True),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
 
@@ -223,10 +232,12 @@ async def test_grpc_get_profile(grpc_channel):
             sync=True,
         ),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
     response = await stub.GetProfile(
         profile_pb2.GetProfileRequest(user_id=user_id),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.user_id == user_id
     assert isinstance(list(response.topics), list)
@@ -245,10 +256,12 @@ async def test_grpc_get_context(grpc_channel):
             sync=True,
         ),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
     response = await stub.GetContext(
         profile_pb2.GetContextRequest(user_id=user_id, max_token_size=300),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
     assert response.user_id == user_id
@@ -270,6 +283,7 @@ async def test_grpc_add_and_delete_profile_item(grpc_channel):
             sync=True,
         ),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
 
     add_resp = await stub.AddProfileItem(
@@ -280,6 +294,7 @@ async def test_grpc_add_and_delete_profile_item(grpc_channel):
             content="喜欢游泳（gRPC 测试）",
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert add_resp.success is True
     profile_id = add_resp.data.id
@@ -288,6 +303,7 @@ async def test_grpc_add_and_delete_profile_item(grpc_channel):
     del_resp = await stub.DeleteProfileItem(
         profile_pb2.DeleteProfileItemRequest(user_id=user_id, profile_id=profile_id),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert del_resp.success is True
 
@@ -305,6 +321,7 @@ async def test_grpc_list_datasets(grpc_channel):
     response = await stub.ListDatasets(
         knowledge_pb2.ListDatasetsRequest(),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
     assert isinstance(list(response.data), list)
@@ -319,6 +336,7 @@ async def test_grpc_create_dataset(grpc_channel):
     response = await stub.CreateDataset(
         knowledge_pb2.CreateDatasetRequest(name=ds_name),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.name == ds_name
 
@@ -335,6 +353,7 @@ async def test_grpc_add_knowledge(grpc_channel):
             dataset=ds_name,
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
 
@@ -353,11 +372,13 @@ async def test_grpc_cognify(grpc_channel):
             dataset=ds_name,
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
 
     response = await stub.Cognify(
         knowledge_pb2.CognifyRequest(datasets=[ds_name], run_in_background=True),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
 
@@ -374,6 +395,7 @@ async def test_grpc_full_knowledge_flow(grpc_channel):
     add_resp = await stub.AddKnowledge(
         knowledge_pb2.AddKnowledgeRequest(data=content, dataset=ds_name),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert add_resp.success is True
 
@@ -381,6 +403,7 @@ async def test_grpc_full_knowledge_flow(grpc_channel):
     cognify_resp = await stub.Cognify(
         knowledge_pb2.CognifyRequest(datasets=[ds_name], run_in_background=True),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
     assert cognify_resp.success is True
 
@@ -396,6 +419,7 @@ async def test_grpc_full_knowledge_flow(grpc_channel):
                 top_k=5,
             ),
             timeout=30,
+        metadata=_GRPC_METADATA,
         )
         assert search_resp.success is True
         if list(search_resp.data):
@@ -417,6 +441,7 @@ async def test_grpc_search_knowledge(grpc_channel):
             top_k=5,
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
     assert isinstance(list(response.data), list)
@@ -446,6 +471,7 @@ async def test_grpc_get_unified_context(grpc_channel):
             knowledge_search_type="CHUNKS",
         ),
         timeout=60,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
     assert response.user_id == user_id
@@ -471,6 +497,7 @@ async def test_grpc_get_unified_context_no_query(grpc_channel):
             knowledge_search_type="CHUNKS",
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
     assert list(response.knowledge) == []
@@ -492,5 +519,6 @@ async def test_grpc_get_unified_context_with_chats(grpc_channel):
             chats=[conversation_pb2.Message(role="user", content="你好")],
         ),
         timeout=30,
+        metadata=_GRPC_METADATA,
     )
     assert response.success is True
