@@ -71,7 +71,7 @@
 
 # gRPC TLS 终止 (:50051) — Caddy 自签 TLS，内部 h2c 转发到 cozymemory-api
 # 客户端连接加密，避免 API Key metadata 在网络上明文传输
-:50051 {
+localhost:50051 {
 	reverse_proxy h2c://cozymemory-api:50051
 	tls internal
 }
