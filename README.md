@@ -132,6 +132,17 @@ GET    /admin/api-keys/{id}/logs              # 审计日志
 
 ---
 
+## SDKs
+
+客户端 SDK，REST API 的薄封装。拿到 `cozy_live_...` key 即可上手。
+
+- **Python**：`sdks/python/`（包名 `cozymemory`）— 同时提供 `CozyMemoryClient`（同步）和 `CozyMemoryAsyncClient`（异步 httpx）。
+- **TypeScript / JS**：`sdks/js/`（包名 `@cozymemory/sdk`）— 基于原生 `fetch`，Node 18+ / 浏览器通用，ESM。
+
+每个 SDK 有 `README.md` + `examples/quickstart.*` 可直接参考。
+
+---
+
 ## UI 功能一览
 
 访问 http://localhost:8088，首次要在 **Settings** 里填 bootstrap API key。

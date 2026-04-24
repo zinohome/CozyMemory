@@ -85,58 +85,43 @@ export function IntegrationQuickstart({ appId }: Props) {
   -H "X-Cozy-API-Key: ${apiKeyPlaceholder}" \\
   -d '{"user_id": "alice", "query": "outdoor activity"}'`;
 
-  const pythonSnippet = `import httpx
+  const pythonSnippet = `# pip install cozymemory
+from cozymemory import CozyMemoryClient
 
-BASE = "${base}/api/v1"
-HEADERS = {"X-Cozy-API-Key": "${apiKeyPlaceholder}"}
-
-async with httpx.AsyncClient() as c:
+with CozyMemoryClient(
+    api_key="${apiKeyPlaceholder}",
+    base_url="${base}",
+) as c:
     # 1) 写入一条对话记忆
-    await c.post(
-        f"{BASE}/conversations",
-        headers=HEADERS,
-        json={
-            "user_id": "alice",
-            "messages": [
-                {"role": "user", "content": "I love hiking"},
-                {"role": "assistant", "content": "Got it."},
-            ],
-        },
+    c.conversations.add(
+        user_id="alice",
+        messages=[
+            {"role": "user", "content": "I love hiking"},
+            {"role": "assistant", "content": "Got it."},
+        ],
     )
 
     # 2) LLM 调用前拉统一上下文（Mem0 + Memobase + Cognee 并发）
-    ctx = (await c.post(
-        f"{BASE}/context",
-        headers=HEADERS,
-        json={"user_id": "alice", "query": "outdoor activity"},
-    )).json()
-    # ctx["conversations"], ctx["profile_context"], ctx["knowledge"] → 拼进 prompt`;
+    ctx = c.context.get_unified(user_id="alice", query="outdoor activity")
+    # ctx["conversations"], ctx["profile_context"], ctx["knowledge"] → 拼进 prompt
+    print(ctx["conversations"], ctx["profile_context"], ctx["knowledge"])`;
 
-  const jsSnippet = `const BASE = "${base}/api/v1";
-const HEADERS = {
-  "Content-Type": "application/json",
-  "X-Cozy-API-Key": "${apiKeyPlaceholder}",
-};
+  const jsSnippet = `// npm install @cozymemory/sdk
+import { CozyMemory } from "@cozymemory/sdk";
 
-// 1) 写入一条对话记忆
-await fetch(\`\${BASE}/conversations\`, {
-  method: "POST",
-  headers: HEADERS,
-  body: JSON.stringify({
-    user_id: "alice",
-    messages: [
-      { role: "user", content: "I love hiking" },
-      { role: "assistant", content: "Got it." },
-    ],
-  }),
+const client = new CozyMemory({
+  apiKey: "${apiKeyPlaceholder}",
+  baseUrl: "${base}",
 });
 
+// 1) 写入一条对话记忆
+await client.conversations.add("alice", [
+  { role: "user", content: "I love hiking" },
+  { role: "assistant", content: "Got it." },
+]);
+
 // 2) LLM 调用前拉统一上下文
-const ctx = await fetch(\`\${BASE}/context\`, {
-  method: "POST",
-  headers: HEADERS,
-  body: JSON.stringify({ user_id: "alice", query: "outdoor activity" }),
-}).then((r) => r.json());
+const ctx = await client.context.getUnified("alice", "outdoor activity");
 // ctx.conversations, ctx.profile_context, ctx.knowledge → 拼进 prompt`;
 
   return (
@@ -163,8 +148,8 @@ const ctx = await fetch(\`\${BASE}/context\`, {
         <Tabs defaultValue="curl">
           <TabsList>
             <TabsTrigger value="curl">cURL</TabsTrigger>
-            <TabsTrigger value="python">Python</TabsTrigger>
-            <TabsTrigger value="js">JavaScript</TabsTrigger>
+            <TabsTrigger value="python">Python SDK</TabsTrigger>
+            <TabsTrigger value="js">TypeScript SDK</TabsTrigger>
           </TabsList>
 
           <TabsContent value="curl" className="space-y-3 mt-3">
