@@ -233,5 +233,4 @@ These are non-obvious behaviors discovered during integration testing. Check her
 - `base_runtime/` — **current active deployment** for the three backend engines (Mem0, Memobase, Cognee) and their infrastructure (PostgreSQL/pgvector, Redis, Qdrant, MinIO, Neo4j). This is what CozyMemory's service layer connects to. Ongoing development happens here.
 - `ui/` — Next.js 16 admin frontend; see the "Frontend" section above.
 - `docs/` — reference docs checked into the repo: `api-reference.md`, `architecture.md`, `data-models.md`, `deployment.md`, `sdk-clients.md`. Consult these for deeper detail before exploring source.
-- `archive/` — inactive code and superseded configs (previous v1 impl, old deploy/, old unified_deployment/); do not modify.
-- The top-level `README.md` is stale (references an old `src.api.main:app` entry point and outdated test paths). Trust this file and `pyproject.toml` over `README.md`.
+- The top-level `README.md` reflects v0.2.0 state. Trust this file and `pyproject.toml` for build/run commands.
