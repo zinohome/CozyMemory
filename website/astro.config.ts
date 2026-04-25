@@ -71,6 +71,14 @@ export default defineConfig({
     }),
   ],
 
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'zh'],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
+
   image: {
     domains: ['cdn.pixabay.com'],
   },
