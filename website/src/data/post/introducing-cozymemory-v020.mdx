@@ -1,0 +1,72 @@
+---
+publishDate: 2026-04-25T00:00:00Z
+author: ZhangJun
+title: Introducing CozyMemory v0.2.0
+excerpt: CozyMemory v0.2.0 ships multi-tenant SaaS architecture, a full-featured admin dashboard, and production-grade deployment — all under AGPL-3.0.
+image: ~/assets/images/screenshot-dashboard.png
+category: Release
+tags:
+  - release
+  - v0.2.0
+  - multi-tenant
+metadata:
+  canonical: https://github.com/ZhangJun/CozyMemory
+---
+
+## What is CozyMemory?
+
+CozyMemory is a unified AI memory platform that aggregates three specialized open-source memory engines behind a single REST and gRPC API:
+
+- **Mem0** — auto-extracts durable facts from conversations and stores them as searchable vector memories
+- **Memobase** — maintains structured user profiles organized by topic/sub-topic, with LLM-ready context prompt generation
+- **Cognee** — transforms documents into entity-relation knowledge graphs backed by Neo4j, searchable via multiple modes (CHUNKS, SUMMARIES, RAG\_COMPLETION, GRAPH\_COMPLETION)
+
+The `/api/v1/context` endpoint queries all three engines in parallel and returns a merged, LLM-ready payload in a single call — even if one engine is temporarily unavailable.
+
+## What's New in v0.2.0
+
+### Multi-tenant SaaS Architecture
+
+v0.2.0 introduces a full role-model with two tiers:
+
+- **Developer** — self-registers, manages their own organization → App → API Key hierarchy. All memory data is scoped per App. JWT authentication via `/auth/*` endpoints.
+- **Operator** — uses a bootstrap API key (`COZY_API_KEYS` env var) for platform-level administration. Separate `/operator/*` namespace covering org overview, user-mapping, and backup operations.
+
+Authentication middleware routes requests based on the `X-Cozy-API-Key` or `Authorization: Bearer` header and enforces data isolation automatically.
+
+### Admin Dashboard UI
+
+A Next.js 16 / React 19 admin UI (`ui/`) ships as a separate Docker container:
+
+- **Memory Explorer** — browse, search, and delete conversation memories per user/app
+- **Profile Manager** — view and manually edit structured user profiles
+- **Knowledge Base** — manage Cognee datasets, trigger graph builds, run searches
+- **Playground** — interactively test the unified `/context` endpoint and preview LLM prompts
+- **Operator panel** — org overview, health monitoring, and backup management
+
+The UI is built with TanStack Query for server state, Zustand for client state, Base UI + shadcn + Tailwind v4 for styling, and ships i18n support for English and Chinese.
+
+### Production Ready
+
+- **Observability**: Prometheus metrics + Grafana dashboards with alerting rules, structured JSON logging via structlog with request-scoped context
+- **Reliability**: Circuit breaker per backend engine (opens after consecutive 5xx failures), exponential backoff retry, httpx async connection pooling
+- **Deployment**: 15-container Docker Compose stack on 1panel-network — CozyMemory API, Mem0, Memobase, Cognee, PostgreSQL/pgvector, Redis, Qdrant, MinIO, Neo4j, Grafana, Prometheus, Caddy
+
+## Get Started
+
+```bash
+# Clone and configure
+git clone https://github.com/ZhangJun/CozyMemory
+cp .env.example .env   # edit engine URLs and API keys
+
+# Build custom images (first time only)
+cd base_runtime && ./build.sh all
+
+# Launch everything
+docker compose -f base_runtime/docker-compose.1panel.yml up -d
+
+# Verify
+curl http://localhost:8000/api/v1/health
+```
+
+For full documentation see the [docs/](https://github.com/ZhangJun/CozyMemory/tree/main/docs) directory, or explore the [API Reference](https://github.com/ZhangJun/CozyMemory/tree/main/docs/api-reference.md).

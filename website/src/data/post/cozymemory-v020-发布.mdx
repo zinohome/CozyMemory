@@ -1,0 +1,72 @@
+---
+publishDate: 2026-04-25T00:00:00Z
+author: ZhangJun
+title: CozyMemory v0.2.0 发布
+excerpt: CozyMemory v0.2.0 正式发布，带来多租户 SaaS 架构、全功能管理仪表盘和生产级部署支持，基于 AGPL-3.0 开源协议。
+image: ~/assets/images/screenshot-dashboard.png
+category: Release
+tags:
+  - release
+  - v0.2.0
+  - 多租户
+metadata:
+  canonical: https://github.com/ZhangJun/CozyMemory
+---
+
+## CozyMemory 是什么？
+
+CozyMemory 是一个统一的 AI 记忆服务平台，通过单一 REST 和 gRPC API 集成三个专业的开源记忆引擎：
+
+- **Mem0** — 从对话中自动提取持久事实，以可搜索的向量记忆形式存储
+- **Memobase** — 维护按主题/子主题组织的结构化用户画像，并可生成 LLM 就绪的上下文提示词
+- **Cognee** — 将文档转化为基于 Neo4j 的实体关系知识图谱，支持多种搜索模式（CHUNKS、SUMMARIES、RAG\_COMPLETION、GRAPH\_COMPLETION）
+
+`/api/v1/context` 端点并行查询三个引擎，并在单次调用中返回合并后的、LLM 就绪的响应 —— 即使某个引擎暂时不可用也能正常工作。
+
+## v0.2.0 新特性
+
+### 多租户 SaaS 架构
+
+v0.2.0 引入了完整的双层角色模型：
+
+- **Developer（开发者）** — 自助注册，管理自己的 Organization → App → API Key 层级。所有记忆数据按 App 范围隔离，通过 `/auth/*` 端点进行 JWT 认证。
+- **Operator（运维者）** — 使用引导 API Key（`COZY_API_KEYS` 环境变量）进行平台级管理。独立的 `/operator/*` 命名空间，涵盖 org 总览、user 映射和备份操作。
+
+认证中间件根据 `X-Cozy-API-Key` 或 `Authorization: Bearer` 请求头自动路由请求并强制数据隔离。
+
+### 管理仪表盘 UI
+
+Next.js 16 / React 19 管理 UI（`ui/`）作为独立 Docker 容器发布：
+
+- **Memory Explorer（记忆浏览器）** — 按用户/App 浏览、搜索和删除对话记忆
+- **Profile Manager（画像管理器）** — 查看和手动编辑结构化用户画像
+- **Knowledge Base（知识库）** — 管理 Cognee 数据集、触发知识图谱构建、执行搜索
+- **Playground（演练场）** — 交互式测试统一 `/context` 端点，预览 LLM 提示词
+- **Operator 面板** — org 总览、健康监控和备份管理
+
+UI 使用 TanStack Query 管理服务端状态，Zustand 管理客户端状态，Base UI + shadcn + Tailwind v4 作为样式方案，并内置中英文 i18n 支持。
+
+### 生产就绪
+
+- **可观测性**：Prometheus 指标采集 + Grafana 仪表盘及告警规则，通过 structlog 实现结构化 JSON 日志，支持请求级上下文绑定
+- **可靠性**：每个后端引擎独立熔断器（连续 5xx 故障后开路），指数退避重试，httpx 异步连接池
+- **部署**：15 容器 Docker Compose 一键部署 —— CozyMemory API、Mem0、Memobase、Cognee、PostgreSQL/pgvector、Redis、Qdrant、MinIO、Neo4j、Grafana、Prometheus、Caddy
+
+## 快速开始
+
+```bash
+# 克隆并配置
+git clone https://github.com/ZhangJun/CozyMemory
+cp .env.example .env   # 编辑引擎 URL 和 API Key
+
+# 构建自定义镜像（首次运行）
+cd base_runtime && ./build.sh all
+
+# 启动所有服务
+docker compose -f base_runtime/docker-compose.1panel.yml up -d
+
+# 验证
+curl http://localhost:8000/api/v1/health
+```
+
+完整文档见 [docs/](https://github.com/ZhangJun/CozyMemory/tree/main/docs) 目录，或查阅 [API 参考文档](https://github.com/ZhangJun/CozyMemory/tree/main/docs/api-reference.md)。
