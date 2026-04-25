@@ -7,7 +7,7 @@ def test_settings_defaults():
     """默认配置值正确"""
     s = Settings()
     assert s.APP_NAME == "CozyMemory"
-    assert s.APP_VERSION == "0.1.0"
+    assert s.APP_VERSION == "0.2.0"
     assert s.APP_ENV == "development"
     assert s.DEBUG is False
     assert s.PORT == 8000
