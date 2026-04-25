@@ -1,366 +1,294 @@
-# CozyMemory 数据模型设计文档
+# CozyMemory 数据模型
 
-**版本**: 2.0  
-**日期**: 2026-04-13  
-**状态**: 已批准
-
----
-
-## 1. 设计原则
-
-- **三个领域独立建模**，不做强行统一
-- **每个模型只包含对应引擎实际能提供的字段**
-- **请求模型和响应模型分离**
-- **使用 Pydantic v2 BaseModel**，支持 OpenAPI 自动生成
+**版本**: 0.2.0  
+**更新**: 2026-04-25
 
 ---
 
-## 2. 通用模型 (`models/common.py`)
+## 概览
+
+CozyMemory 的数据分为两大类：
+
+1. **平台模型**（PostgreSQL `cozymemory` 库）：多租户管理、鉴权、审计
+2. **业务数据**（各引擎自有存储）：对话记忆、用户画像、知识图谱
+
+```
+Organization ──┬── Developer (JWT 登录)
+               └── App ──┬── ApiKey (API 鉴权)
+                         ├── ExternalUser (uuid5 映射)
+                         ├── AppDataset (Cognee 数据集归属)
+                         └── APIUsage (调用统计)
+                              └── AuditLog (操作审计)
+```
+
+---
+
+## 平台模型（SQLAlchemy 2.0）
+
+### Organization
+
+多租户顶层实体。Developer 注册时自动创建。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | UUID | PK, default=uuid4 | |
+| `name` | String(200) | NOT NULL | 组织名称 |
+| `slug` | String(64) | UNIQUE, NOT NULL | URL 安全标识（如 `my-company`） |
+| `created_at` | DateTime(tz) | server_default=now() | |
+| `updated_at` | DateTime(tz) | auto-update | |
+
+**关系**：`developers` (cascade delete), `apps` (cascade delete)
+
+### Developer
+
+开发者账号，通过 JWT 登录管理 UI。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | UUID | PK, default=uuid4 | |
+| `org_id` | UUID | FK→organizations, NOT NULL | 所属组织 |
+| `email` | String(320) | UNIQUE, NOT NULL | 登录邮箱 |
+| `password_hash` | String(255) | NOT NULL | bcrypt 哈希 |
+| `name` | String(100) | default="" | 显示名 |
+| `role` | String(20) | default="member" | `owner` / `admin` / `member` |
+| `is_active` | Boolean | default=True | 账号状态 |
+| `created_at` | DateTime(tz) | server_default=now() | |
+| `last_login_at` | DateTime(tz) | nullable | 最近登录时间 |
+
+**角色权限**：
+
+| 操作 | owner | admin | member |
+|------|-------|-------|--------|
+| 查看 App / Key | ✅ | ✅ | ✅ |
+| 创建 App / Key | ✅ | ✅ | ❌ |
+| 更新 App / Key | ✅ | ✅ | ❌ |
+| 删除 App / Key | ✅ | ❌ | ❌ |
+| 管理 Organization | ✅ | ❌ | ❌ |
+
+### App
+
+应用实体，数据隔离的基本单位。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | UUID | PK, default=uuid4 | |
+| `org_id` | UUID | FK→organizations, NOT NULL | 所属组织 |
+| `name` | String(200) | NOT NULL | 应用名称 |
+| `slug` | String(64) | NOT NULL | URL 安全标识，org 内唯一 |
+| `namespace_id` | UUID | default=uuid4, NOT NULL | uuid5 计算命名空间（不可变） |
+| `description` | Text | default="" | |
+| `created_at` | DateTime(tz) | server_default=now() | |
+
+**唯一约束**：`(org_id, slug)`
+
+**关系**：`api_keys` (cascade delete), `external_users` (cascade delete)
+
+### ApiKey
+
+App 级 API 密钥，用于 SDK / 第三方集成。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | UUID | PK, default=uuid4 | |
+| `app_id` | UUID | FK→apps, NOT NULL | 所属 App |
+| `name` | String(100) | NOT NULL | 描述名 |
+| `key_hash` | String(64) | UNIQUE, NOT NULL | SHA-256 hex |
+| `prefix` | String(20) | NOT NULL | 显示前缀（如 `cozy_live_abc12`） |
+| `environment` | String(20) | default="live" | `live`（生产）/ `test`（沙箱） |
+| `disabled` | Boolean | default=False | 是否禁用 |
+| `created_at` | DateTime(tz) | server_default=now() | |
+| `last_used_at` | DateTime(tz) | nullable | 最近使用时间 |
+| `expires_at` | DateTime(tz) | nullable | 过期时间 |
+
+**索引**：`ix_api_keys_hash`（快速查找）, `ix_api_keys_app`
+
+**安全**：明文 Key 仅在创建 / 轮转时返回一次，数据库只存 SHA-256 哈希。
+
+### ExternalUser
+
+App 外部用户到引擎内部 UUID 的确定性映射。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `internal_uuid` | UUID | PK | `uuid5(App.namespace_id, external_user_id)` |
+| `app_id` | UUID | FK→apps, NOT NULL | 所属 App |
+| `external_user_id` | String(255) | NOT NULL | 业务侧用户 ID（如 `alice`） |
+| `created_at` | DateTime(tz) | server_default=now() | |
+
+**唯一约束**：`(app_id, external_user_id)`
+
+**设计原理**：Memobase 要求 UUID v4 格式的 user_id。通过 `uuid5(namespace_id, external_user_id)` 实现确定性映射，同一个 `alice` 在不同 App 下映射为不同 UUID，实现数据隔离。
+
+### AuditLog
+
+操作审计日志。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | UUID | PK, default=uuid4 | |
+| `actor_type` | String(20) | NOT NULL | `developer` / `api_key` / `system` |
+| `actor_id` | String(64) | NOT NULL | 操作者 ID |
+| `action` | String(100) | NOT NULL | 如 `app.created`、`api_key.rotated` |
+| `target_type` | String(30) | nullable | 目标类型（`app`、`api_key`） |
+| `target_id` | String(64) | nullable | 目标 ID |
+| `app_id` | UUID | FK→apps, SET NULL | 关联 App |
+| `meta` | JSONB | nullable | 操作元数据 |
+| `ip_address` | String(45) | nullable | IPv4/v6 |
+| `user_agent` | String(500) | nullable | |
+| `created_at` | DateTime(tz) | server_default=now() | |
+
+**索引**：`ix_audit_logs_app_time` (app_id, created_at), `ix_audit_logs_actor` (actor_type, actor_id)
+
+**保留策略**：90 天（cron 定时清理）
+
+### AppDataset
+
+Cognee 数据集到 App 的归属映射。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `dataset_id` | UUID | PK | Cognee 数据集 ID |
+| `app_id` | UUID | FK→apps, NOT NULL | 所属 App |
+| `created_at` | DateTime(tz) | server_default=now() | |
+
+**用途**：App Key 用户只能看到和操作自己 App 下的数据集。
+
+### APIUsage
+
+每请求 API 使用统计。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | UUID | PK, default=uuid4 | |
+| `app_id` | UUID | FK→apps, NOT NULL | |
+| `route` | String(100) | NOT NULL | 标准化路由键（如 `conversations.item`） |
+| `method` | String(10) | NOT NULL | HTTP 方法 |
+| `status_code` | Integer | NOT NULL | 响应状态码 |
+| `duration_ms` | Float | NOT NULL | 请求耗时 |
+| `created_at` | DateTime(tz) | server_default=now() | |
+
+**索引**：`ix_api_usage_app_time`, `ix_api_usage_route`
+
+---
+
+## 业务数据模型（Pydantic v2）
+
+业务数据通过三引擎存储，CozyMemory 使用 Pydantic 模型做请求/响应序列化。
+
+### 通用类型
 
 ```python
-from pydantic import BaseModel, Field
-from datetime import datetime
-from typing import Any
-
 class Message(BaseModel):
-    """对话消息（Mem0 和 Memobase 共用）"""
-    role: str = Field(..., description="角色: user / assistant / system")
-    content: str = Field(..., description="消息内容")
-    created_at: str | None = Field(None, description="消息时间戳 (ISO 8601)")
+    role: Literal["user", "assistant", "system"]
+    content: str
 
 class EngineStatus(BaseModel):
-    """引擎健康状态"""
-    name: str = Field(..., description="引擎名称")
-    status: str = Field(..., description="状态: healthy / unhealthy")
-    latency_ms: float | None = Field(None, description="响应延迟(ms)")
-    error: str | None = Field(None, description="错误信息")
-
-class HealthResponse(BaseModel):
-    """健康检查响应"""
-    status: str = Field(..., description="整体状态: healthy / degraded / unhealthy")
-    engines: dict[str, EngineStatus] = Field(default_factory=dict)
-    timestamp: datetime = Field(default_factory=datetime.now)
-
-class ErrorResponse(BaseModel):
-    """错误响应"""
-    success: bool = False
-    error: str = Field(..., description="错误类型")
-    detail: str | None = Field(None, description="错误详情")
-    engine: str | None = Field(None, description="出错的引擎名称")
+    name: str
+    status: Literal["healthy", "unhealthy"]
+    latency_ms: float
+    error: str | None
 ```
 
----
-
-## 3. 会话记忆模型 (`models/conversation.py`)
-
-> 对应引擎：**Mem0**
-
-### 3.1 请求模型
-
-```python
-class ConversationMemoryCreate(BaseModel):
-    """添加对话 → Mem0 自动提取事实
-    
-    Mem0 的核心流程：
-    1. 传入对话消息列表
-    2. Mem0 使用 LLM 自动提取事实性记忆
-    3. 返回提取出的记忆列表
-    """
-    user_id: str = Field(..., description="用户 ID", min_length=1)
-    messages: list[Message] = Field(
-        ..., description="对话消息列表", min_length=1
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description="元数据 (source, session_id 等)"
-    )
-    infer: bool = Field(
-        True, description="是否使用 LLM 提取事实。False 则原样存储"
-    )
-
-class ConversationMemorySearch(BaseModel):
-    """搜索会话记忆"""
-    user_id: str = Field(..., description="用户 ID", min_length=1)
-    query: str = Field(..., description="搜索查询文本", min_length=1)
-    limit: int = Field(10, ge=1, le=100, description="返回数量限制")
-    threshold: float | None = Field(
-        None, ge=0, le=1, description="最低相似度阈值"
-    )
-```
-
-### 3.2 响应模型
+### 对话记忆（Mem0）
 
 ```python
 class ConversationMemory(BaseModel):
-    """Mem0 返回的单条记忆（提取出的事实）"""
-    id: str = Field(..., description="记忆 ID")
-    user_id: str = Field(..., description="用户 ID")
-    content: str = Field(..., description="提取的事实内容")
-    score: float | None = Field(None, description="搜索相似度分数")
-    metadata: dict[str, Any] | None = Field(None, description="元数据")
-    created_at: datetime | None = Field(None, description="创建时间")
-    updated_at: datetime | None = Field(None, description="更新时间")
+    id: str
+    memory: str
+    created_at: str | None
+    updated_at: str | None
+    metadata: dict | None
 
-class ConversationMemoryListResponse(BaseModel):
-    """记忆列表响应"""
-    success: bool = True
-    data: list[ConversationMemory] = Field(default_factory=list)
-    total: int = Field(0, description="总数")
-    message: str = ""
-```
-
-### 3.3 Mem0 API 映射
-
-| 统一模型字段 | Mem0 API 响应字段 | 说明 |
-|-------------|-----------------|------|
-| `id` | `id` | 记忆唯一标识 |
-| `user_id` | `user_id` | 用户标识 |
-| `content` | `memory` (v1.1) 或 `data.memory` | 提取出的事实 |
-| `score` | `score` | 搜索相似度 |
-| `metadata` | `metadata` | 附加信息 |
-| `created_at` | `created_at` | 创建时间 |
-| `updated_at` | `updated_at` | 更新时间 |
-
----
-
-## 4. 用户画像模型 (`models/profile.py`)
-
-> 对应引擎：**Memobase**
-
-### 4.1 核心认知
-
-Memobase 不是 CRUD 记忆系统，它的核心范式是：
-
-```
-插入对话 (insert) → 缓冲区 (buffer) → LLM 处理 (flush) → 生成画像 (profile)
-```
-
-画像由系统自动从对话中提取，不能直接 CRUD。但可以手动增删改画像条目。
-
-### 4.2 请求模型
-
-```python
-class ProfileInsertRequest(BaseModel):
-    """插入对话 → Memobase 自动提取画像
-    
-    流程：
-    1. 调用 insert 传入对话消息
-    2. 消息进入缓冲区
-    3. 调用 flush 触发处理（或等待自动处理）
-    4. 调用 profile 获取结构化画像
-    """
-    user_id: str = Field(..., description="用户 ID", min_length=1)
-    messages: list[Message] = Field(
-        ..., description="对话消息列表", min_length=1
-    )
-    sync: bool = Field(
-        False, description="是否同步等待处理完成"
-    )
-
-class ProfileFlushRequest(BaseModel):
-    """触发缓冲区处理"""
-    user_id: str = Field(..., description="用户 ID", min_length=1)
-    sync: bool = Field(
-        False, description="是否同步等待处理完成"
-    )
-
-class ProfileContextRequest(BaseModel):
-    """获取上下文提示词
-    
-    返回可直接插入 LLM prompt 的文本，包含用户画像和近期事件。
-    """
-    user_id: str = Field(..., description="用户 ID", min_length=1)
-    max_token_size: int = Field(
-        500, ge=100, le=4000, description="上下文最大 token 数"
-    )
-    chats: list[Message] | None = Field(
-        None, description="近期对话（用于语义搜索匹配）"
-    )
-```
-
-### 4.3 响应模型
-
-```python
-class ProfileTopic(BaseModel):
-    """画像中的单个主题条目"""
-    id: str = Field(..., description="条目 ID")
-    topic: str = Field(..., description="主题 (如 basic_info, interest)")
-    sub_topic: str = Field(..., description="子主题 (如 name, hobby)")
-    content: str = Field(..., description="内容")
-    created_at: datetime | None = Field(None)
-    updated_at: datetime | None = Field(None)
-
-class UserProfile(BaseModel):
-    """完整用户画像"""
-    user_id: str = Field(..., description="用户 ID")
-    topics: list[ProfileTopic] = Field(
-        default_factory=list, description="画像主题列表"
-    )
-    updated_at: datetime | None = Field(None)
-
-class ProfileContext(BaseModel):
-    """上下文提示词结果"""
-    user_id: str = Field(..., description="用户 ID")
-    context: str = Field(
-        ..., description="可直接插入 LLM prompt 的文本"
-    )
-
-class ProfileInsertResponse(BaseModel):
-    """插入响应"""
-    success: bool = True
+class ConversationMemoryCreate(BaseModel):
     user_id: str
-    blob_id: str | None = Field(None, description="Blob ID")
-    message: str = ""
+    messages: list[Message]
+    metadata: dict | None = None
+    infer: bool = True
+    agent_id: str | None = None
+    session_id: str | None = None
+
+class ConversationMemorySearch(BaseModel):
+    user_id: str
+    query: str
+    limit: int = 10
+    threshold: float | None = None
 ```
 
-### 4.4 Memobase API 映射
+### 用户画像（Memobase）
 
-| 统一操作 | Memobase API | 说明 |
-|---------|-------------|------|
-| 创建用户 | `POST /users` | 首次使用需创建用户 |
-| 插入对话 | `POST /blobs/insert/{user_id}` | ChatBlob 格式 |
-| 触发处理 | `POST /users/buffer/{user_id}/chat` | flush 操作 |
-| 获取画像 | `GET /users/profile/{user_id}` | 结构化画像 |
-| 获取上下文 | `GET /users/context/{user_id}` | 上下文提示词 |
-| 添加画像条目 | `POST /users/profile/{user_id}` | 手动添加 |
-| 删除画像条目 | `DELETE /users/profile/{user_id}/{id}` | 手动删除 |
-| 获取事件 | `GET /users/event/{user_id}` | 时间线事件 |
+```python
+class ProfileItem(BaseModel):
+    id: str
+    content: str
+    attributes: dict  # {"topic": "...", "sub_topic": "..."}
 
----
+class ProfileInsertRequest(BaseModel):
+    user_id: str
+    messages: list[Message]
+    sync: bool = False
 
-## 5. 知识库模型 (`models/knowledge.py`)
-
-> 对应引擎：**Cognee**
-
-### 5.1 核心认知
-
-Cognee 的核心流程是：
-
-```
-添加文档 (add) → 构建知识图谱 (cognify) → 语义搜索 (search)
+class ProfileAddItemRequest(BaseModel):
+    user_id: str
+    topic: str
+    sub_topic: str
+    content: str
 ```
 
-这是一个异步管道：添加文档后需要显式触发 cognify 才能搜索。
-
-### 5.2 请求模型
+### 知识图谱（Cognee）
 
 ```python
 class KnowledgeAddRequest(BaseModel):
-    """添加文档到知识库"""
-    data: str = Field(
-        ..., description="文本内容或文件路径", min_length=1
-    )
-    dataset: str = Field(
-        ..., description="数据集名称", min_length=1
-    )
-    node_set: list[str] | None = Field(
-        None, description="节点集标识"
-    )
-
-class KnowledgeCognifyRequest(BaseModel):
-    """触发知识图谱构建
-    
-    Cognee 是异步管道，add 之后需要 cognify 才能搜索。
-    """
-    datasets: list[str] | None = Field(
-        None, description="要处理的数据集列表"
-    )
-    run_in_background: bool = Field(
-        True, description="是否后台运行"
-    )
+    data: str
+    dataset: str
 
 class KnowledgeSearchRequest(BaseModel):
-    """知识库搜索"""
-    query: str = Field(..., description="搜索查询", min_length=1)
-    dataset: str | None = Field(None, description="限定数据集")
-    search_type: str = Field(
-        "GRAPH_COMPLETION",
-        description="搜索类型: GRAPH_COMPLETION, SUMMARIES, CHUNKS, RAG_COMPLETION"
-    )
-    top_k: int = Field(10, ge=1, le=100, description="返回数量限制")
+    query: str
+    dataset: str
+    search_type: SearchType  # "CHUNKS" | "SUMMARIES" | "RAG_COMPLETION" | "GRAPH_COMPLETION"
+    top_k: int = 5
+
+class KnowledgeCognifyRequest(BaseModel):
+    datasets: list[str] | None = None
+    run_in_background: bool = True
 ```
 
-### 5.3 响应模型
+### 统一上下文
 
 ```python
-class KnowledgeSearchResult(BaseModel):
-    """搜索结果"""
-    id: str | None = Field(None, description="结果 ID")
-    text: str | None = Field(None, description="结果文本内容")
-    score: float | None = Field(None, description="相关性分数")
-    metadata: dict[str, Any] | None = Field(None, description="附加元数据")
-    
-    model_config = {"extra": "allow"}  # Cognee 返回字段不固定
+class ContextRequest(BaseModel):
+    user_id: str
+    query: str | None = None
+    max_token_size: int | None = None
 
-class KnowledgeDataset(BaseModel):
-    """数据集信息"""
-    id: str = Field(..., description="数据集 ID (UUID)")
-    name: str = Field(..., description="数据集名称")
-    created_at: datetime | None = Field(None)
-    updated_at: datetime | None = Field(None)
-
-class KnowledgeAddResponse(BaseModel):
-    """添加文档响应"""
-    success: bool = True
-    data_id: str | None = Field(None, description="数据项 ID")
-    dataset_name: str | None = Field(None)
-    message: str = ""
-
-class KnowledgeCognifyResponse(BaseModel):
-    """知识图谱构建响应"""
-    success: bool = True
-    pipeline_run_id: str | None = Field(None, description="管道运行 ID")
-    status: str = Field("pending", description="状态: pending/running/completed/failed")
-    message: str = ""
-
-class KnowledgeSearchResponse(BaseModel):
-    """搜索响应"""
-    success: bool = True
-    data: list[KnowledgeSearchResult] = Field(default_factory=list)
-    total: int = Field(0)
-    message: str = ""
-
-class KnowledgeDatasetListResponse(BaseModel):
-    """数据集列表响应"""
-    success: bool = True
-    data: list[KnowledgeDataset] = Field(default_factory=list)
-    message: str = ""
+class ContextResponse(BaseModel):
+    conversations: list[dict]
+    profiles: str | None
+    knowledge: list[dict]
+    errors: dict[str, str]
 ```
-
-### 5.4 Cognee API 映射
-
-| 统一操作 | Cognee API | 说明 |
-|---------|-----------|------|
-| 添加文档 | `POST /api/v1/add` | multipart/form-data |
-| 构建图谱 | `POST /api/v1/cognify` | 异步管道 |
-| 搜索 | `POST /api/v1/search` | 多种搜索类型 |
-| 创建数据集 | `POST /api/v1/datasets` | — |
-| 列出数据集 | `GET /api/v1/datasets` | — |
-| 删除数据 | `DELETE /api/v1/delete` | — |
-| 健康检查 | `GET /health` | — |
 
 ---
 
-## 6. 模型之间的关系
+## 存储分布
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    CozyMemory 统一模型层                      │
-│                                                             │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌───────────┐ │
-│  │ ConversationMemory│  │ UserProfile       │  │ Knowledge │ │
-│  │                  │  │                   │  │           │ │
-│  │ - id             │  │ - user_id         │  │ - dataset │ │
-│  │ - user_id        │  │ - topics[]        │  │ - add()   │ │
-│  │ - content (事实) │  │   - topic         │  │ - cognify │ │
-│  │ - score          │  │   - sub_topic     │  │ - search  │ │
-│  │                  │  │   - content        │  │           │ │
-│  └───────┬──────────┘  └────────┬──────────┘  └─────┬─────┘ │
-│          │                      │                    │       │
-│          ▼                      ▼                    ▼       │
-│  ┌───────────────┐  ┌──────────────────┐  ┌───────────────┐ │
-│  │  Mem0Client   │  │ MemobaseClient    │  │ CogneeClient │ │
-│  └───────────────┘  └──────────────────┘  └───────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
+| 数据 | 存储位置 | 说明 |
+|------|---------|------|
+| 平台模型 | PostgreSQL `cozymemory` 库 | Alembic 迁移管理 |
+| Mem0 对话记忆 | Qdrant 向量 + SQLite 历史 | |
+| Memobase 用户画像 | PostgreSQL `memobase` 库 | |
+| Cognee 知识图谱 | Neo4j 图 + PostgreSQL + MinIO | |
+| 用户 ID 映射 | Redis DB 2 | Operator 用的旧映射 |
+| 外部用户映射 | PostgreSQL `external_users` 表 | App 级确定性 uuid5 |
+| API 指标 | Prometheus TSDB | 30 天保留 |
 
-三个领域通过 `user_id` 关联，但数据完全独立，不存在跨引擎的合并或融合。
+---
+
+## 数据库迁移
+
+使用 Alembic 管理 `cozymemory` 库的 schema 变更。详见 [migration-guide.md](migration-guide.md)。
+
+```bash
+alembic upgrade head      # 升级到最新
+alembic downgrade -1      # 回退一步
+alembic history           # 查看迁移历史
+```

@@ -1,331 +1,340 @@
-# CozyMemory 部署设计文档
+# CozyMemory 部署指南
 
-**版本**: 2.0  
-**日期**: 2026-04-13  
-**状态**: 已批准
+**版本**: 0.2.0  
+**更新**: 2026-04-25
 
 ---
 
 ## 1. 部署架构
 
-CozyMemory 作为独立容器加入现有的 `1panel-network` 网络，与 Mem0、Memobase、Cognee 互通。
+CozyMemory 由 15 个容器组成，运行在 `1panel-network` Docker 网络中，Caddy 作为反向代理统一暴露端口。
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    1panel-network (Docker)                       │
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │  Mem0 API    │  │  Memobase    │  │  Cognee      │          │
-│  │  :8888       │  │  :8019       │  │  :8000       │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│         │                  │                  │                  │
-│         │    ┌─────────────────────────┐      │                 │
-│         └────│  CozyMemory Service     │──────┘                 │
-│              │  REST :8010             │                        │
-│              │  gRPC :50051            │                        │
-│              └─────────────────────────┘                        │
-│                          │                                       │
-│              ┌───────────┴───────────┐                           │
-│              │  外部服务 / 其他微服务  │                           │
-│              └───────────────────────┘                           │
-│                                                                 │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│  │ Postgres │  │  Redis   │  │  Qdrant  │  │  Neo4j   │       │
-│  │ :5432    │  │  :6379   │  │  :6333   │  │  :7687   │       │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│  Caddy :80/:8000/:8080/:8081/:8019/:8088/:3001/:50051  反向代理       │
+└────────────────────────────────────────────────────────────────────────┘
+         ↓                     ↓                    ↓
+┌────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│ CozyMemory UI  │ ← │  CozyMemory API  │ → │ Mem0 / Memobase  │
+│ :8088 (Next16) │   │  :8000 REST      │   │ / Cognee 后端    │
+│                │   │  :50051 gRPC     │   │                  │
+└────────────────┘   └──────────────────┘   └──────────────────┘
+                              ↓
+             ┌────────────────┴────────────────┐
+             ↓                                 ↓
+        ┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐
+        │Postgres│   │ Redis  │   │ Qdrant │   │ Neo4j  │
+        │pgvector│   │ 映射+  │   │ mem0   │   │ cognee │
+        └────────┘   │ 限流   │   │ 向量   │   │ 图谱   │
+                     └────────┘   └────────┘   └────────┘
 ```
 
 ---
 
-## 2. Dockerfile
+## 2. 系统要求
 
-```dockerfile
-FROM python:3.11-slim AS base
+- Linux x86_64 / arm64
+- Docker 24+ 和 Docker Compose v2
+- 内存 8GB+（推荐 16GB）
+- 磁盘 20GB+
+- 外部 LLM（OpenAI 兼容 API）
 
-WORKDIR /app
+---
 
-# 安装系统依赖（gRPC 需要）
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc && \
-    rm -rf /var/lib/apt/lists/*
+## 3. 快速部署
 
-# 安装 Python 依赖
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+```bash
+git clone https://github.com/zinohome/CozyMemory.git
+cd CozyMemory
 
-# 复制代码
-COPY src/ src/
-COPY proto/ proto/
+# 配置环境变量
+cp base_runtime/.env.example base_runtime/.env
+vi base_runtime/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
 
-# 生成 gRPC 代码
-RUN python -m grpc_tools.protoc \
-    -I./proto \
-    --python_out=./src/cozymemory/grpc_server \
-    --grpc_python_out=./src/cozymemory/grpc_server \
-    ./proto/common.proto \
-    ./proto/conversation.proto \
-    ./proto/profile.proto \
-    ./proto/knowledge.proto
+# 构建 7 个自定义镜像（约 25-30 分钟）
+sudo ./base_runtime/build.sh all
 
-EXPOSE 8000 50051
+# 启动全部 15 个容器
+sudo docker compose -f base_runtime/docker-compose.1panel.yml up -d
 
-# 默认启动 REST + gRPC
-CMD ["python", "-m", "cozymemory.app"]
+# 等待 ~60 秒，验证
+curl http://localhost:8000/api/v1/health
 ```
 
 ---
 
-## 3. docker-compose.yml
+## 4. 环境变量
 
-将 CozyMemory 容器加入 `unified_deployment/docker-compose.1panel.yml`：
+所有环境变量通过 `base_runtime/.env` 配置，docker compose 自动加载。
+
+### 必填项
+
+| 变量 | 说明 |
+|------|------|
+| `LLM_API_KEY` | OpenAI 兼容 API Key，所有引擎共用 |
+| `POSTGRES_PASSWORD` | PostgreSQL root 密码 |
+| `REDIS_PASSWORD` | Redis 密码 |
+| `NEO4J_PASSWORD` | Neo4j 密码 |
+| `MINIO_ROOT_PASSWORD` | MinIO root 密码 |
+| `COGNEE_DB_PASSWORD` | Cognee 数据库用户密码 |
+| `MEMOBASE_DB_PASSWORD` | Memobase 数据库用户密码 |
+| `COZYMEMORY_DB_PASSWORD` | CozyMemory 数据库用户密码 |
+| `MEMOBASE_ACCESS_TOKEN` | Memobase 服务端 token |
+| `JWT_SECRET` | Developer JWT 签名密钥（`openssl rand -hex 32`） |
+
+### 可选项
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `COZY_API_KEYS` | 空（关闭鉴权） | 逗号分隔的 bootstrap key |
+| `CORS_ALLOWED_ORIGINS` | `*` | 生产环境应限制为具体域名 |
+| `COGNEE_ADMIN_PASSWORD` | `passw0rd` | Cognee 管理员密码 |
+
+> **注意**：数据库密码在 `init.sh` 首次建库时写入。已初始化后修改 `.env` 不会自动更新密码，需手动 `ALTER USER`。
+
+---
+
+## 5. 服务清单（15 个容器）
+
+### 基础设施层
+
+| 服务 | 镜像 | 容器名 | 内部端口 | 说明 |
+|------|------|--------|----------|------|
+| PostgreSQL | `pgvector/pgvector:0.8.1-pg17` | `cozy_postgres` | 5432 | 主数据库 + 向量扩展 |
+| Redis | `redis:7-alpine` | `cozy_redis` | 6379 | 用户映射 + 缓存 |
+| Qdrant | `qdrant/qdrant:v1.15` | `cozy_qdrant` | 6333 | Mem0 向量存储 |
+| MinIO | `minio:RELEASE.2023-11-01` | `cozy_minio` | 9000/9001 | Cognee 对象存储 |
+| Neo4j | `neo4j:2026.03.1` | `cozy_neo4j` | 7687 | Cognee 图数据库 |
+
+### 引擎层
+
+| 服务 | 镜像 | 容器名 | 内部端口 | 说明 |
+|------|------|--------|----------|------|
+| Cognee API | `cognee:0.4.1` | `cozy_cognee` | 8000 | 知识图谱引擎 |
+| Cognee Frontend | `cognee-frontend:local-0.4.1` | `cozy_cognee_frontend` | 3000 | Cognee 管理 UI |
+| Mem0 API | `mem0-api:latest` | `cozy_mem0_api` | 8000 | 对话记忆引擎 |
+| Mem0 WebUI | `mem0-webui:latest` | `cozy_mem0_webui` | 3000 | Mem0 管理 UI |
+| Memobase API | `memobase-server:latest` | `cozy_memobase_api` | 8000 | 用户画像引擎 |
+
+### 应用层
+
+| 服务 | 镜像 | 容器名 | 内部端口 | 说明 |
+|------|------|--------|----------|------|
+| CozyMemory API | `cozymemory:latest` | `cozymemory` | 8000/50051 | REST + gRPC（supervisord） |
+| CozyMemory UI | `cozymemory-ui:latest` | `cozy_ui` | 3000 | Next.js 16 管理界面 |
+
+### 可观测性层
+
+| 服务 | 镜像 | 容器名 | 内部端口 | 说明 |
+|------|------|--------|----------|------|
+| Prometheus | `prom/prometheus:v2.55.0` | `cozy_prometheus` | 9090 | 指标采集（30 天保留） |
+| Grafana | `grafana/grafana:11.4.0` | `cozy_grafana` | 3000 | 监控 Dashboard |
+
+### 反向代理
+
+| 服务 | 镜像 | 容器名 | 说明 |
+|------|------|--------|------|
+| Caddy | `caddy:alpine` | `cozy_caddy` | 统一入口 + LLM 代理 |
+
+---
+
+## 6. 端口映射（Caddy）
+
+| 外部端口 | 目标服务 | 说明 |
+|----------|---------|------|
+| 80 | 导航页 | 服务发现静态页 |
+| 8000 | CozyMemory API | REST API（`/metrics` 被屏蔽） |
+| 8080 | Cognee | `/api/*` → API，`/*` → Frontend |
+| 8081 | Mem0 | `/api/*` → API，`/*` → WebUI |
+| 8019 | Memobase | 直连 API |
+| 8088 | CozyMemory UI | Developer + Operator 管理界面 |
+| 3001 | Grafana | 监控 Dashboard |
+| 50051 | gRPC (TLS) | 自签名 TLS，内部 h2c |
+
+---
+
+## 7. 构建自定义镜像
+
+7 个自定义镜像由 `build.sh` 从源码构建：
+
+```bash
+sudo ./base_runtime/build.sh all            # 构建全部（~25 分钟）
+sudo ./base_runtime/build.sh cozymemory     # 只构建 API
+sudo ./base_runtime/build.sh cozymemory-ui  # 只构建 UI
+sudo ./base_runtime/build.sh cognee         # 只构建 Cognee
+sudo ./base_runtime/build.sh mem0-api       # 只构建 Mem0
+sudo ./base_runtime/build.sh memobase       # 只构建 Memobase
+```
+
+构建完成后重启对应容器：
+
+```bash
+sudo docker compose -f base_runtime/docker-compose.1panel.yml \
+  up -d --force-recreate cozymemory-api cozymemory-ui
+```
+
+---
+
+## 8. Dockerfile（CozyMemory API）
+
+多阶段构建，使用 supervisord 同时运行 REST 和 gRPC：
+
+- **Builder 阶段**：`python:3.11-slim`，安装依赖到 `/opt/venv`
+- **Runtime 阶段**：非 root 用户 `cozymemory`（UID 1000），supervisord 管理两个进程
+- **健康检查**：每 30 秒检查 `/api/v1/health`，15 秒启动延迟，3 次重试
+- **暴露端口**：8000（REST）+ 50051（gRPC）
+
+---
+
+## 9. 数据持久化
+
+所有有状态数据存储在 `/data/CozyMemory/` 下：
+
+```
+/data/CozyMemory/
+├── postgres/       # PostgreSQL 数据
+├── redis/          # Redis AOF 持久化
+├── qdrant/         # Qdrant 向量数据
+├── neo4j/          # Neo4j 图数据
+├── minio/          # MinIO 对象存储
+├── cognee/         # Cognee 数据 + 日志
+├── mem0/           # Mem0 历史 + 日志
+├── memobase/       # Memobase 数据
+├── prometheus/     # 指标数据（30 天）
+├── grafana/        # Dashboard 配置
+└── tiktoken/       # 共享 tokenizer 缓存
+```
+
+---
+
+## 10. 日志管理
+
+所有 15 个容器统一配置 Docker 日志轮转：
 
 ```yaml
-# 在现有 docker-compose.1panel.yml 中添加：
-
-  # ==========================================
-  # CozyMemory 统一记忆服务
-  # ==========================================
-  cozymemory:
-    build:
-      context: /path/to/CozyMemory
-      dockerfile: Dockerfile
-    container_name: cozy_memory
-    restart: unless-stopped
-    ports:
-      - "8010:8000"    # REST API
-      - "50051:50051"  # gRPC
-    environment:
-      # 应用配置
-      - APP_ENV=production
-      - LOG_LEVEL=INFO
-      # Mem0 引擎
-      - MEM0_API_URL=http://mem0-api:8000
-      - MEM0_API_KEY=${MEM0_API_KEY:-}
-      - MEM0_ENABLED=true
-      # Memobase 引擎
-      - MEMOBASE_API_URL=http://memobase-server-api:8000
-      - MEMOBASE_API_KEY=secret
-      - MEMOBASE_ENABLED=true
-      # Cognee 引擎
-      - COGNEE_API_URL=http://cognee:8000
-      - COGNEE_API_KEY=${COGNEE_API_KEY:-}
-      - COGNEE_ENABLED=true
-    depends_on:
-      - mem0-api
-      - memobase-server-api
-      - cognee
-    networks:
-      - 1panel-network
-    labels:
-      createdBy: "Apps"
+logging:
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
 ```
 
----
-
-## 4. 依赖清单
-
-### requirements.txt
-
-```
-# 核心框架
-fastapi>=0.110.0
-uvicorn[standard]>=0.29.0
-
-# HTTP 客户端（SDK 通信）
-httpx[http2]>=0.27.0
-
-# 数据验证
-pydantic>=2.0
-pydantic-settings>=2.0
-
-# gRPC
-grpcio>=1.60.0
-grpcio-tools>=1.60.0
-protobuf>=4.25.0
-
-# 日志
-structlog>=24.0
-```
-
-### requirements-dev.txt
-
-```
--r requirements.txt
-
-# 测试
-pytest>=8.0
-pytest-asyncio>=0.23
-pytest-cov>=5.0
-httpx  # 测试客户端
-
-# 代码质量
-ruff>=0.3
-mypy>=1.9
-black>=24.0
-```
-
----
-
-## 5. 环境变量
-
-### .env.example
+查看日志：
 
 ```bash
-# ==================== 应用配置 ====================
-APP_NAME=CozyMemory
-APP_VERSION=2.0.0
-APP_ENV=development
-DEBUG=true
-HOST=0.0.0.0
-PORT=8000
-GRPC_PORT=50051
-
-# ==================== 日志配置 ====================
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-
-# ==================== Mem0 引擎 ====================
-MEM0_API_URL=http://localhost:8888
-MEM0_API_KEY=                    # 自托管默认不需要
-MEM0_TIMEOUT=30.0
-MEM0_ENABLED=true
-
-# ==================== Memobase 引擎 ====================
-MEMOBASE_API_URL=http://localhost:8019
-MEMOBASE_API_KEY=secret           # 自托管默认 token
-MEMOBASE_TIMEOUT=60.0
-MEMOBASE_ENABLED=true
-
-# ==================== Cognee 引擎 ====================
-COGNEE_API_URL=http://localhost:8000
-COGNEE_API_KEY=                   # 可选
-COGNEE_TIMEOUT=300.0              # cognify 操作需要更长超时
-COGNEE_ENABLED=true
+sudo docker logs -f cozymemory --tail 100      # CozyMemory API
+sudo docker logs -f cozy_cognee --tail 100      # Cognee
+sudo docker compose -f base_runtime/docker-compose.1panel.yml logs -f  # 全部
 ```
 
 ---
 
-## 6. 服务启动
+## 11. 可观测性
 
-### 开发环境
+### Prometheus
+
+- 采集 CozyMemory `/metrics` 端点
+- 告警规则（`base_runtime/prometheus/alerts.yml`）：
+  - `EngineDown`：引擎连续 2 分钟不可达
+  - `HighEngineLatency`：P95 延迟 > 5 秒
+  - `HighEngineErrorRate`：错误率 > 10%
+  - `HighRequestLatencyP99`：API P99 > 10 秒
+  - `APIDown`：CozyMemory 主进程不可达
+
+### Grafana
+
+- 访问 `http://你的IP:3001`，默认密码 `cozyadmin`
+- 预置 Dashboard 展示引擎健康、延迟、错误率
+
+### OpenTelemetry（可选）
 
 ```bash
-# 安装依赖
-pip install -r requirements-dev.txt
-
-# 启动 REST API（开发模式）
-uvicorn cozymemory.app:create_app --factory --reload --port 8000
-
-# 启动 gRPC（开发模式）
-python -m cozymemory.grpc_server.server
+pip install cozymemory[otel]
 ```
 
-### 生产环境
+设置 `OTEL_ENABLED=true` 启用链路追踪，支持 OTLP 导出。
+
+---
+
+## 12. 健康检查
 
 ```bash
-# 构建并启动
-docker-compose -f unified_deployment/docker-compose.1panel.yml up -d cozymemory
+# 快速检查
+curl http://localhost:8000/api/v1/health
 
-# 查看日志
-docker-compose logs -f cozymemory
-
-# 健康检查
-curl http://localhost:8010/api/v1/health
-```
-
----
-
-## 7. 端口分配
-
-| 服务 | 内部端口 | 外部端口 | 说明 |
-|------|---------|---------|------|
-| CozyMemory REST | 8000 | 8010 | REST API |
-| CozyMemory gRPC | 50051 | 50051 | gRPC 服务 |
-| Mem0 API | 8000 | 8888 | 会话记忆引擎 |
-| Memobase | 8000 | 8019 | 用户画像引擎 |
-| Cognee | 8000 | 8000 | 知识库引擎 |
-
-> 注意：CozyMemory REST 外部端口为 8010，避免与 Cognee 的 8000 冲突。内部通信使用 Docker 网络的服务名（如 `mem0-api:8000`），无需端口映射。
-
----
-
-## 8. 健康检查与监控
-
-### 健康检查端点
-
-```
-GET /api/v1/health
-```
-
-返回各引擎状态：
-
-```json
+# 预期响应
 {
   "status": "healthy",
   "engines": {
-    "mem0": {"name": "Mem0", "status": "healthy", "latency_ms": 12.5},
-    "memobase": {"name": "Memobase", "status": "healthy", "latency_ms": 8.3},
-    "cognee": {"name": "Cognee", "status": "healthy", "latency_ms": 15.1}
-  },
-  "timestamp": "2026-04-13T10:30:00Z"
+    "mem0": {"name": "Mem0", "status": "healthy", "latency_ms": 26.0},
+    "memobase": {"name": "Memobase", "status": "healthy", "latency_ms": 15.3},
+    "cognee": {"name": "Cognee", "status": "healthy", "latency_ms": 33.0}
+  }
 }
 ```
 
-- `healthy`: 所有引擎正常
-- `degraded`: 部分引擎不可用
-- `unhealthy`: 全部引擎不可用
+状态值：`healthy`（全部正常）、`degraded`（部分引擎不可用）、`unhealthy`（全部不可用）。
 
-### Docker 健康检查
+---
 
-```yaml
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
+## 13. 常见操作
+
+### 重启单个服务
+
+```bash
+sudo docker compose -f base_runtime/docker-compose.1panel.yml restart cozymemory-api
+```
+
+### 重建并重启
+
+```bash
+sudo ./base_runtime/build.sh cozymemory
+sudo docker compose -f base_runtime/docker-compose.1panel.yml \
+  up -d --force-recreate cozymemory-api
+```
+
+### 数据库迁移
+
+```bash
+cd /home/ubuntu/CozyProjects/CozyMemory
+source .venv/bin/activate
+alembic upgrade head
+```
+
+详见 [migration-guide.md](migration-guide.md)。
+
+### 备份
+
+```bash
+# 单用户备份
+curl http://localhost:8000/api/v1/operator/backup/export/{user_id} \
+  -H "X-Cozy-API-Key: 你的bootstrap-key" > backup.json
+
+# PostgreSQL 全量备份
+sudo docker exec cozy_postgres pg_dumpall -U postgres > pg_backup.sql
 ```
 
 ---
 
-## 9. 后期扩展点
+## 14. Kubernetes 部署
 
-以下功能暂不实现，但架构预留了扩展空间：
+参考 `deploy/k8s/` 目录：
 
-### 9.1 认证
+- `secret.yaml`：API key + 数据库凭证
+- `deployment.yaml`：2 副本，liveness/readiness 探针
+- `service.yaml`：ClusterIP，端口 8000 + 50051
 
-在 `api/deps.py` 中添加认证中间件：
+> K8s 部署仅覆盖 CozyMemory API 本身，三引擎后端需另行部署。
 
-```python
-# 后期添加：API Key 认证
-from fastapi import Security
-from fastapi.security import APIKeyHeader
+---
 
-api_key_header = APIKeyHeader(name="X-API-Key")
+## 15. 生产检查清单
 
-async def verify_api_key(api_key: str = Security(api_key_header)):
-    if api_key != settings.API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-```
-
-### 9.2 速率限制
-
-使用 `slowapi` 中间件：
-
-```python
-from slowapi import Limiter
-limiter = Limiter(key_func=get_remote_address)
-```
-
-### 9.3 指标监控
-
-使用 `prometheus-fastapi-instrumentator`：
-
-```python
-from prometheus_fastapi_instrumentator import Instrumentator
-Instrumentator().instrument(app).expose(app)
-```
-
-### 9.4 日志聚合
-
-使用 `structlog` + JSON 格式，可接入 ELK/Loki。
+- [ ] 所有密码已改为强密码（非默认值）
+- [ ] `JWT_SECRET` 已用 `openssl rand -hex 32` 生成
+- [ ] `COZY_API_KEYS` 已设置（启用鉴权）
+- [ ] `CORS_ALLOWED_ORIGINS` 已限制为具体域名
+- [ ] Grafana 默认密码已修改
+- [ ] 磁盘空间 > 20GB
+- [ ] 日志轮转已配置（默认 50m × 5）
+- [ ] 备份策略已制定
