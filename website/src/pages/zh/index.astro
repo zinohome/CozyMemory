@@ -1,0 +1,195 @@
+---
+import Layout from '~/layouts/PageLayout.astro';
+import Hero from '~/components/widgets/Hero.astro';
+import Features from '~/components/widgets/Features.astro';
+import Note from '~/components/widgets/Note.astro';
+import Stats from '~/components/widgets/Stats.astro';
+import Content from '~/components/widgets/Content.astro';
+import CallToAction from '~/components/widgets/CallToAction.astro';
+import BlogLatestPosts from '~/components/widgets/BlogLatestPosts.astro';
+import { useTranslations } from '~/i18n';
+
+const t = useTranslations('zh');
+
+const GITHUB_URL = 'https://github.com/ZhangJun/CozyMemory';
+const GITHUB_DOCS = 'https://github.com/ZhangJun/CozyMemory/tree/main/docs';
+
+const metadata = {
+  title: 'CozyMemory — 统一 AI 记忆服务平台',
+  ignoreTitleTemplate: true,
+};
+---
+
+<Layout metadata={metadata}>
+  <!-- Hero Widget -->
+  <Hero
+    actions={[
+      {
+        variant: 'primary',
+        text: t.hero.getStarted,
+        href: GITHUB_URL,
+        target: '_blank',
+        icon: 'tabler:brand-github',
+      },
+      {
+        text: t.hero.apiDocs,
+        href: GITHUB_DOCS,
+        target: '_blank',
+        icon: 'tabler:book',
+      },
+    ]}
+    image={{ src: '~/assets/images/screenshot-dashboard.png', alt: 'CozyMemory 管理仪表盘' }}
+  >
+    <Fragment slot="title">
+      {t.hero.title}
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      {t.hero.subtitle}
+    </Fragment>
+  </Hero>
+
+  <!-- Three Engines Features -->
+  <Features
+    id="engines"
+    tagline="三大记忆引擎"
+    title="三大引擎，一个 API"
+    subtitle="CozyMemory 将三个最优秀的记忆引擎整合为统一平台。请求自动路由到最合适的引擎，无需分别管理三套集成。"
+    items={[
+      {
+        title: t.engines.mem0.name,
+        description: `${t.engines.mem0.tagline}。${t.engines.mem0.items.join(' · ')}`,
+        icon: 'tabler:brain',
+      },
+      {
+        title: t.engines.memobase.name,
+        description: `${t.engines.memobase.tagline}。${t.engines.memobase.items.join(' · ')}`,
+        icon: 'tabler:user-circle',
+      },
+      {
+        title: t.engines.cognee.name,
+        description: `${t.engines.cognee.tagline}。${t.engines.cognee.items.join(' · ')}`,
+        icon: 'tabler:topology-star-3',
+      },
+    ]}
+  />
+
+  <!-- Quick Integration Note -->
+  <Note
+    title="快速集成："
+    description="pip install httpx · client.post('/api/v1/conversations', json={'user_id': 'u1', 'messages': [{'role': 'user', 'content': 'I love Python'}]}) · # 完成 — 记忆自动提取"
+  />
+
+  <!-- Stats -->
+  <Stats
+    stats={[
+      { title: t.stats.engines, amount: '3' },
+      { title: 'API 端点', amount: '50+' },
+      { title: '单元测试', amount: '524' },
+      { title: t.stats.protocols, amount: '2' },
+    ]}
+  />
+
+  <!-- Why CozyMemory Features -->
+  <Features
+    id="features"
+    tagline="为什么选择 CozyMemory？"
+    title={t.why.title}
+    subtitle="为生产环境而生：多租户隔离、完整可观测性、自托管部署。"
+    items={[
+      {
+        title: t.why.unified.title,
+        description: t.why.unified.description,
+        icon: 'tabler:api',
+      },
+      {
+        title: t.why.multiTenant.title,
+        description: t.why.multiTenant.description,
+        icon: 'tabler:building',
+      },
+      {
+        title: t.why.selfHosted.title,
+        description: t.why.selfHosted.description,
+        icon: 'tabler:server',
+      },
+      {
+        title: t.why.observable.title,
+        description: t.why.observable.description,
+        icon: 'tabler:chart-line',
+      },
+    ]}
+  />
+
+  <!-- Dashboard Content -->
+  <Content
+    isReversed
+    tagline="管理仪表盘"
+    title="一站式管理"
+    items={[
+      {
+        title: '记忆浏览器',
+        description: '浏览、搜索和删除任意用户在所有应用中的对话记忆。',
+      },
+      {
+        title: '画像管理器',
+        description: '查看结构化用户画像，支持基于主题的组织方式和手动编辑。',
+      },
+      {
+        title: '知识库',
+        description: '管理数据集、触发知识图谱构建，并支持多种模式的搜索。',
+      },
+      {
+        title: 'Playground',
+        description: '交互式测试统一 /context 端点，实时预览 LLM 就绪的记忆提示词。',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-dashboard.png',
+      alt: 'CozyMemory 管理仪表盘',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        全面掌握三层记忆数据
+      </h3>
+      Next.js 管理界面让运营人员和开发者通过单一视图，统一管理对话记忆、用户画像和知识图谱。
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- Latest Blog Posts -->
+  <BlogLatestPosts
+    title="最新博客"
+    information="CozyMemory 的版本说明、架构解析与集成指南。"
+  />
+
+  <!-- CTA -->
+  <CallToAction
+    actions={[
+      {
+        variant: 'primary',
+        text: t.cta.starOnGithub,
+        href: GITHUB_URL,
+        target: '_blank',
+        icon: 'tabler:brand-github',
+      },
+      {
+        text: t.cta.readTheDocs,
+        href: GITHUB_DOCS,
+        target: '_blank',
+        icon: 'tabler:book',
+      },
+    ]}
+  >
+    <Fragment slot="title">
+      立即使用<br class="block sm:hidden" /> <span class="sm:whitespace-nowrap">CozyMemory</span> 开始构建
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      自托管、开源、生产就绪。使用 Docker Compose 几分钟内完成部署。
+    </Fragment>
+  </CallToAction>
+</Layout>

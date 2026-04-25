@@ -1,0 +1,131 @@
+---
+import Layout from '~/layouts/PageLayout.astro';
+import Hero from '~/components/widgets/Hero.astro';
+import Features from '~/components/widgets/Features.astro';
+import Content from '~/components/widgets/Content.astro';
+import CallToAction from '~/components/widgets/CallToAction.astro';
+import { useTranslations } from '~/i18n';
+
+const t = useTranslations('zh');
+
+const GITHUB_URL = 'https://github.com/ZhangJun/CozyMemory';
+
+const metadata = {
+  title: '关于 — CozyMemory',
+};
+---
+
+<Layout metadata={metadata}>
+  <!-- Hero -->
+  <Hero tagline="关于 CozyMemory">
+    <Fragment slot="title">
+      {t.about.title}
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      {t.about.vision}
+    </Fragment>
+  </Hero>
+
+  <!-- 技术栈 -->
+  <Features
+    id="tech-stack"
+    tagline={t.about.techStack}
+    title="基于现代化、经过验证的技术栈"
+    subtitle="每个组件都经过精心选择，兼顾生产可靠性、开发体验与可观测性。"
+    items={[
+      {
+        title: 'Python 3.11+',
+        description: '异步优先的 FastAPI + gRPC 服务器，采用 Pydantic v2 数据模型、ruff 代码检查和 mypy 严格类型检查。',
+        icon: 'tabler:brand-python',
+      },
+      {
+        title: 'Next.js 16 + React 19',
+        description: '基于 App Router 的管理界面，集成 TanStack Query、Zustand、Base UI、shadcn 和 Tailwind v4。',
+        icon: 'tabler:brand-nextjs',
+      },
+      {
+        title: 'Docker + Docker Compose',
+        description: '一键部署：15 个容器——CozyMemory API、三大引擎、PostgreSQL/pgvector、Redis、Qdrant、MinIO、Neo4j。',
+        icon: 'tabler:brand-docker',
+      },
+      {
+        title: 'PostgreSQL + pgvector',
+        description: '主关系型存储加向量相似度搜索，Mem0 和 Memobase 的数据均持久化于此。',
+        icon: 'tabler:database',
+      },
+      {
+        title: 'Prometheus + Grafana',
+        description: '内置指标采集，开箱即用的告警规则和监控仪表盘，无需额外配置。',
+        icon: 'tabler:chart-line',
+      },
+      {
+        title: 'REST + gRPC',
+        description: '19 个 REST 端点和 18 个 gRPC 方法共用同一服务层，两种协议均已生产就绪。',
+        icon: 'tabler:api',
+      },
+    ]}
+  />
+
+  <!-- 协议与贡献 -->
+  <Content
+    tagline="开源"
+    title={t.about.license}
+    items={[
+      {
+        title: 'AGPL-3.0-or-later',
+        description: t.about.licenseText,
+      },
+      {
+        title: t.about.contributing,
+        description: t.about.contributingText,
+      },
+      {
+        title: 'Issue 追踪',
+        description: '发现 Bug 或有功能需求？在 GitHub 上提交 Issue，我们会及时分类处理并回复。',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-dashboard.png',
+      alt: 'CozyMemory 管理仪表盘',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        自由使用，自由 Fork
+      </h3>
+      CozyMemory 基于 AGPL-3.0 协议开源。你可以自托管、贡献改进，或在此基础上构建商业产品——只要对 CozyMemory 本身的修改保持开源即可。
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- CTA -->
+  <CallToAction
+    actions={[
+      {
+        variant: 'primary',
+        text: '访问 GitHub',
+        href: GITHUB_URL,
+        target: '_blank',
+        icon: 'tabler:brand-github',
+      },
+      {
+        text: '提交 Issue',
+        href: `${GITHUB_URL}/issues`,
+        target: '_blank',
+        icon: 'tabler:bug',
+      },
+    ]}
+  >
+    <Fragment slot="title">
+      参与 CozyMemory 建设
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      为仓库点星、提交 Issue 或发起 Pull Request。每一份贡献都让 AI 记忆变得更好。
+    </Fragment>
+  </CallToAction>
+</Layout>

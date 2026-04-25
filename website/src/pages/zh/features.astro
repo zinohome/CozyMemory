@@ -1,0 +1,229 @@
+---
+import Layout from '~/layouts/PageLayout.astro';
+import Hero from '~/components/widgets/Hero.astro';
+import Content from '~/components/widgets/Content.astro';
+import Note from '~/components/widgets/Note.astro';
+import Features from '~/components/widgets/Features.astro';
+import { useTranslations } from '~/i18n';
+
+const t = useTranslations('zh');
+
+const metadata = {
+  title: '功能特性 — CozyMemory',
+};
+---
+
+<Layout metadata={metadata}>
+  <!-- Hero -->
+  <Hero>
+    <Fragment slot="title">
+      {t.features.title}
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      {t.features.subtitle}
+    </Fragment>
+  </Hero>
+
+  <!-- Mem0 — 对话记忆 -->
+  <Content
+    tagline="引擎 1"
+    title={t.engines.mem0.name}
+    items={[
+      {
+        title: '自动提取事实',
+        description: '每段对话都由 LLM 处理，自动提取持久事实——姓名、偏好、历史——并自动去重与合并。',
+      },
+      {
+        title: '语义搜索',
+        description: '基于向量嵌入在 Qdrant 中语义搜索记忆，即使关键词不同也能找到相关上下文。',
+      },
+      {
+        title: '完整历史记录',
+        description: '获取用户的所有记忆，或按 ID 获取单条记忆。支持删除单条记录或清空用户所有记忆。',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-dashboard.png',
+      alt: '记忆浏览器截图',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        对话记忆 API
+      </h3>
+      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto mt-4"><code>{`# 添加对话记忆
+POST /api/v1/conversations
+{
+  "user_id": "u1",
+  "messages": [
+    {"role": "user", "content": "I love hiking and coffee"}
+  ]
+}
+
+# 语义搜索记忆
+POST /api/v1/conversations/search
+{"user_id": "u1", "query": "outdoor activities"}
+
+# 获取用户所有记忆
+GET /api/v1/conversations?user_id=u1`}</code></pre>
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- Memobase — 用户画像 -->
+  <Content
+    isReversed
+    tagline="引擎 2"
+    title={t.engines.memobase.name}
+    items={[
+      {
+        title: '结构化画像',
+        description: '以命名主题/子主题槽位存储用户数据（如 interest → hobby: hiking）。每条画像条目可独立寻址。',
+      },
+      {
+        title: 'LLM 上下文提示词',
+        description: '调用 /context 获取预格式化的提示词字符串，可直接嵌入 LLM 系统提示词——无需手动格式化。',
+      },
+      {
+        title: '缓冲 + 异步刷新管道',
+        description: '将对话插入缓冲区，异步刷新处理，高吞吐量摄入不阻塞主请求路径。',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-playground.png',
+      alt: '画像 Playground 截图',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        用户画像 API
+      </h3>
+      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto mt-4"><code>{`# 将对话插入画像缓冲区
+POST /api/v1/profiles/insert
+{
+  "user_id": "<uuid-v4>",
+  "messages": [{"role": "user", "content": "..."}],
+  "sync": true
+}
+
+# 获取结构化画像
+GET /api/v1/profiles/{user_id}
+
+# 获取 LLM 就绪的上下文提示词
+POST /api/v1/profiles/{user_id}/context
+
+# 手动添加画像主题
+POST /api/v1/profiles/{user_id}/items
+{"topic": "interest", "sub_topic": "hobby", "content": "hiking"}`}</code></pre>
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- Cognee — 知识图谱 -->
+  <Content
+    tagline="引擎 3"
+    title={t.engines.cognee.name}
+    items={[
+      {
+        title: '文档转知识图谱',
+        description: '上传文本文档，Cognee 以 Neo4j 图数据库为底座，自动构建实体关系知识图谱。',
+      },
+      {
+        title: '多种搜索模式',
+        description: '支持 CHUNKS、SUMMARIES、RAG_COMPLETION、GRAPH_COMPLETION 四种模式，在精确度与推理深度之间灵活权衡。',
+      },
+      {
+        title: '两步摄入流程',
+        description: '调用 /add 暂存内容，再调用 /cognify 构建知识图谱。将摄入与索引解耦，适合批量工作流。',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-knowledge.png',
+      alt: '知识库截图',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        知识图谱 API
+      </h3>
+      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto mt-4"><code>{`# 列出数据集
+GET /api/v1/knowledge/datasets
+
+# 向知识库添加文档
+POST /api/v1/knowledge/add
+{"content": "CozyMemory integrates Mem0, Memobase, and Cognee.", "dataset_id": "..."}
+
+# 构建知识图谱（异步）
+POST /api/v1/knowledge/cognify
+
+# 搜索知识图谱
+POST /api/v1/knowledge/search
+{"query": "memory engines", "search_type": "GRAPH_COMPLETION"}`}</code></pre>
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- 统一上下文说明 -->
+  <Note
+    title={`${t.features.unifiedContext.title}：`}
+    description={t.features.unifiedContext.description}
+  />
+
+  <!-- 统一上下文详情 -->
+  <Features
+    tagline="核心能力"
+    title="一次调用，三层记忆"
+    subtitle="/context 端点通过 asyncio.gather 并行查询三个引擎，将结果合并为单一响应——即使某个引擎临时故障也能正常返回。"
+    items={[
+      {
+        title: '并行执行',
+        description: '三个引擎同时查询，总延迟取决于最慢的引擎，而非三者之和。',
+        icon: 'tabler:arrows-split',
+      },
+      {
+        title: '容错设计',
+        description: '各引擎错误单独记录在 errors 字段中，始终返回部分响应，绝不返回完整的 502 错误。',
+        icon: 'tabler:shield-check',
+      },
+      {
+        title: 'LLM 就绪输出',
+        description: '对话记忆、画像上下文字符串和知识片段全部在一个结构化响应中返回。',
+        icon: 'tabler:robot',
+      },
+    ]}
+  >
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Features>
+
+  <div class="max-w-4xl mx-auto px-4 pb-16">
+    <pre class="bg-slate-900 text-green-400 rounded-lg p-6 text-sm overflow-x-auto"><code>{`# 统一上下文 — 一次调用，三个引擎
+POST /api/v1/context
+{
+  "user_id": "u1",
+  "query": "What does this user prefer for outdoor activities?"
+}
+
+# 响应
+{
+  "success": true,
+  "data": {
+    "conversations": [...],         // Mem0 语义搜索结果
+    "profile_context": "...",       // Memobase LLM 就绪提示词字符串
+    "knowledge": [...],             // Cognee 图谱搜索结果
+    "errors": {}                    // 各引擎错误（空 = 全部健康）
+  }
+}`}</code></pre>
+  </div>
+</Layout>
