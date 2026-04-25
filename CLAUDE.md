@@ -146,7 +146,7 @@ python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --g
 
 ### Backend engine deployment (`base_runtime/`)
 
-`base_runtime/docker-compose.1panel.yml` runs 11 services on `1panel-network`. Caddy exposes four ports: 8000 (CozyMemory unified API), 8080 (Cognee), 8081 (Mem0), 8019 (Memobase). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `YOUR_SERVER_IP` in the compose file with the actual server IP. Tiktoken cache must be pre-copied to `/data/CozyMemory/tiktoken/`.
+`base_runtime/docker-compose.1panel.yml` runs 16 services on `1panel-network` (15 long-running + 1 ephemeral `init-data-dirs` for fixing bind mount permissions). Caddy exposes ports: 8000 (CozyMemory unified API), 8080 (Cognee), 8081 (Mem0), 8019 (Memobase), 8088 (UI), 3001 (Grafana), 50051 (gRPC). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `192.168.32.40` in the compose file with the actual server IP. Tiktoken cache is auto-downloaded on first engine start.
 
 The CozyMemory unified API (`cozymemory:latest`) is built from the root `Dockerfile` using `deploy/supervisord.conf` to run REST (port 8000) and gRPC (port 50051) in a single container.
 

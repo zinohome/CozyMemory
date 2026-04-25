@@ -398,10 +398,26 @@ services:
 
   # ──────────────────── Observability ────────────────────
 
+  init-data-dirs:
+    image: busybox
+    container_name: cozy_init_data
+    restart: "no"
+    volumes:
+      - /data/CozyMemory/prometheus:/data/prometheus
+      - /data/CozyMemory/grafana:/data/grafana
+    command: sh -c "chown -R 65534:65534 /data/prometheus && chown -R 472:472 /data/grafana"
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
   prometheus:
     image: prom/prometheus:v2.55.0
     container_name: cozy_prometheus
     restart: unless-stopped
+    depends_on:
+      init-data-dirs:
+        condition: service_completed_successfully
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -422,7 +438,10 @@ services:
     container_name: cozy_grafana
     restart: unless-stopped
     depends_on:
-      - prometheus
+      init-data-dirs:
+        condition: service_completed_successfully
+      prometheus:
+        condition: service_started
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-cozyadmin}
       GF_USERS_ALLOW_SIGN_UP: "false"

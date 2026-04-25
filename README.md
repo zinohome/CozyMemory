@@ -31,6 +31,9 @@ cd CozyMemory
 cp base_runtime/.env.example base_runtime/.env
 vi base_runtime/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
 
+# 替换 docker-compose 中的服务器 IP（5 处）
+sed -i 's/192.168.32.40/你的服务器IP/g' base_runtime/docker-compose.1panel.yml
+
 # 构建 7 个自定义镜像（约 25-30 分钟）
 sudo ./base_runtime/build.sh all
 

@@ -51,6 +51,9 @@ cd CozyMemory
 cp base_runtime/.env.example base_runtime/.env
 vi base_runtime/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
 
+# 替换 docker-compose 中的服务器 IP（Cognee/Mem0/Memobase/UI 前端需要）
+sed -i 's/192.168.32.40/你的服务器IP/g' base_runtime/docker-compose.1panel.yml
+
 # 构建 7 个自定义镜像（约 25-30 分钟）
 sudo ./base_runtime/build.sh all
 
@@ -204,6 +207,10 @@ sudo docker compose -f base_runtime/docker-compose.1panel.yml \
 ├── grafana/        # Dashboard 配置
 └── tiktoken/       # 共享 tokenizer 缓存
 ```
+
+> **权限说明**：`prometheus/` 和 `grafana/` 目录由 `init-data-dirs` 初始化服务在首次启动时自动设置正确的所有者（Prometheus: nobody/65534，Grafana: 472）。无需手动干预。
+
+> **tiktoken 缓存**：Cognee 和 Memobase 共享 `/data/CozyMemory/tiktoken/` 目录作为 tokenizer 缓存。引擎首次启动时会自动下载所需文件（约 5MB），无需预先准备。
 
 ---
 
