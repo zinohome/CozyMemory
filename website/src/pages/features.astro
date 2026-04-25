@@ -1,0 +1,229 @@
+---
+import Layout from '~/layouts/PageLayout.astro';
+import Hero from '~/components/widgets/Hero.astro';
+import Content from '~/components/widgets/Content.astro';
+import Note from '~/components/widgets/Note.astro';
+import Features from '~/components/widgets/Features.astro';
+import { useTranslations } from '~/i18n';
+
+const t = useTranslations('en');
+
+const metadata = {
+  title: 'Features — CozyMemory',
+};
+---
+
+<Layout metadata={metadata}>
+  <!-- Hero -->
+  <Hero>
+    <Fragment slot="title">
+      {t.features.title}
+    </Fragment>
+
+    <Fragment slot="subtitle">
+      {t.features.subtitle}
+    </Fragment>
+  </Hero>
+
+  <!-- Mem0 — Conversation Memory -->
+  <Content
+    tagline="Engine 1"
+    title={t.engines.mem0.name}
+    items={[
+      {
+        title: 'Auto-Extract Facts',
+        description: 'Every conversation is processed by an LLM to extract durable facts — names, preferences, history — automatically deduplicated and merged.',
+      },
+      {
+        title: 'Semantic Search',
+        description: 'Search memories by meaning using vector embeddings stored in Qdrant. Find relevant context even when exact keywords differ.',
+      },
+      {
+        title: 'Full History',
+        description: 'Retrieve all memories for a user, or fetch a single memory by ID. Delete individual entries or wipe all memories for a user.',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-dashboard.png',
+      alt: 'Memory Explorer Screenshot',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        Conversation Memory API
+      </h3>
+      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto mt-4"><code>{`# Add conversation memories
+POST /api/v1/conversations
+{
+  "user_id": "u1",
+  "messages": [
+    {"role": "user", "content": "I love hiking and coffee"}
+  ]
+}
+
+# Search memories semantically
+POST /api/v1/conversations/search
+{"user_id": "u1", "query": "outdoor activities"}
+
+# List all memories for a user
+GET /api/v1/conversations?user_id=u1`}</code></pre>
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- Memobase — User Profiles -->
+  <Content
+    isReversed
+    tagline="Engine 2"
+    title={t.engines.memobase.name}
+    items={[
+      {
+        title: 'Structured Profiles',
+        description: 'Store user data in named topic/sub-topic slots (e.g. interest → hobby: hiking). Each profile entry is independently addressable.',
+      },
+      {
+        title: 'LLM Context Prompts',
+        description: 'Call /context to receive a pre-formatted prompt string that slots directly into your LLM system prompt — no manual formatting needed.',
+      },
+      {
+        title: 'Buffer + Flush Pipeline',
+        description: 'Insert conversations into a buffer and flush asynchronously for high-throughput ingestion without blocking your main request path.',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-playground.png',
+      alt: 'Profile Playground Screenshot',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        User Profile API
+      </h3>
+      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto mt-4"><code>{`# Insert conversation into profile buffer
+POST /api/v1/profiles/insert
+{
+  "user_id": "<uuid-v4>",
+  "messages": [{"role": "user", "content": "..."}],
+  "sync": true
+}
+
+# Get structured profile
+GET /api/v1/profiles/{user_id}
+
+# Get LLM-ready context prompt
+POST /api/v1/profiles/{user_id}/context
+
+# Manually add a profile topic
+POST /api/v1/profiles/{user_id}/items
+{"topic": "interest", "sub_topic": "hobby", "content": "hiking"}`}</code></pre>
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- Cognee — Knowledge Graph -->
+  <Content
+    tagline="Engine 3"
+    title={t.engines.cognee.name}
+    items={[
+      {
+        title: 'Documents to Graphs',
+        description: 'Upload text documents; Cognee builds an entity-relation knowledge graph with graph DB (Neo4j) as the backbone.',
+      },
+      {
+        title: 'Multiple Search Modes',
+        description: 'Choose from CHUNKS, SUMMARIES, RAG_COMPLETION, or GRAPH_COMPLETION. Each mode trades off precision and reasoning depth.',
+      },
+      {
+        title: 'Two-Step Ingestion',
+        description: 'Call /add to stage content, then /cognify to build the knowledge graph. Decouple ingestion from indexing for batch workflows.',
+      },
+    ]}
+    image={{
+      src: '~/assets/images/screenshot-knowledge.png',
+      alt: 'Knowledge Base Screenshot',
+    }}
+  >
+    <Fragment slot="content">
+      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">
+        Knowledge Graph API
+      </h3>
+      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto mt-4"><code>{`# List datasets
+GET /api/v1/knowledge/datasets
+
+# Add document to knowledge base
+POST /api/v1/knowledge/add
+{"content": "CozyMemory integrates Mem0, Memobase, and Cognee.", "dataset_id": "..."}
+
+# Build knowledge graph (async)
+POST /api/v1/knowledge/cognify
+
+# Search knowledge graph
+POST /api/v1/knowledge/search
+{"query": "memory engines", "search_type": "GRAPH_COMPLETION"}`}</code></pre>
+    </Fragment>
+
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Content>
+
+  <!-- Unified Context Note -->
+  <Note
+    title={`${t.features.unifiedContext.title}:`}
+    description={t.features.unifiedContext.description}
+  />
+
+  <!-- Unified Context Detail -->
+  <Features
+    tagline="Power Move"
+    title="One Call, Three Memory Layers"
+    subtitle="The /context endpoint runs all three engines in parallel with asyncio.gather and merges results into a single response — even if one engine is temporarily down."
+    items={[
+      {
+        title: 'Parallel Execution',
+        description: 'All three engines are queried simultaneously. Total latency equals the slowest engine, not their sum.',
+        icon: 'tabler:arrows-split',
+      },
+      {
+        title: 'Fault Tolerant',
+        description: 'Per-engine errors are captured in an errors field. A partial response is always returned, never a full 502.',
+        icon: 'tabler:shield-check',
+      },
+      {
+        title: 'LLM-Ready Output',
+        description: 'Conversation memories, profile context string, and knowledge snippets are all returned in one structured payload.',
+        icon: 'tabler:robot',
+      },
+    ]}
+  >
+    <Fragment slot="bg">
+      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
+    </Fragment>
+  </Features>
+
+  <div class="max-w-4xl mx-auto px-4 pb-16">
+    <pre class="bg-slate-900 text-green-400 rounded-lg p-6 text-sm overflow-x-auto"><code>{`# Unified context — one call, all three engines
+POST /api/v1/context
+{
+  "user_id": "u1",
+  "query": "What does this user prefer for outdoor activities?"
+}
+
+# Response
+{
+  "success": true,
+  "data": {
+    "conversations": [...],         // Mem0 semantic search results
+    "profile_context": "...",       // Memobase LLM-ready prompt string
+    "knowledge": [...],             // Cognee graph search results
+    "errors": {}                    // Per-engine errors (empty = all healthy)
+  }
+}`}</code></pre>
+  </div>
+</Layout>
