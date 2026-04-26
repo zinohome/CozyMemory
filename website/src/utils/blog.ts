@@ -166,9 +166,13 @@ export const findPostsByIds = async (ids: Array<string>): Promise<Array<Post>> =
 };
 
 /** */
-export const findLatestPosts = async ({ count }: { count?: number }): Promise<Array<Post>> => {
+export const findLatestPosts = async ({ count, tag }: { count?: number; tag?: string }): Promise<Array<Post>> => {
   const _count = count || 4;
-  const posts = await fetchPosts();
+  let posts = await fetchPosts();
+
+  if (tag && posts) {
+    posts = posts.filter((post) => Array.isArray(post.tags) && post.tags.some((t) => t.slug === tag));
+  }
 
   return posts ? posts.slice(0, _count) : [];
 };
