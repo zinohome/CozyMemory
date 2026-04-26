@@ -62,7 +62,7 @@ async def test_insert_profile_success(client, mock_service):
     body = response.json()
     assert body["success"] is True
     assert body["blob_id"] == "blob_1"
-    assert body["user_id"] == "uid-abc"
+    assert body["user_id"] == "550e8400-e29b-41d4-a716-446655440000"
 
 
 @pytest.mark.asyncio

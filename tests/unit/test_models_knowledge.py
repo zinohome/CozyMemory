@@ -48,7 +48,7 @@ def test_knowledge_dataset():
 
 
 def test_knowledge_add_response():
-    resp = KnowledgeAddResponse(data_id="data_123", dataset_name="my-dataset")
+    resp = KnowledgeAddResponse(data_id="data_123", dataset="my-dataset")
     assert resp.success is True
 
 

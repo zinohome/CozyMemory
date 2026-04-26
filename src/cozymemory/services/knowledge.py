@@ -32,7 +32,7 @@ class KnowledgeService:
         """添加文本到知识库"""
         result = await self.client.add(data=data, dataset=dataset)
         return KnowledgeAddResponse(
-            success=True, data_id=result.get("id"), dataset_name=dataset, message="数据已添加"
+            success=True, data_id=result.get("id"), dataset=dataset, message="数据已添加"
         )
 
     async def add_files(
@@ -43,7 +43,7 @@ class KnowledgeService:
         return KnowledgeAddResponse(
             success=True,
             data_id=result.get("id"),
-            dataset_name=dataset,
+            dataset=dataset,
             message=f"已上传 {len(files)} 个文件",
         )
 
@@ -87,10 +87,21 @@ class KnowledgeService:
     ) -> KnowledgeCognifyResponse:
         """触发知识图谱构建"""
         result = await self.client.cognify(datasets=datasets, run_in_background=run_in_background)
+        pipeline_run_id = None
+        status = "pending"
+        if isinstance(result, dict):
+            for val in result.values():
+                if isinstance(val, dict):
+                    pipeline_run_id = val.get("pipeline_run_id") or val.get("run_id")
+                    status = val.get("status", status)
+                    break
+            if pipeline_run_id is None:
+                pipeline_run_id = result.get("pipeline_run_id") or result.get("run_id")
+                status = result.get("status", status)
         return KnowledgeCognifyResponse(
             success=True,
-            pipeline_run_id=result.get("run_id"),
-            status=result.get("status", "pending"),
+            pipeline_run_id=pipeline_run_id,
+            status=status,
             message="知识图谱构建已启动",
         )
 

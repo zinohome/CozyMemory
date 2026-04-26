@@ -58,7 +58,9 @@ async def insert_profile(
     scoped_uid = await scope_user_id(app_ctx, request.user_id)
     try:
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
-        return await service.insert(user_id=scoped_uid, messages=messages, sync=request.sync)
+        result = await service.insert(user_id=scoped_uid, messages=messages, sync=request.sync)
+        result.user_id = request.user_id
+        return result
     except EngineError as e:
         return _engine_error_response(e)
 
@@ -96,7 +98,10 @@ async def get_profile(
     """获取用户结构化画像"""
     scoped_uid = await scope_user_id(app_ctx, user_id)
     try:
-        return await service.get_profile(scoped_uid)
+        result = await service.get_profile(scoped_uid)
+        if result.data:
+            result.data.user_id = user_id
+        return result
     except EngineError as e:
         return _engine_error_response(e)
 
@@ -119,9 +124,12 @@ async def get_context(
         chats = None
         if request.chats:
             chats = [{"role": m.role, "content": m.content} for m in request.chats]
-        return await service.get_context(
+        result = await service.get_context(
             user_id=scoped_uid, max_token_size=request.max_token_size, chats=chats
         )
+        if result.data:
+            result.data.user_id = user_id
+        return result
     except EngineError as e:
         return _engine_error_response(e)
 

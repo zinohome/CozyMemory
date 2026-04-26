@@ -52,7 +52,7 @@ export interface DatasetListResponse {
 export interface AddKnowledgeResponse {
   success: boolean;
   data_id?: string;
-  dataset_name?: string;
+  dataset?: string;
   message?: string;
 }
 

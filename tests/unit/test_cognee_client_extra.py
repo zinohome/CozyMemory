@@ -148,12 +148,14 @@ async def test_cognee_create_dataset(cognee_client):
 @pytest.mark.asyncio
 async def test_cognee_cognify(cognee_client):
     """CogneeClient.cognify 成功"""
-    mock_response = httpx.Response(200, json={"run_id": "run_1", "status": "pending"})
+    mock_response = httpx.Response(200, json={
+        "ds-uuid": {"status": "PipelineRunStarted", "pipeline_run_id": "run_1", "dataset_id": "ds-uuid"}
+    })
     with patch.object(
         cognee_client._client, "request", new_callable=AsyncMock, return_value=mock_response
     ):
         result = await cognee_client.cognify(datasets=["ds1"], run_in_background=True)
-        assert result["run_id"] == "run_1"
+        assert result["ds-uuid"]["pipeline_run_id"] == "run_1"
 
 
 @pytest.mark.asyncio

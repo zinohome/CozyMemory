@@ -366,7 +366,7 @@ async def search_knowledge(
         if not request.dataset:
             raise HTTPException(
                 status_code=400,
-                detail="dataset is required when using an App API key",
+                detail="使用 App API Key 时必须在请求中指定 dataset 字段",
             )
         existing_id = await resolve_name_to_id(service, request.dataset)
         if existing_id is None:
@@ -387,15 +387,17 @@ async def search_knowledge(
     "/cognify/status/{job_id}",
     response_model=CognifyStatusResponse,
     responses={502: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
-    summary="查询 Cognify 任务状态",
+    summary="查询 Cognify 任务状态（实验性）",
+    deprecated=True,
 )
 async def get_cognify_status(
     job_id: str,
     service: KnowledgeService = Depends(get_knowledge_service),
 ) -> CognifyStatusResponse | JSONResponse:
-    """查询知识图谱构建任务的当前状态。
+    """查询知识图谱构建任务的当前状态（实验性，部分 Cognee 版本不支持）。
 
     `job_id` 为 `POST /knowledge/cognify` 返回的 `pipeline_run_id`。
+    当前 Cognee 版本对已完成的任务可能返回 404。
     """
     try:
         return await service.get_cognify_status(job_id=job_id)

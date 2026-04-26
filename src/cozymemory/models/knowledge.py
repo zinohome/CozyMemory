@@ -96,7 +96,7 @@ class KnowledgeAddResponse(BaseModel):
 
     success: bool = True
     data_id: str | None = Field(None, description="数据项 ID")
-    dataset_name: str | None = Field(None)
+    dataset: str | None = Field(None, description="数据集名称")
     message: str = ""
 
 
@@ -104,7 +104,7 @@ class KnowledgeCognifyResponse(BaseModel):
     """知识图谱构建响应"""
 
     success: bool = True
-    pipeline_run_id: str | None = Field(None, description="管道运行 ID")
+    pipeline_run_id: str | None = Field(None, description="管道运行 ID（仅作为触发标识，状态查询为实验性功能）")
     status: str = Field("pending", description="状态: pending/running/completed/failed")
     message: str = ""
 

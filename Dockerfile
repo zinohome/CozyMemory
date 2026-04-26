@@ -52,8 +52,13 @@ COPY --chown=cozymemory:cozymemory pyproject.toml ./
 # 安装应用包（注册 CLI entry_points）
 RUN pip install --no-cache-dir -e .
 
-# 复制 supervisord 配置
+# 复制 alembic 迁移文件（启动时自动升级数据库）
+COPY --chown=cozymemory:cozymemory alembic.ini ./
+COPY --chown=cozymemory:cozymemory alembic/ ./alembic/
+
+# 复制 supervisord 配置和 entrypoint
 COPY --chown=cozymemory:cozymemory deploy/supervisord.conf /etc/supervisor/conf.d/cozymemory.conf
+COPY --chown=cozymemory:cozymemory deploy/entrypoint.sh /app/entrypoint.sh
 
 # 环境变量
 ENV PYTHONUNBUFFERED=1 \
@@ -72,5 +77,6 @@ EXPOSE 8000 50051
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" || exit 1
 
-# 启动命令：supervisord 同时管理 REST API 和 gRPC Server
+# entrypoint 先执行数据库迁移，再启动 supervisord
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/cozymemory.conf"]

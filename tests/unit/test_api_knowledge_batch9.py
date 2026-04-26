@@ -42,7 +42,7 @@ async def client(mock_service):
 async def test_add_files_single_file(client, mock_service):
     mock_service.add_files = AsyncMock(
         return_value=KnowledgeAddResponse(
-            success=True, dataset_name="ds", message="已上传 1 个文件"
+            success=True, dataset="ds", message="已上传 1 个文件"
         )
     )
     response = await client.post(
@@ -53,7 +53,7 @@ async def test_add_files_single_file(client, mock_service):
     assert response.status_code == 200
     body = response.json()
     assert body["success"] is True
-    assert body["dataset_name"] == "ds"
+    assert body["dataset"] == "ds"
     # service 收到的 payload 形状正确
     mock_service.add_files.assert_awaited_once()
     kwargs = mock_service.add_files.await_args.kwargs
@@ -69,7 +69,7 @@ async def test_add_files_single_file(client, mock_service):
 @pytest.mark.asyncio
 async def test_add_files_multiple_files(client, mock_service):
     mock_service.add_files = AsyncMock(
-        return_value=KnowledgeAddResponse(success=True, dataset_name="ds")
+        return_value=KnowledgeAddResponse(success=True, dataset="ds")
     )
     response = await client.post(
         "/api/v1/knowledge/add-files",
@@ -104,7 +104,7 @@ async def test_add_files_empty_file_skipped(client, mock_service):
 async def test_add_files_mixed_empty_and_real(client, mock_service):
     """部分为空部分有内容：空的被过滤，有内容的继续"""
     mock_service.add_files = AsyncMock(
-        return_value=KnowledgeAddResponse(success=True, dataset_name="ds")
+        return_value=KnowledgeAddResponse(success=True, dataset="ds")
     )
     response = await client.post(
         "/api/v1/knowledge/add-files",

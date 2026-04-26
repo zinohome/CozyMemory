@@ -478,7 +478,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
             return knowledge_pb2.AddKnowledgeResponse(
                 success=result.success,
                 data_id=result.data_id or "",
-                dataset_name=result.dataset_name,
+                dataset_name=result.dataset or "",
                 message=result.message,
             )
         except EngineError as exc:
@@ -539,7 +539,7 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
                 if not request.dataset:
                     await context.abort(
                         grpc.StatusCode.FAILED_PRECONDITION,
-                        "dataset is required when using an App API key",
+                        "使用 App API Key 时必须在请求中指定 dataset 字段",
                     )
                     return knowledge_pb2.SearchKnowledgeResponse()
                 existing_id = await _resolve_dataset_name_to_id(svc, request.dataset)

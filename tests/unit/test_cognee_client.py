@@ -49,12 +49,14 @@ async def test_cognee_add():
 async def test_cognee_cognify():
     """CogneeClient.cognify 构建知识图谱"""
     client = CogneeClient(api_url="http://localhost:8000")
-    mock_response = httpx.Response(200, json={"run_id": "pipe_123", "status": "pending"})
+    mock_response = httpx.Response(200, json={
+        "ds-uuid": {"status": "PipelineRunStarted", "pipeline_run_id": "pipe_123", "dataset_id": "ds-uuid"}
+    })
     with patch.object(
         client._client, "request", new_callable=AsyncMock, return_value=mock_response
     ):
         result = await client.cognify(datasets=["my-dataset"])
-        assert result["status"] == "pending"
+        assert "ds-uuid" in result
 
 
 @pytest.mark.asyncio

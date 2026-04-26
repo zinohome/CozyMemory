@@ -22,12 +22,12 @@ def test_profile_insert_request():
     assert req.sync is False
 
 
-def test_profile_insert_request_rejects_non_uuid():
-    with pytest.raises(Exception, match="UUID v4"):
-        ProfileInsertRequest(
-            user_id="user_123",
-            messages=[Message(role="user", content="test")],
-        )
+def test_profile_insert_request_accepts_any_string_user_id():
+    req = ProfileInsertRequest(
+        user_id="customer_001",
+        messages=[Message(role="user", content="test")],
+    )
+    assert req.user_id == "customer_001"
 
 
 def test_profile_flush_request():

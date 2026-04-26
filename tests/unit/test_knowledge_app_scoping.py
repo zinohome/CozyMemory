@@ -63,7 +63,7 @@ def mock_knowledge():
     svc.delete_dataset = AsyncMock(return_value=KnowledgeDeleteResponse(success=True, message=""))
     svc.get_dataset_graph = AsyncMock(return_value=MagicMock())
     svc.add = AsyncMock(return_value=KnowledgeAddResponse(
-        success=True, data_id="data-1", dataset_name="dsNew", message=""
+        success=True, data_id="data-1", dataset="dsNew", message=""
     ))
     return svc
 

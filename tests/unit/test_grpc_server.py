@@ -517,7 +517,7 @@ class TestKnowledgeGrpcServicer:
         mock_svc = MagicMock()
         mock_svc.add = AsyncMock(
             return_value=KnowledgeAddResponse(
-                success=True, data_id="doc-1", dataset_name="default", message="已添加"
+                success=True, data_id="doc-1", dataset="default", message="已添加"
             )
         )
         req = knowledge_pb2.AddKnowledgeRequest(data="CozyMemory 介绍", dataset="default")

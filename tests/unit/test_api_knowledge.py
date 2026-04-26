@@ -98,7 +98,7 @@ async def test_add_knowledge_success(client, mock_service):
     """POST /knowledge/add 添加文档"""
     mock_service.add = AsyncMock(
         return_value=KnowledgeAddResponse(
-            success=True, data_id="doc-1", dataset_name="default", message="数据已添加"
+            success=True, data_id="doc-1", dataset="default", message="数据已添加"
         )
     )
     response = await client.post(

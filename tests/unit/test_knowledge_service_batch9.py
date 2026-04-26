@@ -26,7 +26,7 @@ async def test_add_files_forwards_to_client(service, mock_client):
         files=[("a.txt", b"A", "text/plain")], dataset="ds"
     )
     assert resp.success is True
-    assert resp.dataset_name == "ds"
+    assert resp.dataset == "ds"
     assert "1 个文件" in resp.message
     mock_client.add_files.assert_awaited_once()
 

@@ -15,7 +15,9 @@ from cozymemory.services.knowledge import KnowledgeService
 def mock_cognee_client():
     client = MagicMock()
     client.add = AsyncMock(return_value={"id": "data_123"})
-    client.cognify = AsyncMock(return_value={"run_id": "pipe_123", "status": "pending"})
+    client.cognify = AsyncMock(return_value={
+        "ds-uuid": {"status": "PipelineRunStarted", "pipeline_run_id": "pipe_123", "dataset_id": "ds-uuid"}
+    })
     client.search = AsyncMock(
         return_value=[
             KnowledgeSearchResult(id="n1", text="结果1", score=0.9),

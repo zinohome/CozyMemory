@@ -199,7 +199,7 @@ async def test_search_with_all_search_types(client):
 @pytest.mark.asyncio
 async def test_cognify_without_datasets_omits_key(client):
     """cognify() 不提供 datasets 时 payload 中不应有 datasets 键"""
-    mock_req = _mock(httpx.Response(200, json={"run_id": "r1", "status": "pending"}))
+    mock_req = _mock(httpx.Response(200, json={"ds-uuid": {"status": "PipelineRunStarted", "pipeline_run_id": "r1"}}))
     with patch.object(client._client, "request", mock_req):
         await client.cognify()
 
@@ -209,7 +209,7 @@ async def test_cognify_without_datasets_omits_key(client):
 @pytest.mark.asyncio
 async def test_cognify_with_datasets_includes_key(client):
     """cognify(datasets=[...]) 应在 payload 中包含 datasets 键"""
-    mock_req = _mock(httpx.Response(200, json={"run_id": "r1", "status": "pending"}))
+    mock_req = _mock(httpx.Response(200, json={"ds-uuid": {"status": "PipelineRunStarted", "pipeline_run_id": "r1"}}))
     with patch.object(client._client, "request", mock_req):
         await client.cognify(datasets=["ds1", "ds2"])
 
@@ -219,12 +219,12 @@ async def test_cognify_with_datasets_includes_key(client):
 @pytest.mark.asyncio
 async def test_cognify_run_in_background_false(client):
     """cognify(run_in_background=False) 同步模式正确传递"""
-    mock_req = _mock(httpx.Response(200, json={"run_id": "r1", "status": "completed"}))
+    mock_req = _mock(httpx.Response(200, json={"ds-uuid": {"status": "completed", "pipeline_run_id": "r1"}}))
     with patch.object(client._client, "request", mock_req):
         result = await client.cognify(run_in_background=False)
 
     assert mock_req.call_args[1]["json"]["run_in_background"] is False
-    assert result["status"] == "completed"
+    assert result["ds-uuid"]["status"] == "completed"
 
 
 # ===== list_datasets() =====
