@@ -8,13 +8,15 @@ import { getHeaderData, getFooterData } from '~/navigation';
 import { getLocaleFromUrl } from '~/i18n';
 
 import type { MetaData } from '~/types';
+import type { Locale } from '~/i18n';
 
 export interface Props {
   metadata?: MetaData;
+  locale?: Locale;
 }
 
-const { metadata } = Astro.props;
-const locale = getLocaleFromUrl(Astro.url);
+const { metadata, locale: localeProp } = Astro.props;
+const locale = localeProp ?? getLocaleFromUrl(Astro.url);
 const headerData = getHeaderData(locale);
 const footerData = getFooterData(locale);
 ---
@@ -24,7 +26,7 @@ const footerData = getFooterData(locale);
     <Announcement />
   </slot>
   <slot name="header">
-    <Header {...headerData} isSticky showRssFeed showToggleTheme />
+    <Header {...headerData} locale={locale} isSticky showRssFeed showToggleTheme />
   </slot>
   <main>
     <slot />

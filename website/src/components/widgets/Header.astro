@@ -8,7 +8,7 @@ import Button from '~/components/ui/Button.astro';
 import { getHomePermalink, getPermalink } from '~/utils/permalinks';
 import { trimSlash, getAsset } from '~/utils/permalinks';
 import type { CallToAction } from '~/types';
-import { getLocaleFromUrl } from '~/i18n';
+import { getLocaleFromUrl, type Locale } from '~/i18n';
 
 interface Link {
   text?: string;
@@ -31,6 +31,7 @@ export interface Props {
   showToggleTheme?: boolean;
   showRssFeed?: boolean;
   position?: string;
+  locale?: Locale;
 }
 
 const {
@@ -43,10 +44,11 @@ const {
   showToggleTheme = false,
   showRssFeed = false,
   position = 'center',
+  locale: localeProp,
 } = Astro.props;
 
 const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
-const currentLocale = getLocaleFromUrl(Astro.url);
+const currentLocale = localeProp ?? getLocaleFromUrl(Astro.url);
 const switchLabel = currentLocale === 'en' ? '中文' : 'EN';
 const zhRoutes: Record<string, string> = { '/': '/zh/', '/features': '/zh/features', '/about': '/zh/about' };
 const enRoutes: Record<string, string> = { '/zh/': '/', '/zh/features': '/features', '/zh/about': '/about' };
