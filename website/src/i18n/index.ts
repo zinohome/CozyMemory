@@ -10,7 +10,11 @@ export function useTranslations(locale: Locale = 'en') {
 }
 
 export function getLocaleFromUrl(url: URL): Locale {
-  const [, locale] = url.pathname.split('/');
+  const basePath = '/CozyMemory';
+  const pathname = url.pathname.startsWith(basePath)
+    ? url.pathname.slice(basePath.length)
+    : url.pathname;
+  const [, locale] = pathname.split('/');
   if (locale === 'zh') return 'zh';
   return 'en';
 }

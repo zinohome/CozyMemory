@@ -2,7 +2,8 @@
 import PageLayout from '~/layouts/PageLayout.astro';
 import Header from '~/components/widgets/Header.astro';
 
-import { headerData } from '~/navigation';
+import { getHeaderData } from '~/navigation';
+import { getLocaleFromUrl } from '~/i18n';
 import type { MetaData } from '~/types';
 
 export interface Props {
@@ -10,6 +11,8 @@ export interface Props {
 }
 
 const { metadata } = Astro.props;
+const locale = getLocaleFromUrl(Astro.url);
+const headerData = getHeaderData(locale);
 ---
 
 <PageLayout metadata={metadata}>
