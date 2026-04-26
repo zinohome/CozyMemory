@@ -1,7 +1,7 @@
 import { getPermalink, getBlogPermalink, getAsset } from './utils/permalinks';
 
-const GITHUB_URL = 'https://github.com/ZhangJun/CozyMemory';
-const GITHUB_DOCS = 'https://github.com/ZhangJun/CozyMemory/tree/main/docs';
+const GITHUB_URL = 'https://github.com/zinohome/CozyMemory';
+const GITHUB_DOCS = 'https://github.com/zinohome/CozyMemory/tree/main/docs';
 
 export const headerData = {
   links: [
@@ -85,17 +85,14 @@ export const footerData = {
       ],
     },
   ],
-  secondaryLinks: [
-    { text: 'Terms', href: getPermalink('/terms') },
-    { text: 'Privacy Policy', href: getPermalink('/privacy') },
-  ],
+  secondaryLinks: [],
   socialLinks: [
     { ariaLabel: 'Github', icon: 'tabler:brand-github', href: GITHUB_URL },
     { ariaLabel: 'RSS', icon: 'tabler:rss', href: getAsset('/rss.xml') },
   ],
   footNote: `
     Built with <a class="text-blue-600 underline dark:text-muted" href="https://astro.build/">Astro</a> &amp;
-    <a class="text-blue-600 underline dark:text-muted" href="https://github.com/arthelokyo/astrowind">AstroWind</a> ·
-    Licensed under <a class="text-blue-600 underline dark:text-muted" href="https://github.com/ZhangJun/CozyMemory/blob/main/LICENSE">AGPL-3.0</a>
+    <a class="text-blue-600 underline dark:text-muted" href="https://github.com/onwidget/astrowind">AstroWind</a> ·
+    Licensed under <a class="text-blue-600 underline dark:text-muted" href="https://github.com/zinohome/CozyMemory/blob/main/LICENSE">AGPL-3.0</a>
   `,
 };

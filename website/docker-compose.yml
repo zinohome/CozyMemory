@@ -1,6 +1,6 @@
 services:
-  astrowind:
+  cozymemory-website:
     build: .
-    container_name: astrowind
+    container_name: cozymemory-website
     ports:
       - 8080:8080

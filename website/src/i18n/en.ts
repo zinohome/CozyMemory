@@ -31,10 +31,10 @@ export const en = {
     },
   },
   stats: {
-    engines: '3 Engines',
-    endpoints: '50+ API Endpoints',
-    tests: '524 Unit Tests',
-    protocols: 'REST + gRPC',
+    engines: 'Engines',
+    endpoints: 'API Endpoints',
+    tests: 'Unit Tests',
+    protocols: 'Protocols',
   },
   why: {
     title: 'Why CozyMemory?',

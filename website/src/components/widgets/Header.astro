@@ -8,6 +8,7 @@ import Button from '~/components/ui/Button.astro';
 import { getHomePermalink } from '~/utils/permalinks';
 import { trimSlash, getAsset } from '~/utils/permalinks';
 import type { CallToAction } from '~/types';
+import { getLocaleFromUrl } from '~/i18n';
 
 interface Link {
   text?: string;
@@ -45,6 +46,13 @@ const {
 } = Astro.props;
 
 const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
+const currentLocale = getLocaleFromUrl(Astro.url);
+const switchLabel = currentLocale === 'en' ? '中文' : 'EN';
+const zhPages = ['/', '/features', '/about'];
+const enPath = currentLocale === 'zh' ? currentPath.replace(/^\/zh\/?/, '/').replace(/\/$/, '') || '/' : currentPath;
+const switchPath = currentLocale === 'en'
+  ? (zhPages.includes(enPath) ? `/zh${enPath === '/' ? '/' : enPath}` : '/zh/')
+  : enPath;
 ---
 
 <header
@@ -137,6 +145,13 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
     >
       <div class="items-center flex justify-between w-full md:w-auto">
         <div class="flex">
+          <a
+            href={switchPath}
+            class="text-muted dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5 inline-flex items-center font-medium"
+            aria-label={`Switch to ${switchLabel}`}
+          >
+            {switchLabel}
+          </a>
           {showToggleTheme && <ToggleTheme iconClass="w-6 h-6 md:w-5 md:h-5 md:inline-block" />}
           {
             showRssFeed && (

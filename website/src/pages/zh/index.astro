@@ -11,8 +11,8 @@ import { useTranslations } from '~/i18n';
 
 const t = useTranslations('zh');
 
-const GITHUB_URL = 'https://github.com/ZhangJun/CozyMemory';
-const GITHUB_DOCS = 'https://github.com/ZhangJun/CozyMemory/tree/main/docs';
+const GITHUB_URL = 'https://github.com/zinohome/CozyMemory';
+const GITHUB_DOCS = 'https://github.com/zinohome/CozyMemory/tree/main/docs';
 
 const metadata = {
   title: 'CozyMemory — 统一 AI 记忆服务平台',
@@ -84,8 +84,8 @@ const metadata = {
   <Stats
     stats={[
       { title: t.stats.engines, amount: '3' },
-      { title: 'API 端点', amount: '50+' },
-      { title: '单元测试', amount: '524' },
+      { title: t.stats.endpoints, amount: '50+' },
+      { title: t.stats.tests, amount: '524' },
       { title: t.stats.protocols, amount: '2' },
     ]}
   />

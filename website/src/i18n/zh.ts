@@ -30,10 +30,10 @@ export const zh = {
     },
   },
   stats: {
-    engines: '3 大引擎',
-    endpoints: '50+ API 端点',
-    tests: '524 单元测试',
-    protocols: 'REST + gRPC',
+    engines: '大引擎',
+    endpoints: 'API 端点',
+    tests: '单元测试',
+    protocols: '协议',
   },
   why: {
     title: '为什么选择 CozyMemory？',
