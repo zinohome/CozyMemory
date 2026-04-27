@@ -12,6 +12,9 @@ MEMOBASE_DB_PASS="${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}"
 COZYMEMORY_DB_USER="${COZYMEMORY_DB_USER:-cozymemory_user}"
 COZYMEMORY_DB_PASS="${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}"
 
+# 强制使用 scram-sha-256 密码加密（pg_hba.conf 对网络连接要求 scram-sha-256）
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "SET password_encryption = 'scram-sha-256';"
+
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     -- Cognee
     CREATE USER ${COGNEE_DB_USER} WITH PASSWORD '${COGNEE_DB_PASS}';
@@ -38,12 +41,3 @@ EOSQL
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "cognee_db" -c "CREATE EXTENSION IF NOT EXISTS vector;"
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "memobase" -c "CREATE EXTENSION IF NOT EXISTS vector;"
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "cozymemory" -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-
-# 确保密码使用 scram-sha-256 编码（pg_hba.conf 对网络连接要求 scram-sha-256）
-# trust 模式下 CREATE USER WITH PASSWORD 可能不生成正确的 hash
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL2
-    SET password_encryption = 'scram-sha-256';
-    ALTER USER ${COGNEE_DB_USER} WITH PASSWORD '${COGNEE_DB_PASS}';
-    ALTER USER ${MEMOBASE_DB_USER} WITH PASSWORD '${MEMOBASE_DB_PASS}';
-    ALTER USER ${COZYMEMORY_DB_USER} WITH PASSWORD '${COZYMEMORY_DB_PASS}';
-EOSQL2

@@ -30,6 +30,13 @@ services:
       MEMOBASE_DB_PASSWORD: ${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}
       COZYMEMORY_DB_USER: ${COZYMEMORY_DB_USER:-cozymemory_user}
       COZYMEMORY_DB_PASSWORD: ${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}
+    # healthcheck：用密码认证连接 cozymemory 库，确保 init.sh 完成且密码可用
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=$${COZYMEMORY_DB_PASSWORD} psql -h 127.0.0.1 -U $${COZYMEMORY_DB_USER:-cozymemory_user} -d cozymemory -c 'SELECT 1' -q"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
     # 暴露到 host 5433（避开 5432 的另一个 cozyenginev2 老 PG 冲突），
     # 供本地 alembic / 单元测试连接；容器间仍通过 cozy_postgres:5432
     ports:
@@ -190,10 +197,14 @@ services:
       - DEFAULT_USER_PASSWORD=${COGNEE_ADMIN_PASSWORD:-passw0rd}
       - TIKTOKEN_CACHE_DIR=/root/.tiktoken
     depends_on:
-      - postgres
-      - redis
-      - minio
-      - falkordb
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+      falkordb:
+        condition: service_started
     volumes:
       - /data/CozyMemory/cognee/data:/app/data
       - /data/CozyMemory/cognee/logs:/app/logs
@@ -222,7 +233,8 @@ services:
       - NEXT_DISABLE_DEV_INDICATORS=true
       - NEXT_TELEMETRY_DISABLED=1
     depends_on:
-      - cognee
+      cognee:
+        condition: service_started
     networks:
       - 1panel-network
     logging: *default-logging
@@ -256,8 +268,10 @@ services:
       # patch未生效时回退：使用 cozy_postgres 做向量存储（pgvector）
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
-      - qdrant
-      - postgres
+      qdrant:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     volumes:
       - /data/CozyMemory/mem0/history:/app/history
       - /data/CozyMemory/mem0/logs:/app/logs
@@ -282,7 +296,8 @@ services:
       NEXT_PUBLIC_API_URL: http://192.168.66.41:8081
       NEXT_PUBLIC_USER_ID: user
     depends_on:
-      - mem0-api
+      mem0-api:
+        condition: service_started
     networks:
       - 1panel-network
     logging: *default-logging
@@ -321,8 +336,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - /data/CozyMemory/tiktoken:/root/.tiktoken
       - /data/CozyMemory/memobase:/app/data
@@ -375,10 +392,14 @@ services:
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
       COZY_API_KEYS: ${COZY_API_KEYS:-}
     depends_on:
-      - mem0-api
-      - memobase-server-api
-      - cognee
-      - redis
+      mem0-api:
+        condition: service_started
+      memobase-server-api:
+        condition: service_started
+      cognee:
+        condition: service_started
+      redis:
+        condition: service_started
     networks:
       - 1panel-network
     logging: *default-logging
@@ -407,7 +428,8 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
       LLM_MODEL: gpt-4.1-nano-2025-04-14
     depends_on:
-      - cozymemory-api
+      cozymemory-api:
+        condition: service_started
     networks:
       - 1panel-network
     logging: *default-logging
@@ -503,14 +525,22 @@ services:
       - /data/CozyMemory/caddy/data:/data
       - /data/CozyMemory/caddy/config:/config
     depends_on:
-      - cognee
-      - cognee-frontend
-      - mem0-api
-      - mem0-webui
-      - memobase-server-api
-      - cozymemory-api
-      - cozymemory-ui
-      - grafana
+      cognee:
+        condition: service_started
+      cognee-frontend:
+        condition: service_started
+      mem0-api:
+        condition: service_started
+      mem0-webui:
+        condition: service_started
+      memobase-server-api:
+        condition: service_started
+      cozymemory-api:
+        condition: service_started
+      cozymemory-ui:
+        condition: service_started
+      grafana:
+        condition: service_started
     networks:
       - 1panel-network
     logging: *default-logging
