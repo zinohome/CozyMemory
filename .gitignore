@@ -1,3 +1,6 @@
+# Credentials (never commit)
+docs/credentials-dev.md
+
 # Python
 __pycache__/
 *.py[cod]
