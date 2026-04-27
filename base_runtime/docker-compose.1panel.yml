@@ -83,30 +83,41 @@ services:
     labels:
       createdBy: "Apps"
 
-  neo4j:
-    image: neo4j:2026.03.1
-    container_name: cozy_neo4j
-    restart: unless-stopped
-    environment:
-      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?NEO4J_PASSWORD required}
-      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
-      NEO4J_dbms_memory_heap_initial__size: 512m
-      NEO4J_dbms_memory_heap_max__size: 1G
-    volumes:
-      - /data/CozyMemory/neo4j/data:/data
-      - /data/CozyMemory/neo4j/logs:/logs
-      - /data/CozyMemory/neo4j/plugins:/plugins
-    networks:
-      - 1panel-network
-    logging: *default-logging
-    labels:
-      createdBy: "Apps"
-    deploy:
-      resources:
-        limits:
-          memory: 2g
-        reservations:
-          memory: 512m
+  # ──────── Neo4j（已禁用 — 多租户模式使用 Kuzu 替代）────────
+  # 如需切回 Neo4j（单用户/开发模式），取消注释本段并修改 cognee 环境变量：
+  #   GRAPH_DATABASE_PROVIDER=neo4j
+  #   GRAPH_DATABASE_URL=bolt://neo4j:7687
+  #   GRAPH_DATABASE_USERNAME=neo4j
+  #   GRAPH_DATABASE_PASSWORD=${NEO4J_PASSWORD}
+  #   VECTOR_DB_PROVIDER=pgvector
+  #   VECTOR_DB_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@postgres:5432/cognee_db
+  #   ENABLE_BACKEND_ACCESS_CONTROL=false
+  # 同时需将 cognee 的 depends_on 中添加 neo4j
+  #
+  # neo4j:
+  #   image: neo4j:2026.03.1
+  #   container_name: cozy_neo4j
+  #   restart: unless-stopped
+  #   environment:
+  #     NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?NEO4J_PASSWORD required}
+  #     NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+  #     NEO4J_dbms_memory_heap_initial__size: 512m
+  #     NEO4J_dbms_memory_heap_max__size: 1G
+  #   volumes:
+  #     - /data/CozyMemory/neo4j/data:/data
+  #     - /data/CozyMemory/neo4j/logs:/logs
+  #     - /data/CozyMemory/neo4j/plugins:/plugins
+  #   networks:
+  #     - 1panel-network
+  #   logging: *default-logging
+  #   labels:
+  #     createdBy: "Apps"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 2g
+  #       reservations:
+  #         memory: 512m
 
   # ==========================================
   # Cognee 服务群
@@ -140,13 +151,8 @@ services:
       - DB_NAME=cognee_db
       - DB_USERNAME=${COGNEE_DB_USER:-cognee_user}
       - DB_PASSWORD=${COGNEE_DB_PASSWORD}
-      - VECTOR_DB_PROVIDER=pgvector
-      - VECTOR_DB_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@postgres:5432/cognee_db
-      - GRAPH_DATABASE_PROVIDER=neo4j
-      - GRAPH_DATABASE_NAME=neo4j
-      - GRAPH_DATABASE_URL=bolt://neo4j:7687
-      - GRAPH_DATABASE_USERNAME=neo4j
-      - GRAPH_DATABASE_PASSWORD=${NEO4J_PASSWORD}
+      - VECTOR_DB_PROVIDER=lancedb
+      - GRAPH_DATABASE_PROVIDER=kuzu
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - S3_ENDPOINT=http://minio:9000
       - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
@@ -154,9 +160,9 @@ services:
       - S3_BUCKET_NAME=cognee-storage
       - S3_USE_SSL=false
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
-      - EXTRAS=api,postgres,neo4j
+      - EXTRAS=api,postgres
       - TELEMETRY_DISABLED=1
-      - ENABLE_BACKEND_ACCESS_CONTROL=false
+      - ENABLE_BACKEND_ACCESS_CONTROL=true
       - REQUIRE_AUTHENTICATION=false
       - DEFAULT_USER_EMAIL=admin@cognee.com
       - DEFAULT_USER_PASSWORD=${COGNEE_ADMIN_PASSWORD:-passw0rd}
@@ -164,7 +170,6 @@ services:
     depends_on:
       - postgres
       - redis
-      - neo4j
       - minio
     volumes:
       - /data/CozyMemory/cognee/data:/app/data
