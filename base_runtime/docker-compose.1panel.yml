@@ -83,6 +83,24 @@ services:
     labels:
       createdBy: "Apps"
 
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: cozy_falkordb
+    restart: unless-stopped
+    volumes:
+      - /data/CozyMemory/falkordb:/data
+    networks:
+      - 1panel-network
+    logging: *default-logging
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 256m
+
   # ──────── Neo4j（已禁用 — 多租户模式使用 Kuzu 替代）────────
   # 如需切回 Neo4j（单用户/开发模式），取消注释本段并修改 cognee 环境变量：
   #   GRAPH_DATABASE_PROVIDER=neo4j
@@ -152,7 +170,9 @@ services:
       - DB_USERNAME=${COGNEE_DB_USER:-cognee_user}
       - DB_PASSWORD=${COGNEE_DB_PASSWORD}
       - VECTOR_DB_PROVIDER=lancedb
-      - GRAPH_DATABASE_PROVIDER=kuzu
+      - GRAPH_DATABASE_PROVIDER=falkor
+      - GRAPH_DATABASE_URL=redis://falkordb:6379
+      - GRAPH_DATABASE_NAME=cognee
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - S3_ENDPOINT=http://minio:9000
       - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
@@ -171,6 +191,7 @@ services:
       - postgres
       - redis
       - minio
+      - falkordb
     volumes:
       - /data/CozyMemory/cognee/data:/app/data
       - /data/CozyMemory/cognee/logs:/app/logs
