@@ -106,6 +106,16 @@ build_cognee_frontend() {
     rm -rf "$dst"
     cp -r "$src" "$dst"
 
+    # Apply patches (CozyCognee/patches/*.patch)
+    local patch_dir="$cozy_dir/patches"
+    if [ -d "$patch_dir" ]; then
+        for p in "$patch_dir"/*.patch; do
+            [ -f "$p" ] || continue
+            log "Applying patch: $(basename "$p") ..."
+            git -C "$dst" apply "$(realpath "$p")" || log "WARN: patch $(basename "$p") failed, skipping"
+        done
+    fi
+
     docker build \
         -f "$cozy_dir/deployment/docker/cognee-frontend/Dockerfile" \
         -t cognee-frontend:local-0.4.1 \
