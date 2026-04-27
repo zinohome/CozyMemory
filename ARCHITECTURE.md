@@ -101,7 +101,7 @@ ui/                            # Next.js 16 + React 19 Dashboard
 sdks/
 ├── python/                    # cozymemory (PyPI 命名)
 └── js/                        # @cozymemory/sdk (npm 命名)
-base_runtime/
+CozyMemory/
 ├── docker-compose.1panel.yml  # 11 服务全家桶
 ├── Caddyfile
 └── build.sh                   # 镜像构建脚本
@@ -233,7 +233,7 @@ ui/src/app/
 
 ## 9. 部署
 
-`base_runtime/docker-compose.1panel.yml` 一套启动 11 个服务：
+`CozyMemory/docker-compose.1panel.yml` 一套启动 11 个服务：
 
 | 容器 | 角色 | 镜像来源 |
 |---|---|---|

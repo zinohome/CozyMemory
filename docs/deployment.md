@@ -48,17 +48,17 @@ git clone https://github.com/zinohome/CozyMemory.git
 cd CozyMemory
 
 # 配置环境变量
-cp base_runtime/.env.example base_runtime/.env
-vi base_runtime/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
+cp CozyMemory/.env.example CozyMemory/.env
+vi CozyMemory/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
 
 # 替换 docker-compose 中的服务器 IP（Cognee/Mem0/Memobase/UI 前端需要）
-sed -i 's/192.168.32.40/你的服务器IP/g' base_runtime/docker-compose.1panel.yml
+sed -i 's/192.168.32.40/你的服务器IP/g' CozyMemory/docker-compose.1panel.yml
 
 # 构建 7 个自定义镜像（约 25-30 分钟）
-sudo ./base_runtime/build.sh all
+sudo ./CozyMemory/build.sh all
 
 # 启动全部 15 个容器
-sudo docker compose -f base_runtime/docker-compose.1panel.yml up -d
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml up -d
 
 # 等待 ~60 秒，验证
 curl http://localhost:8000/api/v1/health
@@ -68,7 +68,7 @@ curl http://localhost:8000/api/v1/health
 
 ## 4. 环境变量
 
-所有环境变量通过 `base_runtime/.env` 配置，docker compose 自动加载。
+所有环境变量通过 `CozyMemory/.env` 配置，docker compose 自动加载。
 
 ### 必填项
 
@@ -161,18 +161,18 @@ curl http://localhost:8000/api/v1/health
 7 个自定义镜像由 `build.sh` 从源码构建：
 
 ```bash
-sudo ./base_runtime/build.sh all            # 构建全部（~25 分钟）
-sudo ./base_runtime/build.sh cozymemory     # 只构建 API
-sudo ./base_runtime/build.sh cozymemory-ui  # 只构建 UI
-sudo ./base_runtime/build.sh cognee         # 只构建 Cognee
-sudo ./base_runtime/build.sh mem0-api       # 只构建 Mem0
-sudo ./base_runtime/build.sh memobase       # 只构建 Memobase
+sudo ./CozyMemory/build.sh all            # 构建全部（~25 分钟）
+sudo ./CozyMemory/build.sh cozymemory     # 只构建 API
+sudo ./CozyMemory/build.sh cozymemory-ui  # 只构建 UI
+sudo ./CozyMemory/build.sh cognee         # 只构建 Cognee
+sudo ./CozyMemory/build.sh mem0-api       # 只构建 Mem0
+sudo ./CozyMemory/build.sh memobase       # 只构建 Memobase
 ```
 
 构建完成后重启对应容器：
 
 ```bash
-sudo docker compose -f base_runtime/docker-compose.1panel.yml \
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml \
   up -d --force-recreate cozymemory-api cozymemory-ui
 ```
 
@@ -231,7 +231,7 @@ logging:
 ```bash
 sudo docker logs -f cozymemory --tail 100      # CozyMemory API
 sudo docker logs -f cozy_cognee --tail 100      # Cognee
-sudo docker compose -f base_runtime/docker-compose.1panel.yml logs -f  # 全部
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml logs -f  # 全部
 ```
 
 ---
@@ -241,7 +241,7 @@ sudo docker compose -f base_runtime/docker-compose.1panel.yml logs -f  # 全部
 ### Prometheus
 
 - 采集 CozyMemory `/metrics` 端点
-- 告警规则（`base_runtime/prometheus/alerts.yml`）：
+- 告警规则（`CozyMemory/prometheus/alerts.yml`）：
   - `EngineDown`：引擎连续 2 分钟不可达
   - `HighEngineLatency`：P95 延迟 > 5 秒
   - `HighEngineErrorRate`：错误率 > 10%
@@ -289,14 +289,14 @@ curl http://localhost:8000/api/v1/health
 ### 重启单个服务
 
 ```bash
-sudo docker compose -f base_runtime/docker-compose.1panel.yml restart cozymemory-api
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml restart cozymemory-api
 ```
 
 ### 重建并重启
 
 ```bash
-sudo ./base_runtime/build.sh cozymemory
-sudo docker compose -f base_runtime/docker-compose.1panel.yml \
+sudo ./CozyMemory/build.sh cozymemory
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml \
   up -d --force-recreate cozymemory-api
 ```
 

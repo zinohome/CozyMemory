@@ -125,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `X-Cozy-API-Key` header 鉴权
 
 ### Added — 运维
-- `base_runtime/build.sh all` 一键构建 7 个自定义镜像
+- `CozyMemory/build.sh all` 一键构建 7 个自定义镜像
 - `docker-compose.1panel.yml` 部署 14 个容器
 - 329 单元测试 + 50 REST 集成测试
 

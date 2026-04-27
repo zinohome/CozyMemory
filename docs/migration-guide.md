@@ -71,7 +71,7 @@ alembic downgrade base
 
 5. **重启服务**
    ```bash
-   cd base_runtime
+   cd CozyMemory
    sudo docker compose -f docker-compose.1panel.yml up -d --force-recreate cozymemory-api
    ```
 

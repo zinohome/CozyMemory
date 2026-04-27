@@ -25,7 +25,7 @@ set -euo pipefail
 # ── 路径 ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-BASE_RUNTIME_DIR="$ROOT_DIR/base_runtime"
+BASE_RUNTIME_DIR="$ROOT_DIR/CozyMemory"
 COMPOSE_FILE="$BASE_RUNTIME_DIR/docker-compose.1panel.yml"
 
 # ── 颜色 ──────────────────────────────────────────────────────────────────────

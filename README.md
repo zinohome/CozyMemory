@@ -28,17 +28,17 @@ git clone https://github.com/zinohome/CozyMemory.git
 cd CozyMemory
 
 # 配置环境变量
-cp base_runtime/.env.example base_runtime/.env
-vi base_runtime/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
+cp CozyMemory/.env.example CozyMemory/.env
+vi CozyMemory/.env    # 必填：LLM_API_KEY, 各数据库密码, JWT_SECRET
 
 # 替换 docker-compose 中的服务器 IP（5 处）
-sed -i 's/192.168.32.40/你的服务器IP/g' base_runtime/docker-compose.1panel.yml
+sed -i 's/192.168.32.40/你的服务器IP/g' CozyMemory/docker-compose.1panel.yml
 
 # 构建 7 个自定义镜像（约 25-30 分钟）
-sudo ./base_runtime/build.sh all
+sudo ./CozyMemory/build.sh all
 
 # 启动全部 15 个容器
-sudo docker compose -f base_runtime/docker-compose.1panel.yml up -d
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml up -d
 
 # 等待 ~60 秒，验证
 curl http://localhost:8000/api/v1/health
@@ -232,9 +232,9 @@ npx tsc --noEmit                       # 类型检查
 
 ### 重建镜像
 ```bash
-sudo ./base_runtime/build.sh cozymemory      # 只重建 API
-sudo ./base_runtime/build.sh cozymemory-ui   # 只重建 UI
-sudo docker compose -f base_runtime/docker-compose.1panel.yml \
+sudo ./CozyMemory/build.sh cozymemory      # 只重建 API
+sudo ./CozyMemory/build.sh cozymemory-ui   # 只重建 UI
+sudo docker compose -f CozyMemory/docker-compose.1panel.yml \
   up -d --force-recreate cozymemory-api cozymemory-ui
 ```
 
@@ -258,7 +258,7 @@ CozyMemory/
 ├── sdks/
 │   ├── python/              # Python SDK (cozymemory)
 │   └── js/                  # JS/TS SDK (@cozymemory/sdk)
-├── base_runtime/            # Docker 部署
+├── CozyMemory/            # Docker 部署
 │   ├── docker-compose.1panel.yml
 │   ├── build.sh
 │   ├── Caddyfile

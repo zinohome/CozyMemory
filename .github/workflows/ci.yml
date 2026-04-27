@@ -90,7 +90,7 @@ jobs:
     runs-on: [self-hosted, cozymemory-prod]
     timeout-minutes: 20
     env:
-      COMPOSE_FILE: base_runtime/docker-compose.1panel.yml
+      COMPOSE_FILE: CozyMemory/docker-compose.1panel.yml
 
     steps:
       - uses: actions/checkout@v4
@@ -102,8 +102,8 @@ jobs:
           if [ ! -L projects ]; then
             ln -sfn /home/ubuntu/CozyProjects/CozyMemory/projects projects
           fi
-          if [ ! -L base_runtime/.env ]; then
-            ln -sfn /home/ubuntu/CozyProjects/CozyMemory/base_runtime/.env base_runtime/.env
+          if [ ! -L CozyMemory/.env ]; then
+            ln -sfn /home/ubuntu/CozyProjects/CozyMemory/CozyMemory/.env CozyMemory/.env
           fi
 
       - name: Snapshot current image IDs (for rollback)
@@ -119,7 +119,7 @@ jobs:
 
       - name: Build images
         run: |
-          cd base_runtime
+          cd CozyMemory
           ./build.sh cozymemory
           ./build.sh cozymemory-ui
 

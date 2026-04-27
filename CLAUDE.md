@@ -35,13 +35,13 @@ ruff format src/ tests/                          # Auto-fix formatting
 # Type checking
 mypy src/cozymemory --ignore-missing-imports
 
-# Backend engines (base_runtime)
-cd base_runtime && ./build.sh all          # Build all custom images
-cd base_runtime && ./build.sh cognee       # Build single image (cognee|mem0-api|mem0-webui|memobase|cognee-frontend|cozymemory)
-docker compose -f base_runtime/docker-compose.1panel.yml up -d    # Start all engines + CozyMemory API
-docker compose -f base_runtime/docker-compose.1panel.yml ps       # Check status
+# Backend engines (CozyMemory)
+cd CozyMemory && ./build.sh all          # Build all custom images
+cd CozyMemory && ./build.sh cognee       # Build single image (cognee|mem0-api|mem0-webui|memobase|cognee-frontend|cozymemory)
+docker compose -f CozyMemory/docker-compose.1panel.yml up -d    # Start all engines + CozyMemory API
+docker compose -f CozyMemory/docker-compose.1panel.yml ps       # Check status
 
-# Quick API smoke tests (requires running base_runtime)
+# Quick API smoke tests (requires running CozyMemory)
 curl http://SERVER_IP:8000/api/v1/health                          # Health check (all 3 engines)
 curl http://SERVER_IP:8000/api/v1/conversations?user_id=u1        # List memories
 curl -X POST http://SERVER_IP:8000/api/v1/conversations \
@@ -59,7 +59,7 @@ curl -X DELETE http://SERVER_IP:8000/api/v1/knowledge \
   -H "Content-Type: application/json" \
   -d '{"data_id":"<data-id>","dataset_id":"<dataset-id>"}'
 
-# Integration tests (requires running base_runtime)
+# Integration tests (requires running CozyMemory)
 COZY_TEST_URL=http://SERVER_IP:8000 pytest tests/integration/ -v          # All 39 tests
 COZY_TEST_URL=http://SERVER_IP:8000 pytest tests/integration/ -k "health" # Subset
 pytest tests/integration/test_api_error_handlers.py -v                    # Error handling (no server needed)
@@ -144,9 +144,9 @@ Proto definitions live in `proto/`. Generated Python code (`*_pb2.py`, `*_pb2_gr
 python -m grpc_tools.protoc -I proto --python_out=src/cozymemory/grpc_server --grpc_python_out=src/cozymemory/grpc_server proto/common.proto proto/conversation.proto proto/profile.proto proto/knowledge.proto
 ```
 
-### Backend engine deployment (`base_runtime/`)
+### Backend engine deployment (`CozyMemory/`)
 
-`base_runtime/docker-compose.1panel.yml` runs 16 services on `1panel-network` (15 long-running + 1 ephemeral `init-data-dirs` for fixing bind mount permissions). Caddy exposes ports: 8000 (CozyMemory unified API), 8080 (Cognee), 8081 (Mem0), 8019 (Memobase), 8088 (UI), 3001 (Grafana), 50051 (gRPC). Custom images are built by `base_runtime/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `192.168.32.40` in the compose file with the actual server IP. Tiktoken cache is auto-downloaded on first engine start.
+`CozyMemory/docker-compose.1panel.yml` runs 16 services on `1panel-network` (15 long-running + 1 ephemeral `init-data-dirs` for fixing bind mount permissions). Caddy exposes ports: 8000 (CozyMemory unified API), 8080 (Cognee), 8081 (Mem0), 8019 (Memobase), 8088 (UI), 3001 (Grafana), 50051 (gRPC). Custom images are built by `CozyMemory/build.sh` from source in sibling `Cozy*` project directories. Before deploying, replace `192.168.32.40` in the compose file with the actual server IP. Tiktoken cache is auto-downloaded on first engine start.
 
 The CozyMemory unified API (`cozymemory:latest`) is built from the root `Dockerfile` using `deploy/supervisord.conf` to run REST (port 8000) and gRPC (port 50051) in a single container.
 
@@ -230,7 +230,7 @@ These are non-obvious behaviors discovered during integration testing. Check her
 - `tests/unit/` — unit tests (mocked, no engine backends needed)
 - `tests/integration/` — integration tests (need running backends)
 - `proto/` — protobuf definitions
-- `base_runtime/` — **current active deployment** for the three backend engines (Mem0, Memobase, Cognee) and their infrastructure (PostgreSQL/pgvector, Redis, Qdrant, MinIO, Neo4j). This is what CozyMemory's service layer connects to. Ongoing development happens here.
+- `CozyMemory/` — **current active deployment** for the three backend engines (Mem0, Memobase, Cognee) and their infrastructure (PostgreSQL/pgvector, Redis, Qdrant, MinIO, Neo4j). This is what CozyMemory's service layer connects to. Ongoing development happens here.
 - `ui/` — Next.js 16 admin frontend; see the "Frontend" section above.
 - `docs/` — reference docs checked into the repo: `api-reference.md`, `architecture.md`, `data-models.md`, `deployment.md`, `sdk-clients.md`. Consult these for deeper detail before exploring source.
 - The top-level `README.md` reflects v0.2.0 state. Trust this file and `pyproject.toml` for build/run commands.

@@ -19,7 +19,7 @@ CozyMemory v0.2.0 有两类使用者：
 
 ## 快速开始
 
-**前置**：base_runtime 已启动（15 个容器），管理 UI 地址 `http://你的服务器IP:8088`。
+**前置**：CozyMemory 已启动（15 个容器），管理 UI 地址 `http://你的服务器IP:8088`。
 
 ### Developer 快速上手（5 步）
 
@@ -61,7 +61,7 @@ CozyMemory v0.2.0 有两类使用者：
 ### Operator 快速上手
 
 1. 访问 `http://你的IP:8088/operator`
-2. 输入 Bootstrap key（`base_runtime/.env` 里的 `COZY_API_KEYS`，默认 `cozy-dev-key-001`）
+2. 输入 Bootstrap key（`CozyMemory/.env` 里的 `COZY_API_KEYS`，默认 `cozy-dev-key-001`）
 3. 进入 Operator Dashboard，可以看到三引擎健康状态
 
 > Bootstrap key 存在 sessionStorage，关闭浏览器自动清除。
