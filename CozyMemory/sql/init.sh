@@ -12,10 +12,11 @@ MEMOBASE_DB_PASS="${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}"
 COZYMEMORY_DB_USER="${COZYMEMORY_DB_USER:-cozymemory_user}"
 COZYMEMORY_DB_PASS="${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}"
 
-# 强制使用 scram-sha-256 密码加密（pg_hba.conf 对网络连接要求 scram-sha-256）
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "SET password_encryption = 'scram-sha-256';"
-
+# 所有操作在同一个 psql 会话中执行，确保 SET password_encryption 对后续 CREATE USER 生效
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    -- 强制 scram-sha-256（同一会话内对后续 CREATE USER 生效）
+    SET password_encryption = 'scram-sha-256';
+
     -- Cognee
     CREATE USER ${COGNEE_DB_USER} WITH PASSWORD '${COGNEE_DB_PASS}';
     CREATE DATABASE cognee_db OWNER ${COGNEE_DB_USER};
@@ -41,3 +42,6 @@ EOSQL
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "cognee_db" -c "CREATE EXTENSION IF NOT EXISTS vector;"
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "memobase" -c "CREATE EXTENSION IF NOT EXISTS vector;"
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "cozymemory" -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
+# 标记初始化完成（healthcheck 检测此文件）
+touch /var/lib/postgresql/data/pgdata/.init_done

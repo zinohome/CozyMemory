@@ -24,15 +24,18 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required (see .env.example)}
       PGDATA: /var/lib/postgresql/data/pgdata
+      # 从根源确保密码使用 scram-sha-256 编码
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
       COGNEE_DB_USER: ${COGNEE_DB_USER:-cognee_user}
       COGNEE_DB_PASSWORD: ${COGNEE_DB_PASSWORD:?COGNEE_DB_PASSWORD required}
       MEMOBASE_DB_USER: ${MEMOBASE_DB_USER:-memobase}
       MEMOBASE_DB_PASSWORD: ${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}
       COZYMEMORY_DB_USER: ${COZYMEMORY_DB_USER:-cozymemory_user}
       COZYMEMORY_DB_PASSWORD: ${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}
-    # healthcheck：用密码认证连接 cozymemory 库，确保 init.sh 完成且密码可用
+    # healthcheck: init.sh 完成后创建 .init_done 标记文件 + 密码连接双重验证
+    # 确保 init.sh 运行完毕且所有用户密码可用后才放行依赖服务
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=$${COZYMEMORY_DB_PASSWORD} psql -h 127.0.0.1 -U $${COZYMEMORY_DB_USER:-cozymemory_user} -d cozymemory -c 'SELECT 1' -q"]
+      test: ["CMD-SHELL", "test -f /var/lib/postgresql/data/pgdata/.init_done && PGPASSWORD=$${COGNEE_DB_PASSWORD} psql -h 127.0.0.1 -U $${COGNEE_DB_USER:-cognee_user} -d cognee_db -c 'SELECT 1' -q"]
       interval: 3s
       timeout: 3s
       retries: 30
