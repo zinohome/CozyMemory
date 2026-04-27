@@ -1,7 +1,7 @@
 """集成测试共用 fixtures
 
 使用说明：
-  export COZY_TEST_URL=http://192.168.32.40:8000   # 真实服务地址
+  export COZY_TEST_URL=http://192.168.66.41:8000   # 真实服务地址
   pytest tests/integration/                          # 所有集成测试
 
 若 COZY_TEST_URL 未设置，或服务无法连接，测试自动跳过。
