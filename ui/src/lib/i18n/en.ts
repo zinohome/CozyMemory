@@ -514,6 +514,7 @@ export const en = {
   "auth.org_name": "Organization name",
   "auth.org_slug": "Organization slug",
   "auth.go_register": "Don't have an account? Sign up",
+  "auth.go_operator": "Operator Mode",
   "auth.go_login": "Already have an account? Log in",
   "auth.logout": "Sign out",
 

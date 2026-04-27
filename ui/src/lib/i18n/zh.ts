@@ -512,6 +512,7 @@ export const zh: Record<TKey, string> = {
   "auth.org_name": "组织名",
   "auth.org_slug": "组织 slug",
   "auth.go_register": "还没账号？去注册",
+  "auth.go_operator": "Operator 入口",
   "auth.go_login": "已有账号？去登录",
   "auth.logout": "退出登录",
 

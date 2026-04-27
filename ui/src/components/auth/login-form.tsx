@@ -75,6 +75,11 @@ export function LoginForm() {
               {t("auth.go_register")}
             </a>
           </p>
+          <p className="text-sm text-muted-foreground text-center">
+            <a href="/operator" className="underline">
+              {t("auth.go_operator")}
+            </a>
+          </p>
         </form>
       </CardContent>
     </Card>
