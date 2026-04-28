@@ -467,6 +467,44 @@
       <span data-status-text-port="8088">检测中…</span>
     </div>
   </div>
+  <div class="card" data-port="8085" style="--card-color:#ef4444; --card-color-dim:#4a1212;">
+    <div class="card-header">
+      <div class="card-icon">🔺</div>
+      <div class="card-title">FalkorDB Browser</div>
+      <span class="card-port">:8085</span>
+    </div>
+    <p class="card-desc">
+      图数据库可视化管理。查看知识图谱结构、执行 Cypher 查询、监控 Graph 列表和节点/边统计。
+    </p>
+    <div class="card-links">
+      <a class="chip" data-port="8085" data-path="/">
+        <span class="chip-dot"></span>Browser UI
+      </a>
+    </div>
+    <div class="status-row">
+      <span class="dot checking" data-status-port="8085"></span>
+      <span data-status-text-port="8085">检测中…</span>
+    </div>
+  </div>
+  <div class="card" data-port="3001" style="--card-color:#f59e0b; --card-color-dim:#4a3a12;">
+    <div class="card-header">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Grafana</div>
+      <span class="card-port">:3001</span>
+    </div>
+    <p class="card-desc">
+      监控仪表盘。查看 API 请求量、延迟、引擎健康状态和告警规则。
+    </p>
+    <div class="card-links">
+      <a class="chip" data-port="3001" data-path="/">
+        <span class="chip-dot"></span>Dashboard
+      </a>
+    </div>
+    <div class="status-row">
+      <span class="dot checking" data-status-port="3001"></span>
+      <span data-status-text-port="3001">检测中…</span>
+    </div>
+  </div>
   <div class="card" style="--card-color:var(--pink); --card-color-dim:#4a1a3a; cursor:default;">
     <div class="card-header">
       <div class="card-icon">⚡</div>
@@ -474,7 +512,7 @@
       <span class="card-port">:50051</span>
     </div>
     <p class="card-desc">
-      高性能 gRPC 接口，18 个方法镜像全部 REST 端点。直连容器（明文 TCP），无 Caddy 代理。适合低延迟内网服务调用。
+      高性能 gRPC 接口，18 个方法镜像全部 REST 端点。Caddy 自签 TLS 终止。
     </p>
     <div class="card-links">
       <span class="chip" style="cursor:default; opacity:.6">
@@ -523,7 +561,7 @@
     }
   }
 
-  [8000, 8080, 8081, 8019].forEach(checkPort);
+  [8000, 8080, 8081, 8019, 8085, 8088, 3001].forEach(checkPort);
 </script>
 </body>
 </html>

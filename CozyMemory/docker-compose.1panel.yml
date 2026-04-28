@@ -112,6 +112,27 @@ services:
         reservations:
           memory: 256m
 
+  falkordb-browser:
+    image: falkordb/falkordb-browser:latest
+    container_name: cozy_falkordb_browser
+    restart: unless-stopped
+    environment:
+      FALKORDB_URL: redis://falkordb:6379
+    depends_on:
+      falkordb:
+        condition: service_started
+    networks:
+      - 1panel-network
+    logging: *default-logging
+    labels:
+      createdBy: "Apps"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+
   # ──────── Neo4j（已禁用 — 多租户模式使用 Kuzu 替代）────────
   # 如需切回 Neo4j（单用户/开发模式），取消注释本段并修改 cognee 环境变量：
   #   GRAPH_DATABASE_PROVIDER=neo4j
@@ -519,6 +540,7 @@ services:
       - "8080:8080"
       - "8081:8081"
       - "8019:8019"
+      - "8085:8085"
       - "8088:8088"
       - "3001:3001"
       - "50051:50051"
@@ -541,6 +563,8 @@ services:
       cozymemory-api:
         condition: service_started
       cozymemory-ui:
+        condition: service_started
+      falkordb-browser:
         condition: service_started
       grafana:
         condition: service_started
