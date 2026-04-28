@@ -36,10 +36,10 @@ services:
     # 确保 init.sh 运行完毕且所有用户密码可用后才放行依赖服务
     healthcheck:
       test: ["CMD-SHELL", "test -f /var/lib/postgresql/data/pgdata/.init_done && PGPASSWORD=$${COGNEE_DB_PASSWORD} psql -h 127.0.0.1 -U $${COGNEE_DB_USER:-cognee_user} -d cognee_db -c 'SELECT 1' -q"]
-      interval: 3s
-      timeout: 3s
-      retries: 30
-      start_period: 15s
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
     # 暴露到 host 5433（避开 5432 的另一个 cozyenginev2 老 PG 冲突），
     # 供本地 alembic / 单元测试连接；容器间仍通过 cozy_postgres:5432
     ports:
