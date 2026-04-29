@@ -53,6 +53,31 @@ services:
     labels:
       createdBy: "Apps"
 
+  # 密码同步：每次 docker compose up 都将 .env 中的密码同步到 PG
+  # 解决 init.sh 只在首次初始化运行、后续 .env 改密码后 PG 不同步的问题
+  sync-passwords:
+    image: pgvector/pgvector:0.8.1-pg17-trixie
+    container_name: cozy_sync_passwords
+    restart: "no"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required (see .env.example)}
+      COGNEE_DB_USER: ${COGNEE_DB_USER:-cognee_user}
+      COGNEE_DB_PASSWORD: ${COGNEE_DB_PASSWORD:?COGNEE_DB_PASSWORD required}
+      MEMOBASE_DB_USER: ${MEMOBASE_DB_USER:-memobase}
+      MEMOBASE_DB_PASSWORD: ${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}
+      COZYMEMORY_DB_USER: ${COZYMEMORY_DB_USER:-cozymemory_user}
+      COZYMEMORY_DB_PASSWORD: ${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./sql/sync-passwords.sh:/sync-passwords.sh:ro
+    entrypoint: ["bash", "/sync-passwords.sh"]
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
   redis:
     image: redis:7-alpine
     container_name: cozy_redis
@@ -221,8 +246,8 @@ services:
       - DEFAULT_USER_PASSWORD=${COGNEE_ADMIN_PASSWORD:-passw0rd}
       - TIKTOKEN_CACHE_DIR=/root/.tiktoken
     depends_on:
-      postgres:
-        condition: service_healthy
+      sync-passwords:
+        condition: service_completed_successfully
       redis:
         condition: service_started
       minio:
@@ -373,8 +398,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      postgres:
-        condition: service_healthy
+      sync-passwords:
+        condition: service_completed_successfully
       redis:
         condition: service_started
     volumes:
@@ -431,6 +456,8 @@ services:
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
       COZY_API_KEYS: ${COZY_API_KEYS:-}
     depends_on:
+      sync-passwords:
+        condition: service_completed_successfully
       mem0-api:
         condition: service_started
       memobase-server-api:
