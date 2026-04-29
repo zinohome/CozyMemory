@@ -186,8 +186,8 @@ services:
       - PYTHONUNBUFFERED=1
       - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
       - LLM_PROVIDER=openai
-      - LLM_MODEL=${LLM_MODEL:-gpt-4.1-nano-2025-04-14}
-      - LLM_ENDPOINT=${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}
+      - LLM_MODEL=${LLM_MODEL:-gemma4:31b-cloud}
+      - LLM_ENDPOINT=${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
       - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-unused}
@@ -281,11 +281,11 @@ services:
     restart: unless-stopped
     environment:
       OPENAI_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
-      OPENAI_BASE_URL: ${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}
-      OPENAI_MODEL: ${LLM_MODEL:-gpt-4.1-nano-2025-04-14}
+      OPENAI_BASE_URL: ${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
+      OPENAI_MODEL: ${LLM_MODEL:-gemma4:31b-cloud}
       # LLM Provider: openai（默认）或 ollama（本地推理）
-      LLM_PROVIDER: ${MEM0_LLM_PROVIDER:-openai}
-      LLM_BASE_URL: ${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}
+      LLM_PROVIDER: ${MEM0_LLM_PROVIDER:-ollama}
+      LLM_BASE_URL: ${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
       # Embedding Provider: ollama（默认，本地 91ms）或 openai
       EMBEDDER_PROVIDER: ${MEM0_EMBEDDER_PROVIDER:-ollama}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://192.168.66.163:11434/v1}
@@ -361,7 +361,7 @@ services:
       MEMOBASE_LANGUAGE: zh
       MEMOBASE_LLM_STYLE: openai
       MEMOBASE_LLM_API_KEY: "${LLM_API_KEY:?LLM_API_KEY required}"
-      MEMOBASE_LLM_BASE_URL: "${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}"
+      MEMOBASE_LLM_BASE_URL: "${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}"
       MEMOBASE_EMBEDDING_API_KEY: "${EMBEDDING_API_KEY:-unused}"
       MEMOBASE_EMBEDDING_BASE_URL: "${EMBEDDING_BASE_URL:-http://192.168.66.163:11434/v1}"
       MEMOBASE_EMBEDDING_PROVIDER: openai
@@ -461,9 +461,9 @@ services:
       # entrypoint.sh 在启动时将 __COZY_API_URL__ 替换进 .next/static/ 编译产物
       NEXT_PUBLIC_API_URL: http://192.168.66.41:8000
       # Playground 用 — server-side /api/chat 路由读取，不注入浏览器包
-      LLM_ENDPOINT: ${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
       LLM_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4.1-nano-2025-04-14}
+      LLM_MODEL: ${LLM_MODEL:-gemma4:31b-cloud}
     depends_on:
       cozymemory-api:
         condition: service_started
