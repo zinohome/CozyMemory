@@ -536,6 +536,10 @@ services:
     image: caddy:alpine
     container_name: cozy_caddy
     restart: unless-stopped
+    environment:
+      # LLM API 代理目标（切换 oneapi/OpenAI 直连）
+      LLM_UPSTREAM: ${LLM_UPSTREAM:-https://oneapi.naivehero.top}
+      LLM_UPSTREAM_HOST: ${LLM_UPSTREAM_HOST:-oneapi.naivehero.top}
     ports:
       - "80:80"
       - "8000:8000"
