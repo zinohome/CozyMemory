@@ -189,11 +189,11 @@ services:
       - LLM_MODEL=gpt-4o-mini
       - LLM_ENDPOINT=http://caddy:9090/v1
       - LLM_MAX_TOKENS=16384
-      - EMBEDDING_PROVIDER=openai
-      - EMBEDDING_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
-      - EMBEDDING_ENDPOINT=http://caddy:9090/v1
-      - EMBEDDING_MODEL=text-embedding-3-large
-      - EMBEDDING_DIMENSIONS=3072
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-unused}
+      - EMBEDDING_ENDPOINT=${EMBEDDING_ENDPOINT:-http://192.168.66.163:11434/v1}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-bge-m3}
+      - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMS:-1024}
       - DATABASE_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@postgres:5432/cognee_db
       - DB_PROVIDER=postgres
       - DB_HOST=postgres
@@ -283,6 +283,11 @@ services:
       OPENAI_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
       OPENAI_BASE_URL: http://caddy:9090/v1
       OPENAI_MODEL: gpt-4.1-nano-2025-04-14
+      # Embedding 独立配置（本地 Ollama bge-m3，91ms vs OpenAI 794ms）
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://192.168.66.163:11434/v1}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-unused}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      EMBEDDING_DIMS: ${EMBEDDING_DIMS:-1024}
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
       QDRANT_URL: http://qdrant:6333
@@ -352,10 +357,12 @@ services:
       MEMOBASE_LANGUAGE: zh
       MEMOBASE_LLM_STYLE: openai
       MEMOBASE_LLM_API_KEY: "${LLM_API_KEY:?LLM_API_KEY required}"
-      MEMOBASE_LLM_BASE_URL: "https://oneapi.naivehero.top/v1"
-      MEMOBASE_EMBEDDING_API_KEY: "${LLM_API_KEY:?LLM_API_KEY required}"
-      MEMOBASE_EMBEDDING_BASE_URL: "https://oneapi.naivehero.top/v1"
+      MEMOBASE_LLM_BASE_URL: "http://caddy:9090/v1"
+      MEMOBASE_EMBEDDING_API_KEY: "${EMBEDDING_API_KEY:-unused}"
+      MEMOBASE_EMBEDDING_BASE_URL: "${EMBEDDING_BASE_URL:-http://192.168.66.163:11434/v1}"
       MEMOBASE_EMBEDDING_PROVIDER: openai
+      MEMOBASE_EMBEDDING_MODEL: "${EMBEDDING_MODEL:-bge-m3}"
+      MEMOBASE_EMBEDDING_DIM: "${EMBEDDING_DIMS:-1024}"
       TIKTOKEN_CACHE_DIR: /root/.tiktoken
     extra_hosts:
       - "host.docker.internal:host-gateway"
