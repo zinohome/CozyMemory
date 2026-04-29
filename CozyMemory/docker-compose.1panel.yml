@@ -283,7 +283,11 @@ services:
       OPENAI_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
       OPENAI_BASE_URL: ${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}
       OPENAI_MODEL: ${LLM_MODEL:-gpt-4.1-nano-2025-04-14}
-      # Embedding 独立配置（本地 Ollama bge-m3，91ms vs OpenAI 794ms）
+      # LLM Provider: openai（默认）或 ollama（本地推理）
+      LLM_PROVIDER: ${MEM0_LLM_PROVIDER:-openai}
+      LLM_BASE_URL: ${LLM_ENDPOINT:-https://oneapi.naivehero.top/v1}
+      # Embedding Provider: ollama（默认，本地 91ms）或 openai
+      EMBEDDER_PROVIDER: ${MEM0_EMBEDDER_PROVIDER:-ollama}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://192.168.66.163:11434/v1}
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-unused}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
