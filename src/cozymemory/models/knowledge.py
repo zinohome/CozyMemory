@@ -61,11 +61,12 @@ class KnowledgeSearchRequest(BaseModel):
 
     query: str = Field(..., description="搜索查询", min_length=1)
     dataset: str | None = Field(None, description="限定数据集，为 null 则搜索全部")
-    search_type: SearchType = Field(
-        "GRAPH_COMPLETION",
+    search_type: SearchType | None = Field(
+        None,
         description=(
             "搜索类型：CHUNKS（原文片段）/ SUMMARIES（摘要）"
-            "/ RAG_COMPLETION（RAG 生成）/ GRAPH_COMPLETION（图谱推理，最强）"
+            "/ RAG_COMPLETION（RAG 生成）/ GRAPH_COMPLETION（图谱推理）。"
+            "为 null 时使用系统默认值（环境变量 COGNEE_DEFAULT_SEARCH_TYPE，默认 CHUNKS）"
         ),
     )
     top_k: int = Field(10, ge=1, le=100, description="返回数量限制")

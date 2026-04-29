@@ -405,6 +405,8 @@ services:
       COGNEE_ENABLED: "true"
       COGNEE_USER_EMAIL: admin@cognee.com
       COGNEE_USER_PASSWORD: ${COGNEE_ADMIN_PASSWORD:-passw0rd}
+      # Cognee 默认搜索类型：CHUNKS(快) / GRAPH_COMPLETION(慢但有推理)
+      COGNEE_DEFAULT_SEARCH_TYPE: ${COGNEE_DEFAULT_SEARCH_TYPE:-CHUNKS}
       # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
       REDIS_USER_MAPPING_TTL: "0"

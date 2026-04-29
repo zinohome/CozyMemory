@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     COGNEE_ENABLED: bool = True
     COGNEE_USER_EMAIL: str = "admin@cognee.com"
     COGNEE_USER_PASSWORD: str = ""
+    COGNEE_DEFAULT_SEARCH_TYPE: str = "CHUNKS"  # CHUNKS / GRAPH_COMPLETION / RAG_COMPLETION / SUMMARIES
 
     # Redis（用户 ID 映射）
     REDIS_URL: str = "redis://localhost:6379/0"

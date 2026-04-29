@@ -77,8 +77,8 @@ class ContextRequest(BaseModel):
         description="Cognee 查询的数据集列表。null 或空列表表示搜索全部数据集",
     )
     knowledge_top_k: int = Field(3, ge=1, le=50, description="Cognee 返回结果数量")
-    knowledge_search_type: SearchType = Field(
-        "GRAPH_COMPLETION", description="Cognee 搜索类型"
+    knowledge_search_type: SearchType | None = Field(
+        None, description="Cognee 搜索类型（null 时使用系统默认值 COGNEE_DEFAULT_SEARCH_TYPE）"
     )
     engine_timeout: float | None = Field(
         3.0,

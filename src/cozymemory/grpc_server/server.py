@@ -618,7 +618,7 @@ class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
                 conversation_limit=request.conversation_limit or 5,
                 max_token_size=request.max_token_size or 500,
                 knowledge_top_k=request.knowledge_top_k or 3,
-                knowledge_search_type=request.knowledge_search_type or "GRAPH_COMPLETION",
+                knowledge_search_type=request.knowledge_search_type or None,
                 knowledge_datasets=list(request.knowledge_datasets) or None,
                 engine_timeout=request.engine_timeout or None,
                 chats=chats,
