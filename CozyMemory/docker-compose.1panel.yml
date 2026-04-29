@@ -186,7 +186,7 @@ services:
       - PYTHONUNBUFFERED=1
       - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
       - LLM_PROVIDER=openai
-      - LLM_MODEL=gpt-4o-mini
+      - LLM_MODEL=${LLM_MODEL:-qwen3.5:9b}
       - LLM_ENDPOINT=http://caddy:9090/v1
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
@@ -282,7 +282,7 @@ services:
     environment:
       OPENAI_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
       OPENAI_BASE_URL: http://caddy:9090/v1
-      OPENAI_MODEL: gpt-4.1-nano-2025-04-14
+      OPENAI_MODEL: ${LLM_MODEL:-qwen3.5:9b}
       # Embedding 独立配置（本地 Ollama bge-m3，91ms vs OpenAI 794ms）
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://192.168.66.163:11434/v1}
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-unused}
@@ -459,7 +459,7 @@ services:
       # Playground 用 — server-side /api/chat 路由读取，不注入浏览器包
       LLM_ENDPOINT: http://caddy:9090/v1
       LLM_API_KEY: ${LLM_API_KEY:?LLM_API_KEY required}
-      LLM_MODEL: gpt-4.1-nano-2025-04-14
+      LLM_MODEL: ${LLM_MODEL:-qwen3.5:9b}
     depends_on:
       cozymemory-api:
         condition: service_started
@@ -544,9 +544,12 @@ services:
     container_name: cozy_caddy
     restart: unless-stopped
     environment:
-      # LLM API 代理目标（切换 oneapi/OpenAI 直连）
-      LLM_UPSTREAM: ${LLM_UPSTREAM:-https://oneapi.naivehero.top}
-      LLM_UPSTREAM_HOST: ${LLM_UPSTREAM_HOST:-oneapi.naivehero.top}
+      # LLM API 代理目标：
+      #   本地 Ollama:  http://192.168.66.163:11434  (默认，无需 API key)
+      #   oneapi 代理:  https://oneapi.naivehero.top  (需 oneapi key)
+      #   OpenAI 直连:  https://api.openai.com        (需官方 key)
+      LLM_UPSTREAM: ${LLM_UPSTREAM:-http://192.168.66.163:11434}
+      LLM_UPSTREAM_HOST: ${LLM_UPSTREAM_HOST:-192.168.66.163:11434}
     ports:
       - "80:80"
       - "8000:8000"
