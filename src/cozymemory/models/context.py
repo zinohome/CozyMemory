@@ -81,11 +81,11 @@ class ContextRequest(BaseModel):
         "GRAPH_COMPLETION", description="Cognee 搜索类型"
     )
     engine_timeout: float | None = Field(
-        None,
+        3.0,
         gt=0,
         description=(
-            "每个引擎的超时时间（秒）。超时的引擎结果以错误形式记录在 errors 字段，"
-            "不影响其他引擎的结果。为 null 时不限制单引擎超时"
+            "每个引擎的超时时间（秒，默认 3s）。超时的引擎结果以错误形式记录在 errors 字段，"
+            "不影响其他引擎的结果。设为 null 不限制"
         ),
     )
     chats: list[Message] | None = Field(

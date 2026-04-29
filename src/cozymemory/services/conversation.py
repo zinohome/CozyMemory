@@ -1,8 +1,10 @@
 """会话记忆服务
 
 薄层封装 Mem0 客户端，负责请求转发和错误转换。
+搜索结果带 TTL 缓存（60 秒），减少重复 embedding API 调用。
 """
 
+import time
 from typing import Any
 
 import structlog
@@ -11,6 +13,35 @@ from ..clients.mem0 import Mem0Client
 from ..models.conversation import ConversationMemory, ConversationMemoryListResponse, MemoryScope
 
 logger = structlog.get_logger()
+
+# 搜索结果缓存：key=(user_id, query, limit) → (timestamp, result)
+_search_cache: dict[tuple, tuple[float, list[ConversationMemory]]] = {}
+_CACHE_TTL = 60  # 秒
+_CACHE_MAX_SIZE = 200
+
+
+def _cache_get(key: tuple) -> list[ConversationMemory] | None:
+    entry = _search_cache.get(key)
+    if entry and (time.monotonic() - entry[0]) < _CACHE_TTL:
+        return entry[1]
+    if entry:
+        _search_cache.pop(key, None)
+    return None
+
+
+def _cache_set(key: tuple, value: list[ConversationMemory]):
+    if len(_search_cache) >= _CACHE_MAX_SIZE:
+        # 清理过期条目
+        now = time.monotonic()
+        expired = [k for k, (t, _) in _search_cache.items() if now - t >= _CACHE_TTL]
+        for k in expired:
+            _search_cache.pop(k, None)
+        # 仍然太多就清一半
+        if len(_search_cache) >= _CACHE_MAX_SIZE:
+            keys = list(_search_cache.keys())
+            for k in keys[: len(keys) // 2]:
+                _search_cache.pop(k, None)
+    _search_cache[key] = (time.monotonic(), value)
 
 
 class ConversationService:
@@ -62,14 +93,22 @@ class ConversationService:
         session_id: str | None = None,
         memory_scope: MemoryScope = "long",
     ) -> ConversationMemoryListResponse:
-        """搜索会话记忆。
+        """搜索会话记忆（带 60 秒 TTL 缓存）。
 
         memory_scope:
           long  — 不带 session 过滤，返回全量历史记忆（默认）
           short — 带 session 过滤，仅返回本 session 记忆
           both  — 短期（带 session）和长期（不带 session）各搜一次，合并去重后返回
-                  （调用方通过 ContextResponse.short_term_memories/long_term_memories 区分）
         """
+        # 缓存检查（仅缓存 long scope 的搜索，short 和 both 不缓存）
+        cache_key = (user_id, query, limit, agent_id, memory_scope) if memory_scope == "long" else None
+        if cache_key:
+            cached = _cache_get(cache_key)
+            if cached is not None:
+                logger.debug("conversation.search.cache_hit", user_id=user_id, query=query[:30])
+                return ConversationMemoryListResponse(
+                    success=True, data=cached, total=len(cached))
+
         if memory_scope == "short":
             memories = await self.client.search(
                 user_id=user_id, query=query, limit=limit, threshold=threshold,
@@ -108,6 +147,9 @@ class ConversationService:
             user_id=user_id, agent_id=agent_id, session_id=session_id,
             scope=memory_scope, results=len(memories),
         )
+        # 缓存搜索结果
+        if cache_key:
+            _cache_set(cache_key, memories)
         return ConversationMemoryListResponse(success=True, data=memories, total=len(memories))
 
     async def search_short(

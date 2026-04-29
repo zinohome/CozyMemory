@@ -96,9 +96,12 @@ async def add_conversation(
 ) -> ConversationMemoryListResponse | JSONResponse:
     """添加对话消息，Mem0 自动使用 LLM 提取事实性记忆并向量化存储。
 
-    `infer=true`（默认）：LLM 分析对话提取事实，如"用户喜欢篮球"。
-    `infer=false`：原样存储消息内容，不做提取。
+    - `infer=true`（默认）：LLM 分析对话提取事实，如"用户喜欢篮球"。
+    - `infer=false`：原样存储消息内容，不做提取。
+    - `async_mode=true`：异步模式，立即返回确认，后台异步提取记忆（推荐）。
     """
+    import asyncio
+
     scoped_uid = await scope_user_id(app_ctx, request.user_id)
     if app_ctx:
         logger.info(
@@ -107,8 +110,31 @@ async def add_conversation(
             external_user_id=request.user_id,
             internal_uuid=scoped_uid,
         )
+    messages = [{"role": m.role, "content": m.content} for m in request.messages]
+
+    if request.async_mode:
+        # 异步模式：立即返回，后台提取记忆
+        async def _bg_extract():
+            try:
+                result = await service.add(
+                    user_id=scoped_uid, messages=messages,
+                    metadata=request.metadata, infer=request.infer,
+                    agent_id=request.agent_id, session_id=request.session_id,
+                )
+                logger.info("conversation.add.async_done",
+                            user_id=scoped_uid, count=result.total)
+            except Exception as exc:
+                logger.error("conversation.add.async_error",
+                             user_id=scoped_uid, error=str(exc))
+
+        asyncio.create_task(_bg_extract())
+        return ConversationMemoryListResponse(
+            success=True, data=[], total=0,
+            message="对话已接收，记忆正在后台提取中",
+        )
+
+    # 同步模式：等待提取完成后返回
     try:
-        messages = [{"role": m.role, "content": m.content} for m in request.messages]
         return await service.add(
             user_id=scoped_uid,
             messages=messages,

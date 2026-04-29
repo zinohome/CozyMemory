@@ -43,6 +43,10 @@ class ConversationMemoryCreate(BaseModel):
     messages: list[Message] = Field(..., description="对话消息列表", min_length=1)
     metadata: dict[str, Any] | None = Field(None, description="元数据 (source 等)")
     infer: bool = Field(True, description="是否使用 LLM 提取事实。False 则原样存储")
+    async_mode: bool = Field(
+        False,
+        description="异步模式：true 立即返回 202，后台异步提取记忆（推荐用于生产环境减少延迟）",
+    )
 
 
 class ConversationMemorySearch(BaseModel):
