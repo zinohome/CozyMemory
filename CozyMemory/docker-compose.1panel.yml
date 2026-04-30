@@ -217,7 +217,8 @@ services:
       - PYTHONUNBUFFERED=1
       - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
       - LLM_PROVIDER=openai
-      - LLM_MODEL=${LLM_MODEL:-gemma4:31b-cloud}
+      # Cognee 用 LiteLLM，需要 openai/ 前缀才能识别 provider
+      - LLM_MODEL=openai/${LLM_MODEL:-gemma4:31b-cloud}
       - LLM_ENDPOINT=${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
