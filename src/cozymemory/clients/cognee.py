@@ -84,12 +84,11 @@ class CogneeClient(BaseClient):
             return False
 
     async def add(self, data: str, dataset: str) -> dict[str, Any]:
-        """添加文本到 Cognee（包装成 data.txt 上传）"""
+        """添加文本到 Cognee（传原始文本，让 Cognee 用 md5 hash 命名文件）"""
         response = await self._request_with_auth(
             "POST",
             "/api/v1/add",
-            data={"datasetName": dataset},
-            files=[("data", ("data.txt", data.encode("utf-8"), "text/plain"))],
+            data={"data": data, "datasetName": dataset},
         )
         return dict(response.json())
 
