@@ -71,10 +71,13 @@ class MemobaseClient(BaseClient):
     # ===== 数据插入 =====
 
     async def insert(self, user_id: str, messages: list[dict[str, str]], sync: bool = False) -> str:
-        """插入对话数据到 Memobase 缓冲区。若用户不存在则自动创建。
+        """插入对话数据到 Memobase 缓冲区。确保用户存在后再插入。
 
         Memobase API 格式：{"blob_type": "chat", "blob_data": {"messages": [...]}}
         """
+        # 预创建用户（幂等）——避免 background processing 中的 ForeignKeyViolation
+        await self.add_user(user_id=user_id)
+
         payload: dict[str, Any] = {
             "blob_type": "chat",
             "blob_data": {"messages": messages},
@@ -89,17 +92,7 @@ class MemobaseClient(BaseClient):
         result: dict[str, Any] = response.json()
 
         if result.get("errno", 0) != 0:
-            if "ForeignKeyViolation" in result.get("errmsg", ""):
-                # 用户不存在，自动创建后重试
-                await self.add_user(user_id=user_id)
-                response = await self._request(
-                    "POST", f"/api/v1/blobs/insert/{user_id}", json=payload, params=params
-                )
-                result = response.json()
-                if result.get("errno", 0) != 0:
-                    raise EngineError(self.engine_name, result.get("errmsg", "Unknown error"), 500)
-            else:
-                raise EngineError(self.engine_name, result.get("errmsg", "Unknown error"), 500)
+            raise EngineError(self.engine_name, result.get("errmsg", "Unknown error"), 500)
 
         # 响应格式：{"data": {"id": "<blob_id>", "chat_results": [...]}, "errno": 0}
         data = result.get("data") or {}
@@ -168,19 +161,11 @@ class MemobaseClient(BaseClient):
         payload = {"attributes": {"topic": topic, "sub_topic": sub_topic}, "content": content}
         path = f"/api/v1/users/profile/{user_id}"
 
+        await self.add_user(user_id=user_id)
         response = await self._request("POST", path, json=payload)
         result = response.json()
         if isinstance(result, dict) and result.get("errno", 0) != 0:
-            if "ForeignKeyViolation" in result.get("errmsg", ""):
-                await self.add_user(user_id=user_id)
-                response = await self._request("POST", path, json=payload)
-                result = response.json()
-                if isinstance(result, dict) and result.get("errno", 0) != 0:
-                    raise EngineError(
-                        self.engine_name, result.get("errmsg", "add_profile failed"), 500
-                    )
-            else:
-                raise EngineError(self.engine_name, result.get("errmsg", "add_profile failed"), 500)
+            raise EngineError(self.engine_name, result.get("errmsg", "add_profile failed"), 500)
         data = result.get("data", result) if isinstance(result, dict) else {}
         return ProfileTopic(
             id=data.get("id", ""),
