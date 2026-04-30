@@ -92,7 +92,10 @@ services:
     volumes:
       - /data/CozyMemory/redis:/data
     networks:
-      - 1panel-network
+      1panel-network:
+        # 唯一别名：避免与 cozyengine_redis 的 DNS 冲突
+        aliases:
+          - cozy-redis
     logging: *default-logging
     labels:
       createdBy: "Apps"
@@ -242,7 +245,7 @@ services:
       - GRAPH_DATABASE_URL=redis://falkordb:6379
       - GRAPH_DATABASE_NAME=cognee
       - GRAPH_DATASET_DATABASE_HANDLER=falkor
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@cozy-redis:6379/0
       - S3_ENDPOINT=http://minio:9000
       - S3_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -393,7 +396,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${MEMOBASE_DB_USER:-memobase}:${MEMOBASE_DB_PASSWORD}@cozy-pg:5432/memobase
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cozy-redis:6379/1
       ACCESS_TOKEN: ${MEMOBASE_ACCESS_TOKEN:?MEMOBASE_ACCESS_TOKEN required}
       PROJECT_ID: default
       API_HOSTS: "http://192.168.66.41:8019,http://memobase-server-api:8000"
@@ -461,7 +464,7 @@ services:
       # Cognee 默认搜索类型：CHUNKS(快) / GRAPH_COMPLETION(慢但有推理)
       COGNEE_DEFAULT_SEARCH_TYPE: ${COGNEE_DEFAULT_SEARCH_TYPE:-CHUNKS}
       # Redis 用于 user_id → UUID 映射（Memobase 兼容层）
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cozy-redis:6379/2
       REDIS_USER_MAPPING_TTL: "0"
       # PostgreSQL 平台账号库（Organization / Developer / App / ApiKey）
       # 容器内通过 service name 解析；host 端口 5433 供本机 alembic

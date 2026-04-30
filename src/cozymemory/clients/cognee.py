@@ -84,11 +84,16 @@ class CogneeClient(BaseClient):
             return False
 
     async def add(self, data: str, dataset: str) -> dict[str, Any]:
-        """添加文本到 Cognee（传原始文本，让 Cognee 用 md5 hash 命名文件）"""
+        """添加文本到 Cognee（上传为无名文件，Cognee 自动用 md5 hash 命名）"""
+        import hashlib
+        # 用内容 hash 作为文件名，和 Cognee 的 TextLoader 一致
+        content_hash = hashlib.md5(data.encode("utf-8")).hexdigest()
+        filename = f"text_{content_hash}.txt"
         response = await self._request_with_auth(
             "POST",
             "/api/v1/add",
-            data={"data": data, "datasetName": dataset},
+            data={"datasetName": dataset},
+            files=[("data", (filename, data.encode("utf-8"), "text/plain"))],
         )
         return dict(response.json())
 
