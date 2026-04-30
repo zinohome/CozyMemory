@@ -7,6 +7,7 @@
 # 运行方式：由 sync-passwords one-shot 容器调用，
 #   依赖 postgres healthy 后执行 ALTER USER。
 # 幂等：密码相同时 ALTER USER 无副作用。
+# 重试：首次部署时 init.sh 可能还在运行，需等待用户创建完成。
 
 set -e
 
@@ -20,12 +21,25 @@ COZYMEMORY_DB_PASS="${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}"
 PG_HOST="${PG_HOST:-postgres}"
 PG_PORT="${PG_PORT:-5432}"
 
+MAX_RETRIES=30
+DELAY=3
+
 echo "[sync-passwords] Syncing user passwords from environment variables ..."
 
-PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "$PG_HOST" -p "$PG_PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 <<-EOSQL
-    ALTER USER ${COGNEE_DB_USER} WITH PASSWORD '${COGNEE_DB_PASS}';
-    ALTER USER ${MEMOBASE_DB_USER} WITH PASSWORD '${MEMOBASE_DB_PASS}';
-    ALTER USER ${COZYMEMORY_DB_USER} WITH PASSWORD '${COZYMEMORY_DB_PASS}';
+for i in $(seq 1 "$MAX_RETRIES"); do
+    if PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "$PG_HOST" -p "$PG_PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 <<-EOSQL 2>/dev/null
+        ALTER USER ${COGNEE_DB_USER} WITH PASSWORD '${COGNEE_DB_PASS}';
+        ALTER USER ${MEMOBASE_DB_USER} WITH PASSWORD '${MEMOBASE_DB_PASS}';
+        ALTER USER ${COZYMEMORY_DB_USER} WITH PASSWORD '${COZYMEMORY_DB_PASS}';
 EOSQL
+    then
+        echo "[sync-passwords] All 3 user passwords synced successfully."
+        exit 0
+    fi
 
-echo "[sync-passwords] All 3 user passwords synced successfully."
+    echo "[sync-passwords] Attempt $i/$MAX_RETRIES failed, retrying in ${DELAY}s ..."
+    sleep "$DELAY"
+done
+
+echo "[sync-passwords] FAILED after $MAX_RETRIES attempts" >&2
+exit 1
