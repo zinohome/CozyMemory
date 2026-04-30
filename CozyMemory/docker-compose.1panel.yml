@@ -222,7 +222,7 @@ services:
       - LLM_PROVIDER=openai
       # Cognee 用 LiteLLM + instructor，需要 openai/ 前缀
       # qwen3.5:cloud 的 structured output 与 instructor 兼容性最好
-      - LLM_MODEL=openai/qwen3.5:cloud
+      - LLM_MODEL=openai/deepseek-v3.1:671b-cloud
       - LLM_ENDPOINT=${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
