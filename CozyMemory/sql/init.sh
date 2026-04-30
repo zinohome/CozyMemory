@@ -12,13 +12,10 @@ MEMOBASE_DB_PASS="${MEMOBASE_DB_PASSWORD:?MEMOBASE_DB_PASSWORD required}"
 COZYMEMORY_DB_USER="${COZYMEMORY_DB_USER:-cozymemory_user}"
 COZYMEMORY_DB_PASS="${COZYMEMORY_DB_PASSWORD:?COZYMEMORY_DB_PASSWORD required}"
 
-# 全局设置 scram-sha-256 密码加密（修改 postgresql.conf，对所有会话生效）
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
-  -c "ALTER SYSTEM SET password_encryption = 'scram-sha-256';" \
-  -c "SELECT pg_reload_conf();"
+# PG 17 默认 password_encryption = scram-sha-256，无需 ALTER SYSTEM
+# POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256" 已在 compose 中设置
 
 # 创建用户（带密码）、数据库和权限
-# ALTER SYSTEM + pg_reload_conf 已确保 password_encryption=scram-sha-256
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     CREATE USER ${COGNEE_DB_USER} WITH PASSWORD '${COGNEE_DB_PASS}';
     CREATE DATABASE cognee_db OWNER ${COGNEE_DB_USER};

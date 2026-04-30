@@ -20,6 +20,9 @@ services:
   postgres:
     image: pgvector/pgvector:0.8.1-pg17-trixie
     container_name: cozy_postgres
+    # hostname 必须唯一：1panel-network 上有另一个项目也叫 postgres
+    # (cozyengine_postgres)，Docker DNS 会 round-robin 两个 IP 导致 50% 认证失败
+    hostname: cozy-postgres
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required (see .env.example)}
@@ -48,7 +51,10 @@ services:
       - /data/CozyMemory/postgres:/var/lib/postgresql/data
       - ./sql/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     networks:
-      - 1panel-network
+      1panel-network:
+        # 显式设唯一别名，避免与同网络上其他 postgres 服务（cozyengine_postgres）DNS 冲突
+        aliases:
+          - cozy-pg
     logging: *default-logging
     labels:
       createdBy: "Apps"
@@ -219,9 +225,9 @@ services:
       - EMBEDDING_ENDPOINT=${EMBEDDING_ENDPOINT:-http://192.168.66.163:11434/v1}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-bge-m3}
       - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMS:-1024}
-      - DATABASE_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@postgres:5432/cognee_db
+      - DATABASE_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@cozy-pg:5432/cognee_db
       - DB_PROVIDER=postgres
-      - DB_HOST=postgres
+      - DB_HOST=cozy-pg
       - DB_PORT=5432
       - DB_NAME=cognee_db
       - DB_USERNAME=${COGNEE_DB_USER:-cognee_user}
@@ -240,6 +246,9 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
       - EXTRAS=api,postgres
       - TELEMETRY_DISABLED=1
+      # 跳过 LLM 连接测试：Ollama 模型冷启动可能超过 30s 检测超时
+      # LLM 实际可用（容器内 1.4s 响应），但 Cognee 内部测试超时逻辑过于严格
+      - COGNEE_SKIP_CONNECTION_TEST=true
       - ENABLE_BACKEND_ACCESS_CONTROL=true
       - REQUIRE_AUTHENTICATION=false
       - DEFAULT_USER_EMAIL=admin@cognee.com
@@ -377,7 +386,7 @@ services:
     container_name: cozy_memobase_api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${MEMOBASE_DB_USER:-memobase}:${MEMOBASE_DB_PASSWORD}@postgres:5432/memobase
+      DATABASE_URL: postgresql://${MEMOBASE_DB_USER:-memobase}:${MEMOBASE_DB_PASSWORD}@cozy-pg:5432/memobase
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       ACCESS_TOKEN: ${MEMOBASE_ACCESS_TOKEN:?MEMOBASE_ACCESS_TOKEN required}
       PROJECT_ID: default
@@ -450,7 +459,7 @@ services:
       REDIS_USER_MAPPING_TTL: "0"
       # PostgreSQL 平台账号库（Organization / Developer / App / ApiKey）
       # 容器内通过 service name 解析；host 端口 5433 供本机 alembic
-      DATABASE_URL: "postgresql+asyncpg://${COZYMEMORY_DB_USER:-cozymemory_user}:${COZYMEMORY_DB_PASSWORD}@postgres:5432/cozymemory"
+      DATABASE_URL: "postgresql+asyncpg://${COZYMEMORY_DB_USER:-cozymemory_user}:${COZYMEMORY_DB_PASSWORD}@cozy-pg:5432/cozymemory"
       # JWT（Dashboard 登录）— 生产必须改
       JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
