@@ -113,8 +113,8 @@ class KnowledgeService:
         top_k: int = 10,
     ) -> KnowledgeSearchResponse:
         if search_type is None:
-            from ..config import get_settings
-            search_type = get_settings().COGNEE_DEFAULT_SEARCH_TYPE  # type: ignore[assignment]
+            from ..config import settings
+            search_type = settings.COGNEE_DEFAULT_SEARCH_TYPE  # type: ignore[assignment]
         """搜索知识库"""
         results = await self.client.search(
             query=query, dataset=dataset, search_type=search_type, top_k=top_k

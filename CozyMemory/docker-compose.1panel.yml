@@ -217,14 +217,18 @@ services:
       - PYTHONUNBUFFERED=1
       - LLM_API_KEY=${LLM_API_KEY:?LLM_API_KEY required}
       - LLM_PROVIDER=openai
-      # Cognee 用 LiteLLM，需要 openai/ 前缀才能识别 provider
-      - LLM_MODEL=openai/${LLM_MODEL:-gpt-oss:120b-cloud}
+      # Cognee 用 LiteLLM + instructor，需要 openai/ 前缀
+      # qwen3.5:cloud 的 structured output 与 instructor 兼容性最好
+      - LLM_MODEL=openai/qwen3.5:cloud
       - LLM_ENDPOINT=${LLM_ENDPOINT:-http://192.168.66.163:11434/v1}
       - LLM_MAX_TOKENS=16384
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
       - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-unused}
       - EMBEDDING_ENDPOINT=${EMBEDDING_ENDPOINT:-http://192.168.66.163:11434/v1}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-bge-m3}
+      # Cognee 的 LiteLLM 需要 openai/ 前缀
+      - EMBEDDING_MODEL=openai/${EMBEDDING_MODEL:-bge-m3}
+      # EMBEDDING_DIMENSIONS 用于 LanceDB schema 定义（必须和模型输出维度匹配）
+      # 补丁 patch_litellm_drop_params.py 确保不把 dimensions 传给 LiteLLM（会报错）
       - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMS:-1024}
       - DATABASE_URL=postgresql://${COGNEE_DB_USER:-cognee_user}:${COGNEE_DB_PASSWORD}@cozy-pg:5432/cognee_db
       - DB_PROVIDER=postgres
