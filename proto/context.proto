@@ -20,6 +20,7 @@ message GetUnifiedContextRequest {
   string session_id = 13;            // 会话 ID，短期记忆隔离
   string memory_scope = 14;          // short / long / both（默认 long）
   repeated string knowledge_datasets = 15; // 指定查询的数据集，空 = 全部
+  string profile_user_id = 16;       // Memobase 画像用户 ID（空则用 user_id）
 }
 
 message GetUnifiedContextResponse {

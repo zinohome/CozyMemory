@@ -157,11 +157,31 @@ class ConversationGrpcServicer(conversation_pb2_grpc.ConversationServiceServicer
         self._svc = get_conversation_service()
 
     async def AddConversation(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        import asyncio
+        from ..api.v1.conversation import _bg_semaphore
+
         try:
             svc = self._svc
             user_id = await scope_user_id_grpc(request.user_id)
             messages = [{"role": m.role, "content": m.content} for m in request.messages]
             metadata = dict(request.metadata) if request.metadata else None
+
+            if request.async_mode:
+                async def _bg():
+                    async with _bg_semaphore:
+                        try:
+                            await svc.add(
+                                user_id=user_id, messages=messages, metadata=metadata,
+                                infer=request.infer, agent_id=request.agent_id or None,
+                                session_id=request.session_id or None,
+                            )
+                        except Exception:
+                            pass
+                asyncio.create_task(_bg())
+                return conversation_pb2.AddConversationResponse(
+                    success=True, data=[], message="对话已接收，记忆正在后台提取中",
+                )
+
             result = await svc.add(
                 user_id=user_id,
                 messages=messages,
@@ -622,6 +642,7 @@ class ContextGrpcServicer(context_pb2_grpc.ContextServiceServicer):
                 knowledge_datasets=list(request.knowledge_datasets) or None,
                 engine_timeout=request.engine_timeout or None,
                 chats=chats,
+                profile_user_id=request.profile_user_id or None,
             )
             result = await self._svc.get_context(ctx_request)
 

@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from cozymemory.grpc_server import conversation_pb2 as conversation__pb2
-from cozymemory.grpc_server import profile_pb2 as profile__pb2
+from . import conversation_pb2 as conversation__pb2
+from . import profile_pb2 as profile__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__

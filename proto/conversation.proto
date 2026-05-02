@@ -14,6 +14,7 @@ message AddConversationRequest {
   bool infer = 4;
   string agent_id = 5;    // 智能体 ID，用于按 agent 隔离记忆视角（空字符串表示不限制）
   string session_id = 6;  // 会话 ID，映射到 Mem0 run_id（短期记忆）
+  bool async_mode = 7;    // 异步模式：立即返回，后台提取记忆
 }
 
 message ConversationMemory {
