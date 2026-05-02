@@ -551,8 +551,8 @@ class KnowledgeGrpcServicer(knowledge_pb2_grpc.KnowledgeServiceServicer):
             result = await svc.search(
                 query=request.query,
                 dataset=request.dataset or None,
-                search_type=request.search_type,
-                top_k=request.top_k,
+                search_type=request.search_type or None,
+                top_k=request.top_k or None,
             )
             results = [
                 knowledge_pb2.KnowledgeSearchResult(
