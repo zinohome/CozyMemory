@@ -228,7 +228,7 @@ export default function SettingsPage() {
   const isOwner = me?.role === "owner";
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-4 w-full">
       <div>
         <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
       </div>

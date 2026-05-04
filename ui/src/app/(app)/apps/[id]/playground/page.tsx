@@ -292,7 +292,7 @@ export default function PlaygroundPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-6xl">
+    <div className="space-y-4 w-full">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{t("playground.title")}</h1>

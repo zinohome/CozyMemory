@@ -131,7 +131,7 @@ export default function BackupPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-4 w-full">
       <div>
         <h1 className="text-2xl font-bold">{t("backup.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">

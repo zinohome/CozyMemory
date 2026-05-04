@@ -127,7 +127,7 @@ function DocumentPreviewDialog({
 
   return (
     <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+      <DialogContent className="w-full max-h-[80vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>
             {t("knowledge.docs.previewTitle", { name: doc?.name ?? "" })}

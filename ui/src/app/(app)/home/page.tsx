@@ -36,16 +36,16 @@ function StatCard({
   hint?: string;
 }) {
   return (
-    <Card>
+    <Card className="flex flex-col justify-between">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Icon className="h-4 w-4" />
+          <Icon className="h-4 w-4 text-primary" />
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-semibold">{value}</p>
-        {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+        <p className="text-4xl font-bold tracking-tight" style={{fontVariantNumeric: "tabular-nums"}}>{value}</p>
+        {hint && <p className="text-xs text-muted-foreground mt-2">{hint}</p>}
       </CardContent>
     </Card>
   );
@@ -74,7 +74,7 @@ export default function HomePage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-2xl font-semibold">{t("home.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t("home.subtitle")}</p>
@@ -125,7 +125,7 @@ export default function HomePage() {
             <CardTitle className="text-base">{t("home.recent_apps")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {appList.slice(0, 6).map((app, idx) => {
                 const userTotal = userCountQueries[idx]?.data?.total ?? 0;
                 return (

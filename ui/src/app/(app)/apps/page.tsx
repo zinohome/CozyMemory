@@ -34,17 +34,17 @@ export default function AppsPage() {
           <CreateAppDialog trigger={<Button>{t("apps.create_first")}</Button>} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {apps.map((a) => (
             <Link key={a.id} href={`/apps/${a.id}`}>
-              <Card className="hover:bg-accent transition-colors">
-                <CardHeader>
-                  <CardTitle>{a.name}</CardTitle>
+              <Card className="hover:border-primary/40 hover:shadow-md transition-all h-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{a.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">/{a.slug}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(a.created_at).toLocaleDateString()}
+                  <p className="text-sm text-muted-foreground font-mono">/{a.slug}</p>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {t("apps.created")} {new Date(a.created_at).toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
