@@ -529,8 +529,8 @@ export const en = {
   "apps.slug_conflict": "Slug already taken",
   "apps.none": "No apps yet",
   "apps.none_create_cta": "Go create an App",
-  "apps.users_title": "External Users",
-  "apps.users_manage_hint": "View external user mappings for this app",
+  "apps.users_title": "App Users",
+  "apps.users_manage_hint": "View app user mappings for this app",
 
   // ── API Keys (per-app) ──────────────────────────────────────────────
   "keys.title": "API Keys",
@@ -556,7 +556,7 @@ export const en = {
     "Clients using this key will stop working immediately",
   "keys.manage_hint": "View and manage API keys for this app",
 
-  // ── External Users (Task 7) ─────────────────────────────────────────
+  // ── App Users (Task 7) ─────────────────────────────────────────
   "users.ext_title": "External users",
   "users.external_id": "External user_id",
   "users.internal_uuid": "Internal UUID",
@@ -565,7 +565,7 @@ export const en = {
   "users.delete_gdpr_desc":
     "Removes the user mapping (irreversible). Per-engine data must be cleaned up separately.",
   "users.pagination": "Page {page} of {pages} — {total} users",
-  "users.none": "No external users for this app yet",
+  "users.none": "No app users for this app yet",
 
   // ── App Workspace (Step 8.7) ────────────────────────────────────────
   "app_workspace.title": "App Workspace",
@@ -599,7 +599,7 @@ export const en = {
   "home.title": "Home",
   "home.subtitle": "Overview of your apps and memory platform activity.",
   "home.stat.apps": "Apps",
-  "home.stat.users": "External Users",
+  "home.stat.users": "App Users",
   "home.stat.users_hint": "Sum across all apps.",
   "home.stat.engines": "Memory Engines",
   "home.stat.engines_hint": "Mem0 · Memobase · Cognee",

@@ -527,8 +527,8 @@ export const zh: Record<TKey, string> = {
   "apps.slug_conflict": "Slug 已被占用",
   "apps.none": "还没有 App",
   "apps.none_create_cta": "去创建 App",
-  "apps.users_title": "外部用户",
-  "apps.users_manage_hint": "查看本 App 下所有 external user 映射",
+  "apps.users_title": "应用用户",
+  "apps.users_manage_hint": "查看本 App 下所有 应用用户 映射",
 
   // ── API Keys (per-app) ──────────────────────────────────────────────
   "keys.title": "API Keys",
@@ -552,7 +552,7 @@ export const zh: Record<TKey, string> = {
   "keys.manage_hint": "查看和管理 App 下的 API keys",
 
   // ── External Users (Task 7) ─────────────────────────────────────────
-  "users.ext_title": "外部用户映射",
+  "users.ext_title": "应用用户映射",
   "users.external_id": "外部 user_id",
   "users.internal_uuid": "内部 UUID",
   "users.created_at": "创建时间",
@@ -560,7 +560,7 @@ export const zh: Record<TKey, string> = {
   "users.delete_gdpr_desc":
     "将删除用户索引（不可逆）；各引擎端数据需另行清理",
   "users.pagination": "第 {page} / {pages} 页，共 {total} 个用户",
-  "users.none": "此 App 下还没有 external user",
+  "users.none": "此 App 下还没有 应用用户",
 
   // ── App Workspace (Step 8.7) ────────────────────────────────────────
   "app_workspace.title": "应用工作台",
@@ -593,7 +593,7 @@ export const zh: Record<TKey, string> = {
   "home.title": "主页",
   "home.subtitle": "查看当前组织下所有 App 和记忆平台的整体情况。",
   "home.stat.apps": "应用数",
-  "home.stat.users": "外部用户",
+  "home.stat.users": "应用用户",
   "home.stat.users_hint": "所有 App 汇总",
   "home.stat.engines": "记忆引擎",
   "home.stat.engines_hint": "Mem0 · Memobase · Cognee",
