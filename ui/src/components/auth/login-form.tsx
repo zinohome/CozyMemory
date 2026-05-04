@@ -29,7 +29,7 @@ export function LoginForm() {
         { method: "POST", body: JSON.stringify({ email, password }) },
       );
       setJwt(r.access_token);
-      document.cookie = "cm_auth=1; Path=/; SameSite=Lax; Secure";
+      document.cookie = "cm_auth=1; Path=/; SameSite=Lax";
       router.replace("/home");
     } catch {
       toast.error(t("auth.login_failed"));
