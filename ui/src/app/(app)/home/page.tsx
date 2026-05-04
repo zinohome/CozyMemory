@@ -29,22 +29,24 @@ function StatCard({
   value,
   icon: Icon,
   hint,
+  barColor = "stat-bar-blue",
 }: {
   label: string;
   value: string | number;
   icon: typeof LayoutGrid;
   hint?: string;
+  barColor?: string;
 }) {
   return (
-    <Card className="flex flex-col justify-between">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
+    <Card className={`flex flex-col justify-between ${barColor}`}>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <Icon className="h-3.5 w-3.5" />
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-4xl font-bold tracking-tight" style={{fontVariantNumeric: "tabular-nums"}}>{value}</p>
+        <p className="text-4xl font-extrabold tracking-tight" style={{fontVariantNumeric: "tabular-nums"}}>{value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-2">{hint}</p>}
       </CardContent>
     </Card>
@@ -81,23 +83,26 @@ export default function HomePage() {
       </div>
 
       {/* 三个核心统计 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <StatCard
           label={t("home.stat.apps")}
           value={appList.length}
           icon={LayoutGrid}
+          barColor="stat-bar-blue"
         />
         <StatCard
           label={t("home.stat.users")}
           value={totalUsers}
           icon={Users}
           hint={t("home.stat.users_hint")}
+          barColor="stat-bar-amber"
         />
         <StatCard
           label={t("home.stat.engines")}
           value={3}
           icon={Database}
           hint={t("home.stat.engines_hint")}
+          barColor="stat-bar-emerald"
         />
       </div>
 
