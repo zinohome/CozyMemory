@@ -183,7 +183,7 @@ services:
   # ==========================================
 
   cognee:
-    image: cognee:0.4.1
+    image: harbor.naivehero.top:8443/cozyai/cognee:0.4.1
     container_name: cozy_cognee
     restart: unless-stopped
     environment:
@@ -264,7 +264,7 @@ services:
           memory: 512m
 
   cognee-frontend:
-    image: cognee-frontend:local-0.4.1
+    image: harbor.naivehero.top:8443/cozyai/cognee-frontend:0.4.1
     container_name: cozy_cognee_frontend
     restart: unless-stopped
     # cognee-frontend 跑 Next.js dev 模式，NEXT_PUBLIC_* 可在运行时注入
@@ -294,7 +294,7 @@ services:
   # ==========================================
 
   mem0-api:
-    image: mem0-api:latest
+    image: harbor.naivehero.top:8443/cozyai/mem0-api:latest
     container_name: cozy_mem0_api
     restart: unless-stopped
     environment:
@@ -339,7 +339,7 @@ services:
           memory: 256m
 
   mem0-webui:
-    image: mem0-webui:latest
+    image: harbor.naivehero.top:8443/cozyai/mem0-webui:latest
     container_name: cozy_mem0_webui
     restart: unless-stopped
     # entrypoint.sh 在启动时将 NEXT_PUBLIC_* 替换进 .next/ 编译产物
@@ -366,7 +366,7 @@ services:
   # ==========================================
 
   memobase-server-api:
-    image: memobase-server:latest
+    image: harbor.naivehero.top:8443/cozyai/memobase-server:latest
     container_name: cozy_memobase_api
     restart: unless-stopped
     environment:
@@ -415,7 +415,7 @@ services:
   # ==========================================
 
   cozymemory-api:
-    image: cozymemory:latest
+    image: harbor.naivehero.top:8443/cozyai/cozymemory:latest
     container_name: cozymemory
     restart: unless-stopped
     ports:
@@ -476,7 +476,7 @@ services:
   # ==========================================
 
   cozymemory-ui:
-    image: cozymemory-ui:latest
+    image: harbor.naivehero.top:8443/cozyai/cozymemory-ui:latest
     container_name: cozy_ui
     restart: unless-stopped
     environment:
