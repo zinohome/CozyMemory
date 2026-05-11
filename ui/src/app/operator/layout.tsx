@@ -26,7 +26,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
                 <SidebarTrigger className="-ml-1" />
                 <span className="text-sm text-muted-foreground">Operator Mode</span>
               </div>
-              <div className="flex-1 p-5 sm:p-7 min-w-0 min-h-full bg-grid">{children}</div>
+              <div className="flex-1 p-5 sm:p-7 min-w-0 min-h-full bg-mesh">{children}</div>
             </main>
           </div>
         </SidebarProvider>

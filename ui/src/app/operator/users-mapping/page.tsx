@@ -238,7 +238,7 @@ export default function UsersPage() {
         )}
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
         {/* ── Left: table ── */}
         <div className="space-y-3">
           {/* Filter input */}
@@ -258,7 +258,7 @@ export default function UsersPage() {
             </p>
           )}
 
-          <ScrollArea className="h-[520px] rounded-md border">
+          <ScrollArea className="content-h rounded-md border">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm z-10">
                 <tr>

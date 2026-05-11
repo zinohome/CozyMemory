@@ -31,7 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <AppSwitcher />
                 <UserMenu />
               </header>
-              <div className="flex-1 p-5 sm:p-7 min-w-0 min-h-full bg-grid">{children}</div>
+              <div className="flex-1 p-5 sm:p-7 min-w-0 min-h-full bg-mesh">{children}</div>
             </main>
           </div>
         </SidebarProvider>

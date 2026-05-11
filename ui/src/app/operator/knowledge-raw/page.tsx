@@ -353,7 +353,7 @@ export default function KnowledgePage() {
         <p className="text-muted-foreground text-sm mt-1">{t("knowledge.subtitle")}</p>
       </div>
 
-      <div className="grid lg:grid-cols-[240px_1fr] gap-4 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4 min-w-0">
         {/* ── Dataset list ── */}
         <div className="space-y-2 min-w-0">
           <div className="flex items-center justify-between">
@@ -375,7 +375,7 @@ export default function KnowledgePage() {
             onChange={(e) => setDatasetFilter(e.target.value)}
             className="h-8 text-xs"
           />
-          <ScrollArea className="h-72">
+          <ScrollArea className="h-[calc(100vh-350px)] min-h-48">
             <div className="space-y-1 pr-2">
               {filteredDatasets.map((ds) => (
                 <DatasetRow
@@ -718,7 +718,7 @@ export default function KnowledgePage() {
                 )}
               </Button>
             </div>
-            <ScrollArea className="h-72">
+            <ScrollArea className="h-[calc(100vh-350px)] min-h-48">
               <div className="space-y-2 pr-2">
                 {searchMutation.data?.data?.map((item, i) => (
                   <div key={String(item.id ?? i)} className="rounded-md border p-3 text-sm space-y-1">

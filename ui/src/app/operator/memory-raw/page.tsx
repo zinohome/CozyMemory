@@ -157,7 +157,7 @@ export default function MemoryLabPage() {
         </div>
       )}
 
-      <ScrollArea className="h-[500px]">
+      <ScrollArea className="content-h">
         <div className="space-y-2 pr-2">
           {displayList.map((mem) => (
             <MemoryRow key={mem.id} mem={mem} onDelete={handleDelete} />

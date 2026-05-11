@@ -123,7 +123,7 @@ export default function ContextStudioPage() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 flex-1 min-h-0">
         {/* ── Left panel — parameters ── */}
         <Card className="h-fit">
           <CardHeader className="pb-3">
@@ -147,7 +147,7 @@ export default function ContextStudioPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label htmlFor="agent_id">{t("context.agentId")}</Label>
                 <Input
@@ -190,7 +190,7 @@ export default function ContextStudioPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="top_k">{t("context.topK.label")}</Label>
                 <Input
@@ -302,7 +302,7 @@ export default function ContextStudioPage() {
                 </TabsList>
 
                 <TabsContent value="conversations" className="flex-1 min-h-0 mt-2">
-                  <ScrollArea className="h-96">
+                  <ScrollArea className="h-[calc(100vh-300px)] min-h-64">
                     <div className="space-y-2 pr-3">
                       {result.conversations?.length ? (
                         result.conversations.map((m, i) => <MemoryCard key={m.id ?? i} mem={m} />)
@@ -314,7 +314,7 @@ export default function ContextStudioPage() {
                 </TabsContent>
 
                 <TabsContent value="profile" className="flex-1 min-h-0 mt-2">
-                  <ScrollArea className="h-96">
+                  <ScrollArea className="h-[calc(100vh-300px)] min-h-64">
                     {result.profile_context ? (
                       <pre className="text-sm whitespace-pre-wrap font-mono bg-muted rounded-md p-3">
                         {result.profile_context}
@@ -326,7 +326,7 @@ export default function ContextStudioPage() {
                 </TabsContent>
 
                 <TabsContent value="knowledge" className="flex-1 min-h-0 mt-2">
-                  <ScrollArea className="h-96">
+                  <ScrollArea className="h-[calc(100vh-300px)] min-h-64">
                     <div className="space-y-2 pr-3">
                       {result.knowledge?.length ? (
                         result.knowledge.map((item, i) => <KnowledgeCard key={String(item.id ?? i)} item={item} />)

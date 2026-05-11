@@ -153,7 +153,7 @@ export default function ProfilesPage() {
             </span>
             <span className="text-xs text-muted-foreground">{t("profiles.items.for")} {userId}</span>
           </div>
-          <ScrollArea className="h-64">
+          <ScrollArea className="h-[calc(100vh-400px)] min-h-48">
             <div className="space-y-2 pr-2">
               {(profileQuery.data.data.topics ?? []).map((item) => (
                 <ProfileItemRow
@@ -172,7 +172,7 @@ export default function ProfilesPage() {
 
           <div className="space-y-2">
             <p className="text-sm font-medium">{t("profiles.add.title")}</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Input
                 placeholder={t("profiles.add.topic")}
                 value={newItem.topic}

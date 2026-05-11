@@ -444,10 +444,10 @@ export default function PlaygroundPage() {
         </CardContent>
       </Card>
 
-      <div className="grid lg:grid-cols-[1fr_340px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
         {/* ── Chat transcript ── */}
         <Card>
-          <CardContent className="pt-4 flex flex-col h-[560px]">
+          <CardContent className="pt-4 flex flex-col content-h">
             <ScrollArea className="flex-1 pr-2" ref={scrollRef}>
               <div className="space-y-3">
                 {messages.length === 0 && (
