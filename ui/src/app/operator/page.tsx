@@ -6,15 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Activity,
-  ArrowRight,
-  Brain,
   Building2,
   Database,
-  FileText,
   HardDrive,
   Heart,
-  KeyRound,
-  Shield,
   Users,
 } from "lucide-react";
 
@@ -177,16 +172,12 @@ function Dashboard() {
   const totalDatasets = datasets?.data?.length ?? 0;
   const engines = health?.engines ?? {};
   const engineEntries = Object.entries(engines);
+  const unhealthyCount = engineEntries.filter(([, e]) => e.status !== "healthy" && e.status !== "disabled").length;
 
-  const quickLinks = [
-    { href: "/operator/orgs", label: t("operator.orgs"), icon: Building2, desc: "查看所有组织和 App" },
-    { href: "/operator/users-mapping", label: t("operator.users_mapping"), icon: Users, desc: "用户 ID 映射管理" },
-    { href: "/operator/memory-raw", label: t("operator.memory_raw"), icon: Brain, desc: "查看原始对话记忆" },
-    { href: "/operator/profiles-raw", label: t("operator.profiles_raw") || "画像数据", icon: FileText, desc: "查看原始用户画像" },
-    { href: "/operator/knowledge-raw", label: t("operator.knowledge_raw"), icon: Database, desc: "查看知识库数据" },
-    { href: "/operator/health", label: t("operator.health"), icon: Activity, desc: "引擎健康监控详情" },
-    { href: "/operator/backup", label: t("operator.backup") || "备份", icon: HardDrive, desc: "数据导出和导入" },
-    { href: "/operator/settings", label: t("operator.settings") || "设置", icon: KeyRound, desc: "API Key 管理" },
+  const quickActions = [
+    { href: "/operator/orgs", labelKey: "operator.action.view_orgs" as const, descKey: "operator.action.view_orgs_desc" as const, icon: Building2 },
+    { href: "/operator/backup", labelKey: "operator.action.run_backup" as const, descKey: "operator.action.run_backup_desc" as const, icon: HardDrive },
+    { href: "/operator/health", labelKey: "operator.action.health_detail" as const, descKey: "operator.action.health_detail_desc" as const, icon: Activity },
   ];
 
   return (
@@ -196,52 +187,64 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground mt-1">{t("operator.dashboard_subtitle")}</p>
       </div>
 
+      {/* Hero: 引擎健康状态 */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold">{t("operator.engine_health")}</h2>
+        {engineEntries.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {engineEntries.map(([key, eng]) => (
+                <Card key={key} className="flex items-center gap-4 p-4">
+                  <div className={`size-3 rounded-full shrink-0 ${eng.status === "healthy" ? "bg-green-500" : eng.status === "disabled" ? "bg-muted-foreground" : "bg-destructive"}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium capitalize">{eng.name || key}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {eng.latency_ms != null ? `${eng.latency_ms.toFixed(1)} ms` : "—"}
+                    </div>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-sm ${
+                    eng.status === "healthy"
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : eng.status === "disabled"
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-destructive/10 text-destructive"
+                  }`}>
+                    {eng.status}
+                  </span>
+                </Card>
+              ))}
+            </div>
+            <p className={`text-xs font-medium ${unhealthyCount === 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              {unhealthyCount === 0
+                ? t("operator.system_ok")
+                : t("operator.system_degraded", { n: unhealthyCount })}
+            </p>
+          </>
+        )}
+      </div>
+
       {/* 统计指标 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard label={t("operator.stat.api_status")} value={health?.status ?? "…"} icon={Activity} barColor="stat-bar-violet" />
         <StatCard label={t("operator.stat.orgs")} value={totalOrgs} icon={Building2} barColor="stat-bar-blue" />
         <StatCard label={t("operator.stat.users")} value={totalUsers} icon={Users} barColor="stat-bar-amber" />
         <StatCard label={t("operator.stat.datasets")} value={totalDatasets} icon={Database} barColor="stat-bar-emerald" />
-        <StatCard label={t("operator.stat.api_status")} value={health?.status ?? "…"} icon={Activity} barColor="stat-bar-violet" />
       </div>
 
-      {/* 引擎健康 */}
-      {engineEntries.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {engineEntries.map(([key, eng]) => (
-            <Card key={key} className="flex items-center gap-4 p-4">
-              <div className={`size-3 rounded-full shrink-0 ${eng.status === "healthy" ? "bg-green-500" : "bg-destructive"}`} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium capitalize">{eng.name || key}</div>
-                <div className="text-xs text-muted-foreground">
-                  {eng.latency_ms != null ? `${eng.latency_ms.toFixed(1)} ms` : "—"}
-                </div>
-              </div>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-sm ${
-                eng.status === "healthy"
-                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                  : "bg-destructive/10 text-destructive"
-              }`}>
-                {eng.status}
-              </span>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* 快捷入口 */}
+      {/* 快捷操作（精简为 3 个高频动作） */}
       <div>
-        <h2 className="text-base font-semibold mb-3">管理功能</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {quickLinks.map((l) => (
-            <Link key={l.href} href={l.href}>
+        <h2 className="text-sm font-semibold mb-3">{t("operator.quick_actions")}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {quickActions.map((a) => (
+            <Link key={a.href} href={a.href}>
               <Card className="hover:border-primary/40 hover:shadow-md transition-all h-full">
                 <CardContent className="p-4 flex items-start gap-3">
                   <div className="p-2 rounded-md bg-primary/5">
-                    <l.icon className="size-4 text-primary" />
+                    <a.icon className="size-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium text-sm">{l.label}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{l.desc}</div>
+                    <div className="font-medium text-sm">{t(a.labelKey)}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t(a.descKey)}</div>
                   </div>
                 </CardContent>
               </Card>

@@ -55,16 +55,33 @@ const SETTINGS_ITEM: NavItem = {
   icon: Settings,
 };
 
-function workspaceItems(base: string): NavItem[] {
+type NavGroup = { labelKey: TKey; items: NavItem[] };
+
+function workspaceGroups(base: string): NavGroup[] {
   return [
-    { href: base,                  labelKey: "app_workspace.overview",    icon: LayoutGrid },
-    { href: `${base}/keys`,        labelKey: "keys.title",                icon: KeyRound },
-    { href: `${base}/users`,       labelKey: "users.ext_title",           icon: Users },
-    { href: `${base}/memory`,      labelKey: "app_workspace.memory",      icon: MessageSquare },
-    { href: `${base}/profiles`,    labelKey: "app_workspace.profiles",    icon: User },
-    { href: `${base}/knowledge`,   labelKey: "app_workspace.knowledge",   icon: Database },
-    { href: `${base}/context`,     labelKey: "app_workspace.context",     icon: Eye },
-    { href: `${base}/playground`,  labelKey: "app_workspace.playground",  icon: Beaker },
+    {
+      labelKey: "app_workspace.group.try_it",
+      items: [
+        { href: `${base}/playground`,  labelKey: "app_workspace.playground",  icon: Beaker },
+        { href: `${base}/context`,     labelKey: "app_workspace.context",     icon: Eye },
+      ],
+    },
+    {
+      labelKey: "app_workspace.group.data_engines",
+      items: [
+        { href: `${base}/memory`,      labelKey: "app_workspace.memory",      icon: MessageSquare },
+        { href: `${base}/profiles`,    labelKey: "app_workspace.profiles",    icon: User },
+        { href: `${base}/knowledge`,   labelKey: "app_workspace.knowledge",   icon: Database },
+      ],
+    },
+    {
+      labelKey: "app_workspace.group.config",
+      items: [
+        { href: base,                  labelKey: "app_workspace.overview",    icon: LayoutGrid },
+        { href: `${base}/keys`,        labelKey: "keys.title",                icon: KeyRound },
+        { href: `${base}/users`,       labelKey: "users.ext_title",           icon: Users },
+      ],
+    },
   ];
 }
 
@@ -113,23 +130,32 @@ export function AppSidebar() {
 
         {/* 当前 App 工作台 —— 仅在 /apps/[id]/* 下展开 */}
         {inWorkspace && appId && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center justify-between pr-2">
-              <span>{t("app_workspace.title")}</span>
-              <Link
-                href="/apps"
-                className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                aria-label={t("app_workspace.back_to_apps")}
-              >
-                <ArrowLeft className="h-3 w-3" />
-              </Link>
-            </SidebarGroupLabel>
-            <SidebarMenu>
-              {workspaceItems(`/apps/${appId}`).map((item) => (
-                <MenuLink key={item.href} item={item} pathname={pathname} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel className="flex items-center justify-between pr-2">
+                <span>{t("app_workspace.title")}</span>
+                <Link
+                  href="/apps"
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                  aria-label={t("app_workspace.back_to_apps")}
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                </Link>
+              </SidebarGroupLabel>
+            </SidebarGroup>
+            {workspaceGroups(`/apps/${appId}`).map((group) => (
+              <SidebarGroup key={group.labelKey} className="py-0">
+                <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+                  {t(group.labelKey)}
+                </SidebarGroupLabel>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <MenuLink key={item.href} item={item} pathname={pathname} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            ))}
+          </>
         )}
 
         {/* 设置永远在底部 */}
