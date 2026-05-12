@@ -103,7 +103,7 @@ export default function MemoryLabPage() {
   return (
     <div className="space-y-4 w-full">
       <div>
-        <h1 className="text-2xl font-bold">{t("memory.title")}</h1>
+        <h1 className="text-2xl font-semibold">{t("memory.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t("memory.subtitle")}</p>
       </div>
 

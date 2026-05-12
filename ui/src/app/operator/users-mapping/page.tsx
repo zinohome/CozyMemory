@@ -129,7 +129,7 @@ function CreateMappingPanel({ onCreated }: { onCreated: () => void }) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
+        <CardTitle className="text-base flex items-center gap-2">
           <Plus className="h-4 w-4" />
           {t("users.create.title")}
         </CardTitle>
@@ -217,9 +217,9 @@ export default function UsersPage() {
   });
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-4 w-full">
       <div>
-        <h1 className="text-2xl font-bold">{t("users.title")}</h1>
+        <h1 className="text-2xl font-semibold">{t("users.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">
           {t("users.subtitle")}
         </p>
@@ -300,7 +300,7 @@ export default function UsersPage() {
 
                 {filtered.length === 0 && !usersQuery.isLoading && (
                   <tr>
-                    <td colSpan={3} className="px-3 py-8 text-center text-xs text-muted-foreground">
+                    <td colSpan={3} className="px-3 py-8 text-center text-sm text-muted-foreground">
                       {filter ? t("users.filter.empty") : t("users.empty")}
                     </td>
                   </tr>

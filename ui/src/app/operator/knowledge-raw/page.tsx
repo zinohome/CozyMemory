@@ -347,9 +347,9 @@ export default function KnowledgePage() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div>
-        <h1 className="text-2xl font-bold">{t("knowledge.title")}</h1>
+        <h1 className="text-2xl font-semibold">{t("knowledge.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t("knowledge.subtitle")}</p>
       </div>
 

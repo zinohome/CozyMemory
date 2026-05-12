@@ -17,7 +17,7 @@ export default function OrgsPage() {
   const orgs = data?.data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <h1 className="text-2xl font-semibold">
         <Building2 className="size-5 inline mr-2" />
         {t("operator.orgs")}

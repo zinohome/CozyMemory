@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 export default function OperatorSettings() {
   const t = useT();
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="space-y-4 w-full">
       <h1 className="text-xl font-semibold">{t("operator.settings")}</h1>
       <Card>
         <CardHeader>

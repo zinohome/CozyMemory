@@ -156,7 +156,7 @@ function StatCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-extrabold tracking-tight" style={{ fontVariantNumeric: "tabular-nums" }}>
+        <p className="text-4xl font-extrabold tracking-tight" style={{ fontVariantNumeric: "tabular-nums" }}>
           {value}
         </p>
       </CardContent>
@@ -192,7 +192,7 @@ function Dashboard() {
   return (
     <div className="space-y-6 w-full">
       <div>
-        <h1 className="text-2xl font-bold">{t("operator.dashboard_title")}</h1>
+        <h1 className="text-2xl font-semibold">{t("operator.dashboard_title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t("operator.dashboard_subtitle")}</p>
       </div>
 

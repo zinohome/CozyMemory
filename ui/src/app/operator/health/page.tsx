@@ -37,7 +37,7 @@ function EngineCard({ engine }: { engine: EngineStatus }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 min-w-0">
+        <CardTitle className="text-base font-medium flex items-center gap-2 min-w-0">
           <Icon className={`h-4 w-4 shrink-0 ${meta.color}`} />
           <span className="truncate">{meta.label}</span>
         </CardTitle>
@@ -177,7 +177,7 @@ function ObservabilityPanel() {
       <div className="grid lg:grid-cols-1 sm:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5">
+            <CardTitle className="text-base flex items-center gap-1.5">
               <Activity className="h-3.5 w-3.5" /> {t("dashboard.obs.engineLatency")}
             </CardTitle>
           </CardHeader>
@@ -190,7 +190,7 @@ function ObservabilityPanel() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5">
+            <CardTitle className="text-base flex items-center gap-1.5">
               <TrendingUp className="h-3.5 w-3.5" /> {t("dashboard.obs.memoryGrowth")}
             </CardTitle>
           </CardHeader>
@@ -225,7 +225,7 @@ function StatTile({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
-            <p className="text-3xl font-bold mt-1">
+            <p className="text-4xl font-extrabold mt-1">
               {loading ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> : (value ?? "—")}
             </p>
           </div>
@@ -297,7 +297,7 @@ function UsersTable({ userIds }: { userIds: string[] }) {
             })}
             {shown.length === 0 && (
               <tr>
-                <td colSpan={2} className="px-3 py-4 text-center text-xs text-muted-foreground">
+                <td colSpan={2} className="px-3 py-4 text-center text-sm text-muted-foreground">
                   {t("dashboard.users.empty")}
                 </td>
               </tr>
@@ -343,7 +343,7 @@ function DatasetsTable({ datasets }: { datasets: KnowledgeDataset[] }) {
             ))}
             {datasets.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-3 py-4 text-center text-xs text-muted-foreground">
+                <td colSpan={3} className="px-3 py-4 text-center text-sm text-muted-foreground">
                   {t("dashboard.datasets.empty")}
                 </td>
               </tr>
@@ -394,10 +394,10 @@ export default function DashboardPage() {
   const datasetList = datasetsQuery.data?.data ?? [];
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
+          <h1 className="text-2xl font-semibold">{t("dashboard.title")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {t("dashboard.subtitle")}
           </p>

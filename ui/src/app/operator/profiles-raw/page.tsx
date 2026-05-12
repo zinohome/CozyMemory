@@ -113,7 +113,7 @@ export default function ProfilesPage() {
   return (
     <div className="space-y-4 w-full">
       <div>
-        <h1 className="text-2xl font-bold">{t("profiles.title")}</h1>
+        <h1 className="text-2xl font-semibold">{t("profiles.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t("profiles.subtitle")}</p>
       </div>
 
@@ -130,7 +130,7 @@ export default function ProfilesPage() {
       {contextQuery.data?.data?.context && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
               <User className="h-4 w-4" /> {t("profiles.contextPrompt")}
             </CardTitle>
           </CardHeader>
