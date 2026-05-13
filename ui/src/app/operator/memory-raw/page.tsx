@@ -50,6 +50,13 @@ export default function MemoryLabPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const qc = useQueryClient();
 
+  const usersQuery = useQuery({
+    queryKey: ["operator", "users"],
+    queryFn: operatorApi.listUsers,
+    staleTime: 60_000,
+  });
+  const globalUserIds = usersQuery.data?.data ?? [];
+
   const listQuery = useQuery({
     queryKey: ["operator", "memories", userId],
     queryFn: () => operatorApi.listConversations(userId),
@@ -113,6 +120,7 @@ export default function MemoryLabPage() {
             onConfirm={handleLoad}
             loading={listQuery.isFetching}
             buttonLabel={t("common.load")}
+            knownUserIds={globalUserIds}
           />
 
           <div className="flex gap-2">
@@ -170,7 +178,6 @@ export default function MemoryLabPage() {
               icon={MessageSquare}
               title={t("empty.noUser.title")}
               description={t("empty.memory.desc")}
-              action={{ label: t("empty.openPlayground"), href: "/playground" }}
             />
           )}
         </div>

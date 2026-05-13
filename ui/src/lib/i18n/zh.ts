@@ -63,7 +63,7 @@ export const zh: Record<TKey, string> = {
   "empty.openPlayground": "打开对话沙盒",
 
   // ── Dashboard ───────────────────────────────────────────────────────
-  "dashboard.title": "仪表盘",
+  "dashboard.title": "系统健康",
   "dashboard.subtitle": "所有记忆引擎和已存数据的概览。",
   "dashboard.refresh": "刷新",
   "dashboard.refreshing": "刷新中…",

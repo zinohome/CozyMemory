@@ -35,6 +35,7 @@ export function UserMenu() {
       <Button
         variant="ghost"
         size="icon"
+        nativeButton={false}
         render={<Link href="/settings" />}
         aria-label={t("sidebar.item.settings")}
         title={t("sidebar.item.settings")}

@@ -52,6 +52,13 @@ export default function ProfilesPage() {
   const [newItem, setNewItem] = useState({ topic: "", sub_topic: "", content: "" });
   const qc = useQueryClient();
 
+  const usersQuery = useQuery({
+    queryKey: ["operator", "users"],
+    queryFn: operatorApi.listUsers,
+    staleTime: 60_000,
+  });
+  const globalUserIds = usersQuery.data?.data ?? [];
+
   const profileQuery = useQuery({
     queryKey: ["operator", "profile", userId],
     queryFn: () => operatorApi.getProfile(userId),
@@ -123,6 +130,7 @@ export default function ProfilesPage() {
             onConfirm={handleLoad}
             loading={profileQuery.isFetching}
             buttonLabel={t("common.load")}
+            knownUserIds={globalUserIds}
           />
         </CardContent>
       </Card>
@@ -203,7 +211,6 @@ export default function ProfilesPage() {
           icon={User}
           title={t("empty.noUser.title")}
           description={t("empty.profiles.desc")}
-          action={{ label: t("empty.openPlayground"), href: "/playground" }}
         />
       )}
     </div>

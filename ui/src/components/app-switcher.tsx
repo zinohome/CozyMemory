@@ -55,7 +55,9 @@ export function AppSwitcher() {
       }}
     >
       <SelectTrigger className="w-48">
-        <SelectValue />
+        <SelectValue placeholder={t("apps.none_create_cta")}>
+          {apps.find((a) => a.id === current)?.name}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {apps.map((a) => (

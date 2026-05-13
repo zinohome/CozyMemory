@@ -26,6 +26,8 @@ interface Props {
   withButton?: boolean;
   buttonLabel?: string;
   loading?: boolean;
+  /** Override the default user list (e.g. for Operator pages that have their own user source) */
+  knownUserIds?: string[];
 }
 
 const NEW_USER_SENTINEL = "__new__";
@@ -36,6 +38,7 @@ export function UserSelector({
   withButton = true,
   buttonLabel = "Load",
   loading = false,
+  knownUserIds,
 }: Props) {
   const { currentUserId, setCurrentUserId } = useAppStore();
   const currentAppId = useAppStore((s) => s.currentAppId);
@@ -44,8 +47,13 @@ export function UserSelector({
 
   // 使用当前 App 的 external_users（来自 Step 7 的 dashboard users endpoint）。
   // 没选 App 时 query 自动 disable（useAppUsers 内部 enabled: !!appId）。
-  const { data, isFetching } = useAppUsers(currentAppId, 500, 0);
-  const knownUsers = (data?.data ?? []).map((u) => u.external_user_id);
+  // 如果调用方提供了 knownUserIds（例如 Operator 页面），则跳过 fetch。
+  const { data, isFetching } = useAppUsers(
+    knownUserIds ? undefined : currentAppId,
+    500,
+    0,
+  );
+  const knownUsers = knownUserIds ?? (data?.data ?? []).map((u) => u.external_user_id);
 
   function handleChange(val: string) {
     if (val === NEW_USER_SENTINEL) {

@@ -64,7 +64,7 @@ export const en = {
   "empty.openPlayground": "Open Playground",
 
   // ── Dashboard ───────────────────────────────────────────────────────
-  "dashboard.title": "Dashboard",
+  "dashboard.title": "System Health",
   "dashboard.subtitle": "Overview of all memory engines and stored data.",
   "dashboard.refresh": "Refresh",
   "dashboard.refreshing": "Refreshing…",

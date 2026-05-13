@@ -57,11 +57,11 @@ function CodeBlock({ code }: { code: string }) {
 }
 
 function getBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    return envUrl && envUrl.length > 0 ? envUrl : window.location.origin;
-  }
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && envUrl.length > 0) return envUrl;
+  // Fallback to the default backend API URL, NOT the frontend origin.
+  // The frontend (Next.js) runs on a different port from the backend API.
+  return "http://localhost:8000";
 }
 
 export function IntegrationQuickstart({ appId }: Props) {
@@ -139,7 +139,7 @@ const ctx = await client.context.getUnified("alice", "outdoor activity");
             <span className="font-medium text-foreground">Base URL: </span>
             <code className="break-all">{base}/api/v1</code>
           </div>
-          <Button variant="outline" size="sm" render={<Link href={`/apps/${appId}/keys`} />}>
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/apps/${appId}/keys`} />}>
             <KeyRound className="h-3 w-3 mr-1" />
             {t("quickstart.manage_keys")}
           </Button>

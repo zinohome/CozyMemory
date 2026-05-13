@@ -112,11 +112,11 @@ export default function HomePage() {
           <CardTitle className="text-base">{t("home.quick.title")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button render={<Link href="/apps" />}>
+          <Button nativeButton={false} render={<Link href="/apps" />}>
             <Plus className="h-4 w-4 mr-2" />
             {t("home.quick.new_app")}
           </Button>
-          <Button variant="outline" render={<Link href="/apps" />}>
+          <Button variant="outline" nativeButton={false} render={<Link href="/apps" />}>
             <LayoutGrid className="h-4 w-4 mr-2" />
             {t("home.quick.browse_apps")}
           </Button>
