@@ -14,12 +14,12 @@ export interface ExtUserList {
   total: number;
 }
 
-export function useAppUsers(appId: string, limit: number, offset: number) {
+export function useAppUsers(appId: string | undefined, limit: number, offset: number) {
   return useQuery<ExtUserList>({
     queryKey: ["apps", appId, "users", limit, offset],
     queryFn: () =>
       dashboardFetch<ExtUserList>(
-        `/dashboard/apps/${appId}/users?limit=${limit}&offset=${offset}`,
+        `/dashboard/apps/${appId!}/users?limit=${limit}&offset=${offset}`,
       ),
     enabled: !!appId,
   });
