@@ -95,6 +95,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD required}
+    ports:
+      - "9000:9000"   # MinIO S3 API
+      - "9001:9001"   # MinIO Web 控制台
     volumes:
       - /data/CozyMemory/minio:/data
     networks:
@@ -232,7 +235,9 @@ services:
       # 跳过 LLM 连接测试：Ollama 模型冷启动可能超过 30s 检测超时
       # LLM 实际可用（容器内 1.4s 响应），但 Cognee 内部测试超时逻辑过于严格
       - COGNEE_SKIP_CONNECTION_TEST=true
-      - ENABLE_BACKEND_ACCESS_CONTROL=true
+      # CozyMemory 自行管理 App 级别的数据隔离，Cognee 内置的 access control
+      # 在 FalkorDB 模式下会导致图谱查询端点（/datasets/{id}/graph）500 崩溃
+      - ENABLE_BACKEND_ACCESS_CONTROL=false
       - REQUIRE_AUTHENTICATION=false
       - DEFAULT_USER_EMAIL=admin@cognee.com
       - DEFAULT_USER_PASSWORD=${COGNEE_ADMIN_PASSWORD:-passw0rd}

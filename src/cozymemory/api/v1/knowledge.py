@@ -73,6 +73,14 @@ async def create_dataset(
     session: AsyncSession = Depends(get_session),
 ) -> KnowledgeDatasetListResponse | JSONResponse:
     """创建数据集"""
+    if not name or not name.strip():
+        return JSONResponse(
+            status_code=400,
+            content=ErrorResponse(
+                success=False, error="ValidationError", detail="数据集名称不能为空"
+            ).model_dump(),
+        )
+    name = name.strip()
     try:
         resp = await service.create_dataset(name=name)
     except EngineError as e:

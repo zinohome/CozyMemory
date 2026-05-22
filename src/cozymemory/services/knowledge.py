@@ -28,21 +28,42 @@ class KnowledgeService:
     def __init__(self, client: CogneeClient):
         self.client = client
 
+    async def _resolve_latest_data_id(self, dataset: str) -> str | None:
+        """通过数据集名称找到最新添加文档的 data_id。
+        Cognee /api/v1/add 响应不含 id，需要通过 list_dataset_data 反查。
+        """
+        try:
+            datasets = await self.client.list_datasets()
+            ds = next((d for d in datasets if d.name == dataset), None)
+            if ds is None:
+                return None
+            items = await self.client.list_dataset_data(dataset_id=ds.id)
+            if not items:
+                return None
+            # 取最后一个（Cognee 按插入顺序返回）
+            last = items[-1]
+            raw_id = last.get("id")
+            return str(raw_id) if raw_id else None
+        except Exception:
+            return None
+
     async def add(self, data: str, dataset: str) -> KnowledgeAddResponse:
         """添加文本到知识库"""
-        result = await self.client.add(data=data, dataset=dataset)
+        await self.client.add(data=data, dataset=dataset)
+        data_id = await self._resolve_latest_data_id(dataset)
         return KnowledgeAddResponse(
-            success=True, data_id=result.get("id"), dataset=dataset, message="数据已添加"
+            success=True, data_id=data_id, dataset=dataset, message="数据已添加"
         )
 
     async def add_files(
         self, files: list[tuple[str, bytes, str]], dataset: str
     ) -> KnowledgeAddResponse:
         """上传文件到知识库"""
-        result = await self.client.add_files(files=files, dataset=dataset)
+        await self.client.add_files(files=files, dataset=dataset)
+        data_id = await self._resolve_latest_data_id(dataset)
         return KnowledgeAddResponse(
             success=True,
-            data_id=result.get("id"),
+            data_id=data_id,
             dataset=dataset,
             message=f"已上传 {len(files)} 个文件",
         )

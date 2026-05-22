@@ -68,6 +68,8 @@ class Mem0Client(BaseClient):
                 user_id=user_id,
                 content=item.get("memory", ""),
                 metadata=item.get("metadata"),
+                created_at=item.get("created_at"),
+                updated_at=item.get("updated_at"),
             )
             for item in items
         ]
@@ -108,6 +110,8 @@ class Mem0Client(BaseClient):
                     content=item.get("memory", ""),
                     score=item.get("score"),
                     metadata=item.get("metadata"),
+                    created_at=item.get("created_at"),
+                    updated_at=item.get("updated_at"),
                 )
             )
         return results
@@ -124,6 +128,8 @@ class Mem0Client(BaseClient):
                 user_id=item.get("user_id", ""),
                 content=item.get("memory", ""),
                 metadata=item.get("metadata"),
+                created_at=item.get("created_at"),
+                updated_at=item.get("updated_at"),
             )
         except EngineError as e:
             if e.status_code == 404:
@@ -159,6 +165,8 @@ class Mem0Client(BaseClient):
                 user_id=item.get("user_id", user_id),
                 content=item.get("memory", ""),
                 metadata=item.get("metadata"),
+                created_at=item.get("created_at"),
+                updated_at=item.get("updated_at"),
             )
             for item in items
         ]

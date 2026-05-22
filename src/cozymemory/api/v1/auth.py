@@ -4,9 +4,12 @@
 但 /auth/me 需要 Bearer JWT。
 """
 
+import time
+from collections import defaultdict
 from datetime import UTC, datetime
+from threading import Lock
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +26,12 @@ from ...models.auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# 登录速率限制：每个 IP 在滑动窗口内最多允许 N 次尝试
+_LOGIN_WINDOW_SECONDS = 60
+_LOGIN_MAX_ATTEMPTS = 10
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+_login_lock = Lock()
 
 
 def _to_developer_info(dev: Developer, org: Organization) -> DeveloperInfo:
@@ -109,20 +118,42 @@ async def register(
     return _issue_token(dev, org)
 
 
+def _check_login_rate_limit(client_ip: str) -> bool:
+    """滑动窗口速率检查，返回 True 表示已超限。线程安全。"""
+    now = time.monotonic()
+    cutoff = now - _LOGIN_WINDOW_SECONDS
+    with _login_lock:
+        attempts = _login_attempts[client_ip]
+        # 清除过期记录
+        _login_attempts[client_ip] = [t for t in attempts if t > cutoff]
+        if len(_login_attempts[client_ip]) >= _LOGIN_MAX_ATTEMPTS:
+            return True
+        _login_attempts[client_ip].append(now)
+        return False
+
+
 @router.post(
     "/login",
     response_model=TokenResponse,
     summary="登录 — 邮箱 + 密码换 JWT",
 )
 async def login(
+    request: Request,
     body: LoginRequest,
     session: AsyncSession = Depends(get_session),
 ) -> TokenResponse:
     """验证邮箱 + 密码，成功返回 JWT。
 
     失败统一返回 401 invalid credentials（不区分"邮箱不存在" vs "密码错"，
-    防枚举）。
+    防枚举）。每个 IP 60 秒内最多尝试 10 次，超限返回 429。
     """
+    client_ip = request.client.host if request.client else "unknown"
+    if _check_login_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many login attempts. Please try again after {_LOGIN_WINDOW_SECONDS} seconds.",
+            headers={"Retry-After": str(_LOGIN_WINDOW_SECONDS)},
+        )
     result = await session.execute(select(Developer).where(Developer.email == body.email))
     dev = result.scalar_one_or_none()
     if dev is None or not verify_password(body.password, dev.password_hash):
