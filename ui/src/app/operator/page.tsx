@@ -209,7 +209,12 @@ function Dashboard() {
                         ? "bg-muted text-muted-foreground"
                         : "bg-destructive/10 text-destructive"
                   }`}>
-                    {eng.status}
+                    {({
+                      healthy: t("operator.engine.status.healthy"),
+                      degraded: t("operator.engine.status.degraded"),
+                      unhealthy: t("operator.engine.status.unhealthy"),
+                      disabled: t("operator.engine.status.disabled"),
+                    } as Record<string, string>)[eng.status] ?? t("operator.engine.status.unknown")}
                   </span>
                 </Card>
               ))}
