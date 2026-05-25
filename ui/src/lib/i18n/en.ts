@@ -312,6 +312,7 @@ export const en = {
   "context.empty.conversations": "No conversation memories.",
   "context.empty.profile": "No profile context.",
   "context.empty.knowledge": "No knowledge results.",
+  "context.knowledge.engineError": "Knowledge engine returned an error — results may be incomplete. See the engine errors section below.",
   "context.selectFirst":
     "Select a user and click \"Fetch Context\" to see results.",
 

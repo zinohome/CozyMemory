@@ -115,7 +115,7 @@ export default function MemoryLabPage() {
           <UserSelector
             onConfirm={handleLoad}
             loading={listQuery.isFetching}
-            buttonLabel={t("common.load")}
+            withButton={false}
           />
 
           <div className="flex gap-2">

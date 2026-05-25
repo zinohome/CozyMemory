@@ -311,6 +311,7 @@ export const zh: Record<TKey, string> = {
   "context.empty.conversations": "没有对话记忆。",
   "context.empty.profile": "没有画像上下文。",
   "context.empty.knowledge": "没有知识结果。",
+  "context.knowledge.engineError": "知识引擎返回错误，结果可能不完整。请查看下方引擎错误详情。",
   "context.selectFirst":
     "选一个用户并点击 \"获取上下文\" 查看结果。",
 

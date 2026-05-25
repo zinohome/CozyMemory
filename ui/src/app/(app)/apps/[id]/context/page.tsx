@@ -18,6 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Zap, MessageSquare, User, BookOpen, AlertTriangle } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { useT } from "@/lib/i18n";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ContextParams {
   user_id: string;
@@ -318,9 +320,11 @@ export default function ContextStudioPage() {
                 <TabsContent value="profile" className="flex-1 min-h-0 mt-2">
                   <ScrollArea className="h-[calc(100vh-300px)] min-h-64">
                     {result.profile_context ? (
-                      <pre className="text-sm whitespace-pre-wrap font-mono bg-muted rounded-md p-3">
-                        {result.profile_context}
-                      </pre>
+                      <div className="text-sm bg-muted rounded-md p-3 prose prose-sm dark:prose-invert max-w-none prose-headings:text-sm prose-headings:font-semibold prose-p:my-1 prose-ul:my-1 prose-li:my-0">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {result.profile_context}
+                        </ReactMarkdown>
+                      </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">{t("context.empty.profile")}</p>
                     )}
@@ -333,7 +337,14 @@ export default function ContextStudioPage() {
                       {result.knowledge?.length ? (
                         result.knowledge.map((item, i) => <KnowledgeCard key={String(item.id ?? i)} item={item} />)
                       ) : (
-                        <p className="text-sm text-muted-foreground">{t("context.empty.knowledge")}</p>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">{t("context.empty.knowledge")}</p>
+                          {result.errors && Object.keys(result.errors).some(k => k.toLowerCase().includes("knowledge") || k.toLowerCase().includes("cognee")) && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400">
+                              {t("context.knowledge.engineError")}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </ScrollArea>

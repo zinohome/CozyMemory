@@ -10,7 +10,7 @@
  * On select/confirm it writes to Zustand currentUserId so all pages stay in sync.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppUsers } from "@/lib/hooks/use-app-users";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,13 @@ export function UserSelector({
     0,
   );
   const knownUsers = knownUserIds ?? (data?.data ?? []).map((u) => u.external_user_id);
+
+  // 加载完毕后若无已知用户，自动切换到文本输入模式，避免用户困惑
+  useEffect(() => {
+    if (!isFetching && knownUsers.length === 0 && mode === "select") {
+      setMode("text");
+    }
+  }, [isFetching, knownUsers.length, mode]);
 
   function handleChange(val: string) {
     if (val === NEW_USER_SENTINEL) {

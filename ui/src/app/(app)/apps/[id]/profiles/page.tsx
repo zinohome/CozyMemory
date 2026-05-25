@@ -15,6 +15,8 @@ import { Loader2, Trash2, User } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
 import { useT } from "@/lib/i18n";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const ProfileItemRow = memo(function ProfileItemRow({
   item,
@@ -125,7 +127,7 @@ export default function ProfilesPage() {
           <UserSelector
             onConfirm={handleLoad}
             loading={profileQuery.isFetching}
-            buttonLabel={t("common.load")}
+            withButton={false}
           />
         </CardContent>
       </Card>
@@ -139,9 +141,11 @@ export default function ProfilesPage() {
             <p className="text-xs text-muted-foreground">{t("profiles.contextPrompt.hint")}</p>
           </CardHeader>
           <CardContent>
-            <pre className="text-xs whitespace-pre-wrap font-mono bg-muted rounded p-3">
-              {contextQuery.data.data.context}
-            </pre>
+            <div className="text-xs bg-muted rounded p-3 prose prose-sm dark:prose-invert max-w-none prose-headings:text-sm prose-headings:font-semibold prose-p:my-1 prose-ul:my-1 prose-li:my-0">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {contextQuery.data.data.context}
+              </ReactMarkdown>
+            </div>
           </CardContent>
         </Card>
       )}
