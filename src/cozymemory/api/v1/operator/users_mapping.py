@@ -87,7 +87,7 @@ async def get_uuid(
         uuid_str = await service.get_or_create_uuid(user_id)
         return UserMappingResponse(user_id=user_id, uuid=uuid_str, created=(existing is None))
 
-    uuid_str = await service.get_uuid(user_id)
+    uuid_str = await service.get_uuid(user_id)  # type: ignore[assignment]
     if uuid_str is None:
         return JSONResponse(
             status_code=404,

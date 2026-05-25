@@ -29,7 +29,7 @@ def _cache_get(key: tuple) -> list[ConversationMemory] | None:
     return None
 
 
-def _cache_set(key: tuple, value: list[ConversationMemory]):
+def _cache_set(key: tuple, value: list[ConversationMemory]) -> None:
     if len(_search_cache) >= _CACHE_MAX_SIZE:
         # 清理过期条目
         now = time.monotonic()

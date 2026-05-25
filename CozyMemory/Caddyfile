@@ -7,6 +7,13 @@
 #   :8019 → Memobase API
 #   :8085 → FalkorDB Browser（图数据库管理）
 
+{
+	# 禁止 Caddy 自动将 HTTP 重定向到 HTTPS：
+	# localhost:50051 { tls internal } 块会导致 Caddy 把 localhost:80 的请求
+	# 自动重定向到 https://localhost:50051/，覆盖导航页的 :80 块
+	auto_https disable_redirects
+}
+
 # 导航页 (:80) — 点击跳转各服务端口
 :80 {
 	root * /srv/nav

@@ -138,7 +138,7 @@ class KnowledgeService:
             search_type = settings.COGNEE_DEFAULT_SEARCH_TYPE  # type: ignore[assignment]
         """搜索知识库"""
         results = await self.client.search(
-            query=query, dataset=dataset, search_type=search_type, top_k=top_k
+            query=query, dataset=dataset, search_type=search_type, top_k=top_k  # type: ignore[arg-type]
         )
         return KnowledgeSearchResponse(success=True, data=results, total=len(results))
 

@@ -364,7 +364,7 @@ async def get_app_usage(
             .order_by(func.count(APIUsage.id).desc())
         )
     ).all()
-    per_route = [{"route": r.route, "count": int(r.count)} for r in per_route_rows]
+    per_route = [{"route": r.route, "count": int(r.count)} for r in per_route_rows]  # type: ignore[call-overload]
 
     # daily bucket
     day_rows = (
@@ -378,7 +378,7 @@ async def get_app_usage(
             .order_by("day")
         )
     ).all()
-    daily = [{"date": str(r.day), "count": int(r.count)} for r in day_rows]
+    daily = [{"date": str(r.day), "count": int(r.count)} for r in day_rows]  # type: ignore[call-overload]
 
     return {
         "total": total,

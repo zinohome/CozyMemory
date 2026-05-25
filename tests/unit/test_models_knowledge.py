@@ -33,7 +33,8 @@ def test_knowledge_cognify_request():
 
 def test_knowledge_search_request():
     req = KnowledgeSearchRequest(query="Cognee 是什么？")
-    assert req.search_type == "GRAPH_COMPLETION"
+    # search_type 默认为 None（由 Cognee 服务端决定默认搜索类型）
+    assert req.search_type is None
     assert req.top_k == 10
 
 

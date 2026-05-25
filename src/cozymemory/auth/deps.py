@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -71,7 +72,7 @@ async def get_current_developer(
     return developer
 
 
-def require_role(*allowed: str):
+def require_role(*allowed: str) -> Any:
     """依赖工厂：限制路由只有指定 role 能访问。
 
     用法：

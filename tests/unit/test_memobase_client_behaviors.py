@@ -1,7 +1,7 @@
 """Memobase 客户端新行为测试
 
-覆盖客户端重写后新增的核心行为：
-- insert() 的 FK 自动重试逻辑
+覆盖客户端核心行为：
+- insert() 预先调用 add_user() 防止 FK 违规（幂等预创建）
 - add_user() 的 UniqueViolation 静默忽略
 - profile() 新响应格式解析
 - context() 新响应格式解析
@@ -21,26 +21,23 @@ def client():
     return MemobaseClient(api_url="http://localhost:8019", api_key="secret")
 
 
-# ===== insert() FK 自动重试 =====
+# ===== insert() 预创建用户 =====
 
 
 @pytest.mark.asyncio
-async def test_insert_auto_creates_user_on_fk_violation(client):
-    """insert() 检测到 ForeignKeyViolation 时自动调用 add_user() 并重试"""
-    fk_response = httpx.Response(
-        200, json={"errno": 500, "errmsg": "ForeignKeyViolation: user not found"}
-    )
-    ok_response = httpx.Response(200, json={"data": {"id": "blob_1"}, "errno": 0})
+async def test_insert_preemptively_creates_user(client):
+    """insert() 在发送 blob 前先调用 add_user()（幂等预创建，防止 FK 违规）"""
     add_user_response = httpx.Response(200, json={"data": {"id": "uid-123"}, "errno": 0})
+    insert_response = httpx.Response(200, json={"data": {"id": "blob_1"}, "errno": 0})
 
-    request_mock = AsyncMock(side_effect=[fk_response, add_user_response, ok_response])
+    request_mock = AsyncMock(side_effect=[add_user_response, insert_response])
     with patch.object(client._client, "request", request_mock):
         blob_id = await client.insert(
             user_id="uid-123", messages=[{"role": "user", "content": "你好"}]
         )
         assert blob_id == "blob_1"
-        # 第1次: insert 请求, 第2次: add_user 请求, 第3次: insert 重试
-        assert request_mock.call_count == 3
+        # 第1次: add_user, 第2次: blob insert
+        assert request_mock.call_count == 2
 
 
 @pytest.mark.asyncio

@@ -118,7 +118,7 @@ async def add_conversation(
 
     if request.async_mode:
         # 异步模式：立即返回，后台提取记忆（限制并发避免打满 Mem0）
-        async def _bg_extract():
+        async def _bg_extract() -> None:
             async with _bg_semaphore:
                 try:
                     result = await service.add(

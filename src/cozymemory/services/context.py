@@ -6,6 +6,7 @@
 
 import asyncio
 import time
+from typing import Any
 
 import structlog
 
@@ -51,7 +52,7 @@ class ContextService:
 
         # ── 构建并发任务列表 ──────────────────────────────────────────────
         task_keys: list[str] = []
-        coros = []
+        coros: list[Any] = []
 
         if request.include_conversations:
             if need_both:
@@ -108,7 +109,7 @@ class ContextService:
             )
 
         if request.include_knowledge and request.query:
-            datasets = request.knowledge_datasets or [None]  # None = 搜索全部
+            datasets = request.knowledge_datasets or [None]  # type: ignore[list-item]  # None = 搜索全部
             for ds in datasets:
                 key = f"knowledge:{ds}" if ds else "knowledge"
                 task_keys.append(key)
@@ -134,7 +135,7 @@ class ContextService:
         short_term_memories: list[ConversationMemory] = []
         long_term_memories: list[ConversationMemory] = []
         profile_context = None
-        knowledge = []
+        knowledge: list[Any] = []
         errors: dict[str, str] = {}
 
         for key, result in zip(task_keys, raw_results):
@@ -157,17 +158,17 @@ class ContextService:
 
             if key == "conversations_short":
                 # search_short / get_all_short 直接返回 list[ConversationMemory]
-                short_term_memories = result if isinstance(result, list) else result.data
+                short_term_memories = result if isinstance(result, list) else result.data  # type: ignore[union-attr]
             elif key == "conversations_long":
                 # search / get_all 返回 ConversationMemoryListResponse
                 long_term_memories = (
-                    result.data if isinstance(result, ConversationMemoryListResponse) else result
+                    result.data if isinstance(result, ConversationMemoryListResponse) else result  # type: ignore[assignment]
                 )
                 conversations = long_term_memories  # 向后兼容
             elif key == "conversations":
                 # memory_scope != both：单次调用，返回 ConversationMemoryListResponse
                 data: list[ConversationMemory] = (
-                    result if isinstance(result, list) else result.data
+                    result if isinstance(result, list) else result.data  # type: ignore[union-attr]
                 )
                 conversations = data
                 if request.memory_scope == "short":
@@ -175,9 +176,9 @@ class ContextService:
                 else:
                     long_term_memories = data
             elif key == "profile":
-                profile_context = result.data.context if result.data else None
+                profile_context = result.data.context if result.data else None  # type: ignore[union-attr]
             elif key.startswith("knowledge"):
-                items = result if isinstance(result, list) else result.data
+                items = result if isinstance(result, list) else result.data  # type: ignore[union-attr]
                 knowledge.extend(items)
 
         latency_ms = round((time.monotonic() - start) * 1000, 1)

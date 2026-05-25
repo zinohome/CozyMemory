@@ -10,6 +10,8 @@ Step 8.15 起：按 app_ctx 分流。
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -470,9 +472,7 @@ async def delete_knowledge(
 # ─────────────────────────── 私有 helper ───────────────────────────
 
 
-def _parse_id(s: str):
-    from uuid import UUID
-
+def _parse_id(s: str) -> UUID | None:
     try:
         return UUID(str(s))
     except (ValueError, TypeError):
