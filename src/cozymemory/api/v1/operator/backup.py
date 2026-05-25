@@ -34,7 +34,7 @@ async def export_user(
         return await service.export_user(user_id, dataset_ids=dataset_ids)
     except EngineError as e:
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY if e.status_code >= 500 else status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_502_BAD_GATEWAY if (e.status_code or 0) >= 500 else status.HTTP_400_BAD_REQUEST,
             detail={"error": e.engine, "detail": str(e)},
         )
 

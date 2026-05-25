@@ -190,19 +190,19 @@ def create_app() -> FastAPI:
             pipe.expire(key, window + 1)
             results = await pipe.execute()
             count = results[2]
-            return count > settings.RATE_LIMIT_PER_MINUTE
+            return bool(count > settings.RATE_LIMIT_PER_MINUTE)
         except Exception:
             return False  # rate limiter failure never blocks requests
 
     @app.middleware("http")
     async def require_api_key(request: Request, call_next: Any) -> Response:
         if not settings.auth_enabled:
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
         path = request.url.path
         if path == "/" or any(path.startswith(p) for p in _AUTH_EXEMPT_PREFIXES):
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
         if request.method == "OPTIONS":  # CORS 预检直接放行
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
 
         provided = request.headers.get("x-cozy-api-key", "")
         authorization = request.headers.get("authorization", "")
@@ -309,7 +309,7 @@ def create_app() -> FastAPI:
                     headers={"Retry-After": "60"},
                 )
 
-        return await call_next(request)
+        return await call_next(request)  # type: ignore[no-any-return]
 
     # Step 8.16: per-App API 用量记录。仅业务路由；bootstrap key 或无 app_id
     # 场景直接 passthrough。失败永远不阻塞业务响应。
@@ -346,9 +346,9 @@ def create_app() -> FastAPI:
         path = request.url.path
         tracked = any(path.startswith(p) for p in _USAGE_TRACKED_PREFIXES)
         if not tracked:
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
         start = time.perf_counter()
-        response = await call_next(request)
+        response: Response = await call_next(request)
         try:
             app_id_raw = getattr(request.state, "app_id", None)
             if not app_id_raw:

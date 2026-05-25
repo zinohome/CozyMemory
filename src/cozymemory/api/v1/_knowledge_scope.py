@@ -5,6 +5,7 @@ App Key / Bearer+AppId → 登记 / 校验 / 过滤。
 """
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -74,7 +75,7 @@ async def filter_datasets_for_app(
     return [d for d in datasets if _parse_uuid(d.id) in owned]
 
 
-async def resolve_name_to_id(service, name: str) -> str | None:
+async def resolve_name_to_id(service: Any, name: str) -> str | None:
     """通过 list_datasets 查名字对应的 id。未找到返 None。"""
     try:
         resp = await service.list_datasets()
@@ -82,5 +83,5 @@ async def resolve_name_to_id(service, name: str) -> str | None:
         return None
     for d in resp.data or []:
         if d.name == name:
-            return d.id
+            return str(d.id)
     return None

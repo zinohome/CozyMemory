@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -32,7 +33,7 @@ from ...services.api_key_store import ApiKeyStore
 router = APIRouter(prefix="/dashboard/apps/{app_id}/keys", tags=["dashboard"])
 
 
-def _to_info(record) -> ApiKeyInfo:
+def _to_info(record: Any) -> ApiKeyInfo:
     return ApiKeyInfo(
         id=record.id,
         app_id=record.app_id,
@@ -197,7 +198,7 @@ async def update_key(
     if record is None:
         raise HTTPException(status_code=404, detail="key not found")
 
-    changes = {}
+    changes: dict[str, Any] = {}
     if body.name is not None:
         changes["name"] = body.name
     if body.disabled is not None:

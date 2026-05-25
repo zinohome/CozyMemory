@@ -4,7 +4,8 @@
 服务地址由 COZY_TEST_URL 环境变量控制（默认 http://localhost:8000）。
 若服务不可达，测试自动跳过。
 
-注意：Memobase 要求 user_id 必须为 UUID v4 格式。
+注意：CozyMemory 通过 UserMappingService 将任意 user_id 透明转换为 UUID v4，
+Memobase 收到的永远是合法 UUID，上层不再需要约束 user_id 格式。
 """
 
 import pytest
@@ -32,8 +33,12 @@ async def test_insert_profile(http, unique_user_id):
 
 @requires_server
 @pytest.mark.asyncio
-async def test_insert_requires_uuid_user_id(http):
-    """POST /profiles/insert user_id 非 UUID v4 → 400/422"""
+async def test_insert_accepts_non_uuid_user_id(http):
+    """POST /profiles/insert 接受非 UUID v4 的 user_id
+
+    CozyMemory 通过 UserMappingService 将任意字符串 user_id 透明映射为内部 UUID，
+    外部调用者无需关心 user_id 格式（原始 user_id 会被原样返回）。
+    """
     response = await http.post(
         "/api/v1/profiles/insert",
         json={
@@ -41,8 +46,10 @@ async def test_insert_requires_uuid_user_id(http):
             "messages": [{"role": "user", "content": "测试"}],
         },
     )
-    # Memobase 在路径层拒绝非 UUID，CozyMemory 转发 → 400 或 502
-    assert response.status_code in (400, 422, 502)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["user_id"] == "not-a-uuid"  # 原始 user_id 原样返回
 
 
 @requires_server

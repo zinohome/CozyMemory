@@ -12,14 +12,13 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from sqlalchemy import func
 
 from ...auth import get_current_developer, require_role
 from ...db import App, AuditLog, Developer, Organization, get_session
@@ -328,14 +327,13 @@ async def get_app_usage(
 ) -> dict:
     from datetime import datetime as _dt
     from datetime import timedelta
-    from datetime import timezone as _tz
 
     from sqlalchemy import Date, and_, case, cast
 
     from ...db.models import APIUsage
 
     await _get_own_app(app_id, dev, session)  # 404 if cross-org
-    since = _dt.now(_tz.utc) - timedelta(days=max(1, min(days, 90)))
+    since = _dt.now(UTC) - timedelta(days=max(1, min(days, 90)))
 
     # aggregates
     agg = (
@@ -366,7 +364,7 @@ async def get_app_usage(
             .order_by(func.count(APIUsage.id).desc())
         )
     ).all()
-    per_route = [{"route": r.route, "count": int(r.count)} for r in per_route_rows]
+    per_route = [{"route": r.route, "count": int(r.count)} for r in per_route_rows]  # type: ignore[call-overload]
 
     # daily bucket
     day_rows = (
@@ -380,7 +378,7 @@ async def get_app_usage(
             .order_by("day")
         )
     ).all()
-    daily = [{"date": str(r.day), "count": int(r.count)} for r in day_rows]
+    daily = [{"date": str(r.day), "count": int(r.count)} for r in day_rows]  # type: ignore[call-overload]
 
     return {
         "total": total,

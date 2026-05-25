@@ -58,18 +58,21 @@ async def test_add_field_name_is_dataset_name(client):
 
 @pytest.mark.asyncio
 async def test_add_encodes_data_as_bytes(client):
-    """add() 将文本编码为 UTF-8 bytes 放入 files"""
+    """add() 将文本编码为 UTF-8 bytes 放入 files，文件名用内容 MD5 hash"""
+    import hashlib
     mock_req = _mock(httpx.Response(200, json={"id": "data_1"}))
     with patch.object(client._client, "request", mock_req):
         await client.add(data="中文内容", dataset="ds")
 
     _, kwargs = mock_req.call_args
     files = kwargs.get("files")
-    # files = [("data", ("data.txt", b"...", "text/plain"))]
+    # files = [("data", ("text_{md5}.txt", b"...", "text/plain"))]
     assert files is not None
     field_name, (filename, content, mime_type) = files[0]
     assert field_name == "data"
-    assert filename == "data.txt"
+    # 文件名格式：text_{md5_of_content}.txt（和 Cognee TextLoader 一致）
+    expected_md5 = hashlib.md5("中文内容".encode()).hexdigest()
+    assert filename == f"text_{expected_md5}.txt"
     assert content == "中文内容".encode()
     assert mime_type == "text/plain"
 
