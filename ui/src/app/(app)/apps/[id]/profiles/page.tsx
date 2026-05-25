@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useCallback } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profilesApi, type ProfileItem, type ProfileResponse } from "@/lib/api";
@@ -15,6 +15,7 @@ import { Loader2, Trash2, User } from "lucide-react";
 import { UserSelector } from "@/components/user-selector";
 import { EmptyState } from "@/components/empty-state";
 import { useT } from "@/lib/i18n";
+import { useAppStore } from "@/lib/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -53,9 +54,17 @@ export default function ProfilesPage() {
   const t = useT();
   const params = useParams();
   const appId = (params?.id as string | undefined) ?? "";
-  const [userId, setUserId] = useState("");
+  const { currentUserId } = useAppStore();
+  const [userId, setUserId] = useState(currentUserId);
   const [newItem, setNewItem] = useState({ topic: "", sub_topic: "", content: "" });
   const qc = useQueryClient();
+
+  // 同步 Zustand store 的用户切换（跨页面持久化）
+  useEffect(() => {
+    if (currentUserId && currentUserId !== userId) {
+      setUserId(currentUserId);
+    }
+  }, [currentUserId]);
 
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
