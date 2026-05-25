@@ -102,8 +102,9 @@ export default function PlaygroundPage() {
   const { sessions, activeId, newSession, setActive, upsertMessages, deleteSession } =
     usePlaygroundSessions();
   const activeSession = sessions.find((s) => s.id === activeId) ?? null;
+  const { currentUserId } = useAppStore();
 
-  const [userId, setUserId] = useState(activeSession?.userId ?? "");
+  const [userId, setUserId] = useState(activeSession?.userId || currentUserId);
   const [messages, setMessages] = useState<ChatMsg[]>(activeSession?.messages ?? []);
   const [input, setInput] = useState("");
 
@@ -111,13 +112,22 @@ export default function PlaygroundPage() {
   useEffect(() => {
     if (activeSession) {
       setMessages(activeSession.messages);
-      setUserId(activeSession.userId);
+      setUserId(activeSession.userId || currentUserId);
     } else {
       setMessages([]);
+      if (currentUserId) setUserId(currentUserId);
     }
     // 只在 activeId 真正变化时跑（不要跟 activeSession 引用变化触发）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
+
+  // 当 store 的 currentUserId 变化时，同步到本地（仅在当前 userId 为空时）
+  useEffect(() => {
+    if (currentUserId && !userId) {
+      setUserId(currentUserId);
+    }
+  }, [currentUserId, userId]);
+
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastContext, setLastContext] = useState<ContextResponse | null>(null);
