@@ -303,11 +303,14 @@ export function ServerApiKeysPanel() {
               {/* Create row */}
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="new-name" className="text-xs">{t("settings.server.newName")}</Label>
+                  <Label htmlFor="new-name" className="text-xs">
+                    {t("settings.server.newName")} <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="new-name"
                     placeholder={t("settings.server.newName.placeholder")}
                     value={newName}
+                    required
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                   />

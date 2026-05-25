@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -44,6 +45,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactNode }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("apps.create")}</DialogTitle>
+          <DialogDescription className="sr-only">{t("apps.create")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
@@ -58,6 +60,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactNode }) {
               pattern="^[a-z0-9][a-z0-9\-]{0,30}[a-z0-9]$"
               required
             />
+            <p className="text-xs text-muted-foreground">{t("apps.slug.hint")}</p>
           </div>
           <Button type="submit" disabled={m.isPending}>
             {t("apps.create_submit")}

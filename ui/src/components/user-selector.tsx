@@ -65,10 +65,9 @@ export function UserSelector({
       setLocalId("");
     } else {
       setLocalId(val);
-      if (!withButton) {
-        setCurrentUserId(val);
-        onConfirm?.(val);
-      }
+      // Auto-confirm on dropdown selection — manual input still requires explicit confirm
+      setCurrentUserId(val);
+      onConfirm?.(val);
     }
   }
 

@@ -135,9 +135,12 @@ const ctx = await client.context.getUnified("alice", "outdoor activity");
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md p-2.5 border">
-          <div className="flex-1 min-w-0">
-            <span className="font-medium text-foreground">Base URL: </span>
-            <code className="break-all">{base}/api/v1</code>
+          <div className="flex-1 min-w-0 space-y-0.5">
+            <div>
+              <span className="font-medium text-foreground">Base URL: </span>
+              <code className="break-all">{base}/api/v1</code>
+            </div>
+            <p className="text-[10px]">{t("quickstart.baseUrl.hint")}</p>
           </div>
           <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/apps/${appId}/keys`} />}>
             <KeyRound className="h-3 w-3 mr-1" />
