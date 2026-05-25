@@ -44,6 +44,8 @@ export const zh: Record<TKey, string> = {
   "common.userId": "用户 ID",
   "common.selectUser": "选择用户…",
   "common.enterNewId": "输入新 ID…",
+  "common.loadingUsers": "加载用户中…",
+  "common.pickFromList": "从列表选择",
   "common.use": "使用",
   "common.reset": "重置",
   "common.new": "新建",
@@ -343,6 +345,7 @@ export const zh: Record<TKey, string> = {
   "playground.settings.prepended":
     "每轮都会拼接到前面，检索到的上下文会跟在后面。浏览器本地持久化。",
   "playground.thinking": "思考中…",
+  "playground.error.llm": "调用出错：{msg}",
 
   // ── Backup ──────────────────────────────────────────────────────────
   "backup.title": "备份",
@@ -550,6 +553,7 @@ export const zh: Record<TKey, string> = {
   "keys.delete_confirm_title": "确认删除 key？",
   "keys.delete_confirm_desc": "外部使用此 key 的客户端会立即失效",
   "keys.manage_hint": "查看和管理 App 下的 API keys",
+  "keys.name_required": "请输入 key 名称",
 
   // ── External Users (Task 7) ─────────────────────────────────────────
   "users.ext_title": "应用用户映射",

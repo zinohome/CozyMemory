@@ -36,8 +36,12 @@ export default function KeysPage({
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   async function create() {
+    if (!name.trim()) {
+      toast.error(t("keys.name_required"));
+      return;
+    }
     try {
-      const r = await createM.mutateAsync({ name: name.trim() || "key" });
+      const r = await createM.mutateAsync({ name: name.trim() });
       setRevealed(r);
       setName("");
     } catch (e) {

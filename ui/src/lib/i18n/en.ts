@@ -45,6 +45,8 @@ export const en = {
   "common.userId": "User ID",
   "common.selectUser": "Select a user…",
   "common.enterNewId": "Enter new ID…",
+  "common.loadingUsers": "Loading users…",
+  "common.pickFromList": "Pick from list",
   "common.use": "Use",
   "common.reset": "Reset",
   "common.new": "New",
@@ -344,6 +346,7 @@ export const en = {
   "playground.settings.prepended":
     "Prepended to every turn; retrieved context is appended underneath. Persists in this browser.",
   "playground.thinking": "Thinking…",
+  "playground.error.llm": "Error: {msg}",
 
   // ── Backup ──────────────────────────────────────────────────────────
   "backup.title": "Backup",
@@ -555,6 +558,7 @@ export const en = {
   "keys.delete_confirm_desc":
     "Clients using this key will stop working immediately",
   "keys.manage_hint": "View and manage API keys for this app",
+  "keys.name_required": "Please enter a key name",
 
   // ── App Users (Task 7) ─────────────────────────────────────────
   "users.ext_title": "External users",
