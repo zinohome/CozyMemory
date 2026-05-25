@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { contextApi, type ContextResponse, type ConversationMemory, type KnowledgeSearchResult } from "@/lib/api";
+import { toast } from "sonner";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,7 @@ export default function ContextStudioPage() {
       return res;
     },
     onSuccess: (data) => setResult(data),
+    onError: (e) => toast.error((e as Error).message),
   });
 
   function handleUserSelect(id: string) {
@@ -268,7 +270,7 @@ export default function ContextStudioPage() {
           {result && (
             <>
               <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                <Badge variant="outline">{result.user_id}</Badge>
+                <Badge variant="outline">{params.user_id}</Badge>
                 {elapsed != null && <span>{t("context.client.latency", { n: elapsed })}</span>}
                 {result.latency_ms != null && <span>{t("context.server.latency", { n: result.latency_ms })}</span>}
                 {hasErrors && (
@@ -353,7 +355,16 @@ export default function ContextStudioPage() {
             </>
           )}
 
-          {!result && !mutation.isPending && (
+          {mutation.isError && (
+            <Card className="border-destructive bg-destructive/5">
+              <CardContent className="pt-3 pb-3">
+                <p className="text-xs font-medium text-destructive">{t("context.errors.fetchFailed")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{String(mutation.error)}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!result && !mutation.isPending && !mutation.isError && (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-lg min-h-48">
               {t("context.selectFirst")}
             </div>

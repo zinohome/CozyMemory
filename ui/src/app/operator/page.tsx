@@ -63,7 +63,7 @@ function KeyGate() {
           <form onSubmit={submit} className="space-y-5">
             <h2 className="text-lg font-semibold">{t("operator.bootstrap_key")}</h2>
             <div className="space-y-1.5">
-              <Label htmlFor="op-key">Bootstrap Key</Label>
+              <Label htmlFor="op-key">{t("operator.bootstrap_key")}</Label>
               <Input
                 id="op-key"
                 type="password"

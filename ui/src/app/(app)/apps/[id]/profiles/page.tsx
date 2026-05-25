@@ -136,6 +136,7 @@ export default function ProfilesPage() {
             <CardTitle className="text-sm flex items-center gap-2">
               <User className="h-4 w-4" /> {t("profiles.contextPrompt")}
             </CardTitle>
+            <p className="text-xs text-muted-foreground">{t("profiles.contextPrompt.hint")}</p>
           </CardHeader>
           <CardContent>
             <pre className="text-xs whitespace-pre-wrap font-mono bg-muted rounded p-3">

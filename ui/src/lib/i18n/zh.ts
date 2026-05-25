@@ -24,6 +24,7 @@ export const zh: Record<TKey, string> = {
   "sidebar.language.zh": "中文",
   "sidebar.language.en": "English",
   "sidebar.aria.main": "主导航",
+  "sidebar.toggleSidebar": "切换侧边栏",
 
   // ── Common / shared ─────────────────────────────────────────────────
   "common.load": "加载",
@@ -120,6 +121,7 @@ export const zh: Record<TKey, string> = {
   "profiles.title": "用户画像",
   "profiles.subtitle": "管理 Memobase 结构化用户画像。",
   "profiles.contextPrompt": "上下文提示",
+  "profiles.contextPrompt.hint": "原始 Markdown 模板，由 Memobase 引擎生成",
   "profiles.items.count": "{n} 个画像条目",
   "profiles.items.for": "属于",
   "profiles.empty": "没有画像条目。",
@@ -305,6 +307,7 @@ export const zh: Record<TKey, string> = {
   "context.server.latency": "服务端：{n} 毫秒",
   "context.errors.count": "{n} 个引擎错误",
   "context.errors.title": "引擎错误",
+  "context.errors.fetchFailed": "上下文获取失败",
   "context.empty.conversations": "没有对话记忆。",
   "context.empty.profile": "没有画像上下文。",
   "context.empty.knowledge": "没有知识结果。",
@@ -527,6 +530,7 @@ export const zh: Record<TKey, string> = {
   "apps.created": "App 已创建",
   "apps.name": "名称",
   "apps.slug": "Slug",
+  "apps.slug.hint": "只允许小写字母、数字和 -（如 my-app）",
   "apps.slug_conflict": "Slug 已被占用",
   "apps.none": "还没有 App",
   "apps.none_create_cta": "去创建 App",
@@ -654,6 +658,7 @@ export const zh: Record<TKey, string> = {
   "quickstart.example.add_conv": "1) 写入一条对话记忆",
   "quickstart.example.get_context": "2) LLM 调用前拉统一上下文",
   "quickstart.footer_hint": "所有业务路由都走 X-Cozy-API-Key 鉴权。数据通过 uuid5(app_namespace, user_id) 按 App 隔离 —— 详情见文档。",
+  "quickstart.baseUrl.hint": "此地址由 NEXT_PUBLIC_API_URL 环境变量决定，可在部署时自定义",
 
   "usage.title": "用量（最近 7 天）",
   "usage.total": "总调用数",
