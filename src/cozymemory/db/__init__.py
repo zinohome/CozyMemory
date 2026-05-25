@@ -9,8 +9,8 @@
 
 from .engine import close_engine, get_session, init_engine
 from .models import (
-    APIUsage,
     ApiKey,
+    APIUsage,
     App,
     AppDataset,
     AuditLog,

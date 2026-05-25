@@ -15,10 +15,6 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-# 后台 async_mode 提取的并发限制
-# Mem0 的 LLM 调用是串行阻塞的，过多并发会打满 worker 导致 502
-_bg_semaphore = asyncio.Semaphore(3)
-
 from ...api.deps import get_conversation_service
 from ...auth import AppContext, get_app_context, scope_user_id
 from ...clients.base import EngineError
@@ -31,6 +27,9 @@ from ...models.conversation import (
     ConversationMemorySearch,
 )
 from ...services.conversation import ConversationService
+
+# Mem0 的 LLM 调用是串行阻塞的，过多并发会打满 worker 导致 502
+_bg_semaphore = asyncio.Semaphore(3)
 
 logger = structlog.get_logger()
 
