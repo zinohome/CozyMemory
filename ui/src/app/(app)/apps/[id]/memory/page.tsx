@@ -27,7 +27,7 @@ const MemoryRow = memo(function MemoryRow({
       <div className="flex-1 space-y-1">
         <p>{mem.content}</p>
         <div className="flex gap-2 text-xs text-muted-foreground flex-wrap">
-          <span className="font-mono">{mem.id}</span>
+          <span className="font-mono text-muted-foreground" title={mem.id}>{mem.id.slice(0, 8)}…</span>
           {mem.created_at && <span>{new Date(mem.created_at).toLocaleString()}</span>}
         </div>
       </div>

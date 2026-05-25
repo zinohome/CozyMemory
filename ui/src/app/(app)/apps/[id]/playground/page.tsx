@@ -89,7 +89,7 @@ function extractDeltas(buffer: string): { deltas: string[]; rest: string; done: 
 // 与后端 /api/chat 的 LLM_MODEL 默认保持一致；其他为 oneapi 常见可用模型，
 // 用户可通过 "Custom" 选项填任意非列表值
 const MODEL_PRESETS = [
-  "gpt-4.1-nano-2025-04-14",
+  "gpt-oss:20b-cloud",
   "gpt-4o-mini",
   "gpt-4o",
   "gpt-4.1-mini",
@@ -261,7 +261,12 @@ export default function PlaygroundPage() {
           ]);
         }
       } else {
-        toast.error((e as Error).message);
+        const errMsg = (e as Error).message;
+        toast.error(errMsg);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: t("playground.error.llm", { msg: errMsg }), createdAt: new Date().toISOString() },
+        ]);
       }
       setStreamingText("");
     } finally {

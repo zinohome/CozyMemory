@@ -30,7 +30,7 @@ interface ChatRequest {
 export async function POST(req: Request) {
   const endpoint = process.env.LLM_ENDPOINT;
   const apiKey = process.env.LLM_API_KEY;
-  const defaultModel = process.env.LLM_MODEL ?? "gpt-4.1-nano-2025-04-14";
+  const defaultModel = process.env.LLM_MODEL ?? "gpt-oss:20b-cloud";
 
   if (!endpoint || !apiKey) {
     return NextResponse.json(

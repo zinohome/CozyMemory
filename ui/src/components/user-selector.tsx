@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, UserRound, ChevronDown, PenLine } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   label?: string;
@@ -33,13 +34,16 @@ interface Props {
 const NEW_USER_SENTINEL = "__new__";
 
 export function UserSelector({
-  label = "User ID",
+  label,
   onConfirm,
   withButton = true,
-  buttonLabel = "Load",
+  buttonLabel,
   loading = false,
   knownUserIds,
 }: Props) {
+  const t = useT();
+  const effectiveLabel = label ?? t("common.userId");
+  const effectiveButtonLabel = buttonLabel ?? t("common.load");
   const { currentUserId, setCurrentUserId } = useAppStore();
   const currentAppId = useAppStore((s) => s.currentAppId);
   const [localId, setLocalId] = useState(currentUserId);
@@ -76,18 +80,18 @@ export function UserSelector({
 
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label>{effectiveLabel}</Label>
       <div className="flex gap-2">
         {mode === "select" ? (
           <div className="flex-1 flex gap-2">
             <Select value={localId || undefined} onValueChange={(v) => handleChange(v ?? "")}>
-              <SelectTrigger className="flex-1" aria-label={label}>
+              <SelectTrigger className="flex-1" aria-label={effectiveLabel}>
                 {isFetching ? (
                   <span className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading users…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("common.loadingUsers")}
                   </span>
                 ) : (
-                  <SelectValue placeholder="Select a user…" />
+                  <SelectValue placeholder={t("common.selectUser")} />
                 )}
               </SelectTrigger>
               <SelectContent>
@@ -102,7 +106,7 @@ export function UserSelector({
                 <SelectItem value={NEW_USER_SENTINEL}>
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <PenLine className="h-3.5 w-3.5" />
-                    Enter new ID…
+                    {t("common.enterNewId")}
                   </span>
                 </SelectItem>
               </SelectContent>
@@ -118,7 +122,7 @@ export function UserSelector({
               onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
             />
             {knownUsers.length > 0 && (
-              <Button variant="ghost" size="icon" onClick={() => setMode("select")} title="Pick from list" aria-label="Pick from list">
+              <Button variant="ghost" size="icon" onClick={() => setMode("select")} title={t("common.pickFromList")} aria-label={t("common.pickFromList")}>
                 <ChevronDown className="h-4 w-4" />
               </Button>
             )}
@@ -127,7 +131,7 @@ export function UserSelector({
 
         {withButton && (
           <Button onClick={handleConfirm} disabled={!localId || loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : buttonLabel}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : effectiveButtonLabel}
           </Button>
         )}
       </div>
