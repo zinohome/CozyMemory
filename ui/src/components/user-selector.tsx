@@ -126,6 +126,7 @@ export function UserSelector({
               value={localId}
               onChange={(e) => setLocalId(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
+              onBlur={() => { if (localId && localId !== currentUserId) handleConfirm(); }}
             />
             {knownUsers.length > 0 && (
               <Button variant="ghost" size="icon" onClick={() => setMode("select")} title={t("common.pickFromList")} aria-label={t("common.pickFromList")}>

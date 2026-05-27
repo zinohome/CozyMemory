@@ -131,7 +131,8 @@ export default function PlaygroundPage() {
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastContext, setLastContext] = useState<ContextResponse | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "savedZero" | "error">("idle");
+  const [saveCount, setSaveCount] = useState(0);
   const [model, setModel] = useState<string>(MODEL_PRESETS[0]);
   const [customModel, setCustomModel] = useState<string>("");
   const [temperature, setTemperature] = useState<number>(0.7);
@@ -164,6 +165,7 @@ export default function PlaygroundPage() {
     setIsStreaming(true);
     setStreamingText("");
     setSaveStatus("idle");
+    setSaveCount(0);
 
     const ac = new AbortController();
     abortRef.current = ac;
@@ -259,7 +261,11 @@ export default function PlaygroundPage() {
           ],
           infer: true,
         })
-        .then(() => setSaveStatus("saved"))
+        .then((res) => {
+          const count = res.total ?? res.data?.length ?? 0;
+          setSaveCount(count);
+          setSaveStatus(count > 0 ? "saved" : "savedZero");
+        })
         .catch(() => setSaveStatus("error"));
     } catch (e) {
       if ((e as Error).name === "AbortError") {
@@ -295,6 +301,7 @@ export default function PlaygroundPage() {
     setMessages([]);
     setLastContext(null);
     setSaveStatus("idle");
+    setSaveCount(0);
     setStreamingText("");
   }
 
@@ -303,6 +310,7 @@ export default function PlaygroundPage() {
     setMessages([]);
     setLastContext(null);
     setSaveStatus("idle");
+    setSaveCount(0);
     setStreamingText("");
   }
 
@@ -520,7 +528,8 @@ export default function PlaygroundPage() {
                     <Loader2 className="h-3 w-3 animate-spin" /> {t("playground.save.saving")}
                   </span>
                 )}
-                {saveStatus === "saved" && t("playground.save.saved")}
+                {saveStatus === "saved" && t("playground.save.savedCount", { n: saveCount })}
+                {saveStatus === "savedZero" && t("playground.save.savedZero")}
                 {saveStatus === "error" && t("playground.save.error")}
               </span>
             </div>

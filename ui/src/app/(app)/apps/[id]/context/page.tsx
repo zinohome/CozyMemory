@@ -113,6 +113,10 @@ export default function ContextStudioPage() {
   }
 
   function handleFetch() {
+    if (!params.user_id) {
+      toast.error(t("context.errors.noUser"));
+      return;
+    }
     mutation.mutate(params);
   }
 
@@ -245,7 +249,7 @@ export default function ContextStudioPage() {
 
             <Button
               onClick={handleFetch}
-              disabled={!params.user_id || mutation.isPending}
+              disabled={mutation.isPending}
               className="w-full"
             >
               {mutation.isPending ? (

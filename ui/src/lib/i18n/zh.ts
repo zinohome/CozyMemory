@@ -25,6 +25,7 @@ export const zh: Record<TKey, string> = {
   "sidebar.language.en": "English",
   "sidebar.aria.main": "主导航",
   "sidebar.toggleSidebar": "切换侧边栏",
+  "sidebar.theme.toggleAria": "切换主题",
 
   // ── Common / shared ─────────────────────────────────────────────────
   "common.load": "加载",
@@ -308,6 +309,7 @@ export const zh: Record<TKey, string> = {
   "context.errors.count": "{n} 个引擎错误",
   "context.errors.title": "引擎错误",
   "context.errors.fetchFailed": "上下文获取失败",
+  "context.errors.noUser": "请先选择一个用户",
   "context.empty.conversations": "没有对话记忆。",
   "context.empty.profile": "没有画像上下文。",
   "context.empty.knowledge": "没有知识结果。",
@@ -341,6 +343,8 @@ export const zh: Record<TKey, string> = {
     "模型：{model} · 温度 {temp} · 上限 {max}{custom}",
   "playground.save.saving": "保存到记忆中…",
   "playground.save.saved": "✅ 本轮已保存到 Mem0",
+  "playground.save.savedCount": "✅ 已保存 {n} 条记忆到 Mem0",
+  "playground.save.savedZero": "⚠️ Mem0 未从本轮对话提取到任何记忆",
   "playground.save.error": "⚠️ 保存记忆失败",
   "playground.contextPanel.title": "最近注入的上下文",
   "playground.contextPanel.empty":
@@ -692,6 +696,8 @@ export const zh: Record<TKey, string> = {
   "operator.action.run_backup_desc": "导出或导入用户记忆数据",
   "operator.action.health_detail": "健康详情",
   "operator.action.health_detail_desc": "引擎监控指标与趋势分析",
+  "operator.orgs.info": "{devs} 位 developer，{apps} 个 app",
+  "operator.orgs.empty": "暂无组织。",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "网络错误，请重试。",

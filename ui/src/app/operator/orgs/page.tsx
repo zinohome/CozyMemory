@@ -31,7 +31,7 @@ export default function OrgsPage() {
             <CardContent className="text-sm space-y-1">
               <p className="text-muted-foreground">/{o.slug}</p>
               <p>
-                {o.dev_count} developer(s), {o.app_count} app(s)
+                {t("operator.orgs.info", { devs: o.dev_count, apps: o.app_count })}
               </p>
               <p className="text-xs text-muted-foreground">
                 {new Date(o.created_at).toLocaleDateString()}
@@ -40,7 +40,7 @@ export default function OrgsPage() {
           </Card>
         ))}
         {orgs.length === 0 && (
-          <p className="text-muted-foreground">No orgs yet.</p>
+          <p className="text-muted-foreground">{t("operator.orgs.empty")}</p>
         )}
       </div>
     </div>

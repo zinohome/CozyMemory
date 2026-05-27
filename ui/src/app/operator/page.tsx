@@ -230,7 +230,12 @@ function Dashboard() {
 
       {/* 统计指标 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard label={t("operator.stat.api_status")} value={health?.status ?? "…"} icon={Activity} barColor="stat-bar-violet" />
+        <StatCard label={t("operator.stat.api_status")} value={health?.status ? (({
+          healthy: t("operator.engine.status.healthy"),
+          degraded: t("operator.engine.status.degraded"),
+          unhealthy: t("operator.engine.status.unhealthy"),
+          disabled: t("operator.engine.status.disabled"),
+        } as Record<string, string>)[health.status] ?? health.status) : "…"} icon={Activity} barColor="stat-bar-violet" />
         <StatCard label={t("operator.stat.orgs")} value={totalOrgs} icon={Building2} barColor="stat-bar-blue" />
         <StatCard label={t("operator.stat.users")} value={totalUsers} icon={Users} barColor="stat-bar-amber" />
         <StatCard label={t("operator.stat.datasets")} value={totalDatasets} icon={Database} barColor="stat-bar-emerald" />

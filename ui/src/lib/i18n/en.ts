@@ -26,6 +26,7 @@ export const en = {
   "sidebar.language.en": "English",
   "sidebar.aria.main": "Main",
   "sidebar.toggleSidebar": "Toggle Sidebar",
+  "sidebar.theme.toggleAria": "Toggle theme",
 
   // ── Common / shared ─────────────────────────────────────────────────
   "common.load": "Load",
@@ -309,6 +310,7 @@ export const en = {
   "context.errors.count": "{n} engine error(s)",
   "context.errors.title": "Engine errors",
   "context.errors.fetchFailed": "Failed to fetch context",
+  "context.errors.noUser": "Please select a user first",
   "context.empty.conversations": "No conversation memories.",
   "context.empty.profile": "No profile context.",
   "context.empty.knowledge": "No knowledge results.",
@@ -342,6 +344,8 @@ export const en = {
     "Model: {model} · temp {temp} · max {max}{custom}",
   "playground.save.saving": "saving to memory…",
   "playground.save.saved": "✅ last turn saved to Mem0",
+  "playground.save.savedCount": "✅ {n} memories saved to Mem0",
+  "playground.save.savedZero": "⚠️ Mem0 extracted 0 memories from this turn",
   "playground.save.error": "⚠️ memory save failed",
   "playground.contextPanel.title": "Last context injected",
   "playground.contextPanel.empty":
@@ -698,6 +702,8 @@ export const en = {
   "operator.action.run_backup_desc": "Export or import user memory data",
   "operator.action.health_detail": "Health Details",
   "operator.action.health_detail_desc": "Detailed engine metrics and trends",
+  "operator.orgs.info": "{devs} developer(s), {apps} app(s)",
+  "operator.orgs.empty": "No orgs yet.",
 
   // ── Errors / toasts ─────────────────────────────────────────────────
   "error.network": "Network error. Please try again.",
