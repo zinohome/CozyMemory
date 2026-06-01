@@ -60,4 +60,5 @@ Thumbs.db
 # Project specific
 projects/
 scripts/
+!scripts/seed_admin_developer.py
 tests/
