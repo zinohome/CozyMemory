@@ -239,7 +239,7 @@ services:
       # 在 FalkorDB 模式下会导致图谱查询端点（/datasets/{id}/graph）500 崩溃
       - ENABLE_BACKEND_ACCESS_CONTROL=false
       - REQUIRE_AUTHENTICATION=false
-      - DEFAULT_USER_EMAIL=admin@cognee.com
+      - DEFAULT_USER_EMAIL=admin@yanyi.com
       - DEFAULT_USER_PASSWORD=${COGNEE_ADMIN_PASSWORD:-passw0rd}
       - TIKTOKEN_CACHE_DIR=/root/.tiktoken
     depends_on:
@@ -439,7 +439,7 @@ services:
       COGNEE_API_URL: http://cognee:8000
       COGNEE_API_KEY: ""
       COGNEE_ENABLED: "true"
-      COGNEE_USER_EMAIL: admin@cognee.com
+      COGNEE_USER_EMAIL: admin@yanyi.com
       COGNEE_USER_PASSWORD: ${COGNEE_ADMIN_PASSWORD:-passw0rd}
       # Cognee 默认搜索类型：CHUNKS(快) / GRAPH_COMPLETION(慢但有推理)
       COGNEE_DEFAULT_SEARCH_TYPE: ${COGNEE_DEFAULT_SEARCH_TYPE:-CHUNKS}
@@ -452,7 +452,12 @@ services:
       # JWT（Dashboard 登录）— 生产必须改
       JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
       # API Key 鉴权 — 逗号分隔多个 key；留空关闭鉴权
-      COZY_API_KEYS: ${COZY_API_KEYS:-}
+      COZY_API_KEYS: ${COZY_API_KEYS:-CM-Key-2026-0001,CM-Key-2026-0002,CM-Key-2026-0003,CM-Key-2026-0004}
+      # 管理员账号种子（entrypoint 幂等创建）
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@yanyi.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Cozy@2026}
+      SEED_ADMIN_ORG_NAME: ${SEED_ADMIN_ORG_NAME:-Yanyi Admin}
+      SEED_ADMIN_ORG_SLUG: ${SEED_ADMIN_ORG_SLUG:-yanyi-admin}
     depends_on:
       postgres:
         condition: service_healthy
