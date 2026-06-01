@@ -56,6 +56,9 @@ RUN pip install --no-cache-dir -e .
 COPY --chown=cozymemory:cozymemory alembic.ini ./
 COPY --chown=cozymemory:cozymemory alembic/ ./alembic/
 
+# 复制 scripts（含 seed 脚本）
+COPY --chown=cozymemory:cozymemory scripts/ ./scripts/
+
 # 复制 supervisord 配置和 entrypoint
 COPY --chown=cozymemory:cozymemory deploy/supervisord.conf /etc/supervisor/conf.d/cozymemory.conf
 COPY --chown=cozymemory:cozymemory deploy/entrypoint.sh /app/entrypoint.sh
